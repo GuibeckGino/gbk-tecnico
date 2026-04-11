@@ -10,6 +10,7 @@ import {
   TextInput,
   ScrollView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
@@ -49,6 +50,11 @@ export default function HistoricoScreen() {
   const [editData, setEditData] = useState("");
   const [editObs, setEditObs] = useState("");
   const [salvandoEdit, setSalvandoEdit] = useState(false);
+
+  // Modal de confirmação de exclusão
+  const [confirmandoExclusao, setConfirmandoExclusao] =
+    useState<Installation | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
 
   function abrirEdicao(inst: Installation) {
     haptic();
@@ -96,22 +102,25 @@ export default function HistoricoScreen() {
     }
   }
 
-  function confirmarExclusao(inst: Installation) {
+  function abrirConfirmacaoExclusao(inst: Installation) {
     hapticError();
-    Alert.alert(
-      "Excluir Instalação",
-      `Deseja excluir a instalação de "${inst.cliente}"? Esta ação não pode ser desfeita.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            await removerInstalacao(inst.id);
-          },
-        },
-      ]
-    );
+    setConfirmandoExclusao(inst);
+  }
+
+  function fecharConfirmacaoExclusao() {
+    setConfirmandoExclusao(null);
+  }
+
+  async function executarExclusao() {
+    if (!confirmandoExclusao) return;
+    setExcluindo(true);
+    try {
+      await removerInstalacao(confirmandoExclusao.id);
+      hapticSuccess();
+      fecharConfirmacaoExclusao();
+    } finally {
+      setExcluindo(false);
+    }
   }
 
   function formatarData(texto: string) {
@@ -159,7 +168,7 @@ export default function HistoricoScreen() {
               instalacao={item}
               valorIndividual={stats.valorIndividual}
               onEditar={() => abrirEdicao(item)}
-              onExcluir={() => confirmarExclusao(item)}
+              onExcluir={() => abrirConfirmacaoExclusao(item)}
             />
           )}
           ItemSeparatorComponent={() => (
@@ -373,6 +382,74 @@ export default function HistoricoScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Modal
+        visible={confirmandoExclusao !== null}
+        animationType="fade"
+        transparent
+        onRequestClose={fecharConfirmacaoExclusao}
+      >
+        <View style={styles.confirmOverlay}>
+          <View
+            style={[
+              styles.confirmContainer,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[styles.confirmTitulo, { color: colors.foreground }]}
+            >
+              Excluir Instalação
+            </Text>
+            <Text
+              style={[styles.confirmMensagem, { color: colors.muted }]}
+            >
+              Tem certeza que deseja excluir a instalação de "{confirmandoExclusao?.cliente}"?
+            </Text>
+            <Text
+              style={[styles.confirmAviso, { color: colors.error }]}
+            >
+              Esta ação não pode ser desfeita.
+            </Text>
+
+            <View style={styles.confirmBotoes}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.botaoCancelar,
+                  {
+                    backgroundColor: colors.muted,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+                onPress={fecharConfirmacaoExclusao}
+                disabled={excluindo}
+              >
+                <Text style={styles.botaoCancelarTexto}>Cancelar</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.botaoExcluir,
+                  {
+                    backgroundColor: excluindo ? colors.muted : colors.error,
+                    opacity: pressed ? 0.85 : 1,
+                    transform: pressed ? [{ scale: 0.97 }] : [],
+                  },
+                ]}
+                onPress={executarExclusao}
+                disabled={excluindo}
+              >
+                {excluindo ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.botaoExcluirTexto}>Excluir</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -570,7 +647,7 @@ const styles = StyleSheet.create({
   acaoBotaoTexto: {
     fontSize: 16,
   },
-  // Modal
+  // Modal de Edição
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -645,6 +722,72 @@ const styles = StyleSheet.create({
   botaoSalvarTexto: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "700",
+  },
+  // Modal de Confirmação
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  confirmContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    width: "100%",
+    maxWidth: 320,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  confirmTitulo: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  confirmMensagem: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  confirmAviso: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  confirmBotoes: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  botaoCancelar: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  botaoCancelarTexto: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  botaoExcluir: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  botaoExcluirTexto: {
+    color: "#fff",
+    fontSize: 14,
     fontWeight: "700",
   },
 });

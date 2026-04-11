@@ -8,6 +8,8 @@ import {
   Alert,
   Switch,
   Platform,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -24,6 +26,18 @@ function haptic() {
   }
 }
 
+function hapticError() {
+  if (Platform.OS !== "web") {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  }
+}
+
+function hapticSuccess() {
+  if (Platform.OS !== "web") {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
+}
+
 export default function ConfiguracoesScreen() {
   const { instalacoes, limparDados, exportarJSON, importarJSON } =
     useInstallations();
@@ -31,6 +45,10 @@ export default function ConfiguracoesScreen() {
   const colors = useColors();
   const [exportando, setExportando] = useState(false);
   const [importando, setImportando] = useState(false);
+
+  // Modal de confirmação para limpar dados
+  const [confirmandoLimpeza, setConfirmandoLimpeza] = useState(false);
+  const [limpando, setLimpando] = useState(false);
 
   async function exportarCSV() {
     if (instalacoes.length === 0) {
@@ -53,7 +71,10 @@ export default function ConfiguracoesScreen() {
       const csv = [cabecalho, ...linhas].join("\n");
 
       if (Platform.OS === "web") {
-        Alert.alert("Exportação", "Exportação CSV disponível apenas no dispositivo móvel.");
+        Alert.alert(
+          "Exportação",
+          "Exportação CSV disponível apenas no dispositivo móvel."
+        );
         return;
       }
 
@@ -87,7 +108,10 @@ export default function ConfiguracoesScreen() {
       const json = exportarJSON();
 
       if (Platform.OS === "web") {
-        Alert.alert("Exportação", "Exportação de backup disponível apenas no dispositivo móvel.");
+        Alert.alert(
+          "Exportação",
+          "Exportação de backup disponível apenas no dispositivo móvel."
+        );
         return;
       }
 
@@ -113,7 +137,10 @@ export default function ConfiguracoesScreen() {
 
   async function restaurarBackup() {
     if (Platform.OS === "web") {
-      Alert.alert("Restauração", "Restauração de backup disponível apenas no dispositivo móvel.");
+      Alert.alert(
+        "Restauração",
+        "Restauração de backup disponível apenas no dispositivo móvel."
+      );
       return;
     }
     setImportando(true);
@@ -143,8 +170,10 @@ export default function ConfiguracoesScreen() {
             onPress: async () => {
               const sucesso = await importarJSON(conteudo);
               if (sucesso) {
+                hapticSuccess();
                 Alert.alert("Sucesso", "Backup restaurado com sucesso!");
               } else {
+                hapticError();
                 Alert.alert("Erro", "Arquivo de backup inválido.");
               }
             },
@@ -158,23 +187,24 @@ export default function ConfiguracoesScreen() {
     }
   }
 
-  function confirmarLimpeza() {
-    haptic();
-    Alert.alert(
-      "Limpar Todos os Dados",
-      `Isso apagará permanentemente todas as ${instalacoes.length} instalações cadastradas. Esta ação não pode ser desfeita.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Limpar Tudo",
-          style: "destructive",
-          onPress: async () => {
-            await limparDados();
-            Alert.alert("Concluído", "Todos os dados foram apagados.");
-          },
-        },
-      ]
-    );
+  function abrirConfirmacaoLimpeza() {
+    hapticError();
+    setConfirmandoLimpeza(true);
+  }
+
+  function fecharConfirmacaoLimpeza() {
+    setConfirmandoLimpeza(false);
+  }
+
+  async function executarLimpeza() {
+    setLimpando(true);
+    try {
+      await limparDados();
+      hapticSuccess();
+      fecharConfirmacaoLimpeza();
+    } finally {
+      setLimpando(false);
+    }
   }
 
   return (
@@ -242,7 +272,7 @@ export default function ConfiguracoesScreen() {
             icone="🗑️"
             label="Limpar Todos os Dados"
             sublabel="Apaga todas as instalações"
-            onPress={confirmarLimpeza}
+            onPress={abrirConfirmacaoLimpeza}
             cor="error"
           />
         </Secao>
@@ -257,6 +287,74 @@ export default function ConfiguracoesScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Modal de Confirmação de Limpeza */}
+      <Modal
+        visible={confirmandoLimpeza}
+        animationType="fade"
+        transparent
+        onRequestClose={fecharConfirmacaoLimpeza}
+      >
+        <View style={styles.confirmOverlay}>
+          <View
+            style={[
+              styles.confirmContainer,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[styles.confirmTitulo, { color: colors.foreground }]}
+            >
+              Limpar Todos os Dados
+            </Text>
+            <Text
+              style={[styles.confirmMensagem, { color: colors.muted }]}
+            >
+              Isso apagará permanentemente todas as {instalacoes.length} instalações cadastradas.
+            </Text>
+            <Text
+              style={[styles.confirmAviso, { color: colors.error }]}
+            >
+              Esta ação não pode ser desfeita.
+            </Text>
+
+            <View style={styles.confirmBotoes}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.botaoCancelar,
+                  {
+                    backgroundColor: colors.muted,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+                onPress={fecharConfirmacaoLimpeza}
+                disabled={limpando}
+              >
+                <Text style={styles.botaoCancelarTexto}>Cancelar</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.botaoLimpar,
+                  {
+                    backgroundColor: limpando ? colors.muted : colors.error,
+                    opacity: pressed ? 0.85 : 1,
+                    transform: pressed ? [{ scale: 0.97 }] : [],
+                  },
+                ]}
+                onPress={executarLimpeza}
+                disabled={limpando}
+              >
+                {limpando ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.botaoLimparTexto}>Limpar Tudo</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -425,5 +523,71 @@ const styles = StyleSheet.create({
   },
   infoTexto: {
     fontSize: 12,
+  },
+  // Modal de Confirmação
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  confirmContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    width: "100%",
+    maxWidth: 320,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  confirmTitulo: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  confirmMensagem: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  confirmAviso: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  confirmBotoes: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  botaoCancelar: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  botaoCancelarTexto: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  botaoLimpar: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  botaoLimparTexto: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

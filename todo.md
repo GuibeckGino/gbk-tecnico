@@ -54,3 +54,10 @@
 - [x] AsyncStorage sincronizado em todas as operações
 - [x] Regra financeira retroativa validada (100=6500, 103=6695, 104=7280, 105=7350)
 - [x] Dados persistem após fechar e reabrir o app
+
+
+## Bugs Críticos (Correção)
+- [x] Exclusão no histórico não funciona — corrigir fluxo de remoção
+- [x] Confirmação de exclusão deve funcionar corretamente
+- [x] Limpar dados não pede confirmação
+- [x] Limpar dados não funciona
