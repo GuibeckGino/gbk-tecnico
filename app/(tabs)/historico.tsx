@@ -46,9 +46,7 @@ export default function HistoricoScreen() {
   const { mes, ano, mesAnoFormatado } = useMonth();
   const colors = useColors();
 
-  // Filtrar instalações do mês selecionado
-  const instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
-
+  // Estados
   const [editando, setEditando] = useState<Installation | null>(null);
   const [editCliente, setEditCliente] = useState("");
   const [editEndereco, setEditEndereco] = useState("");
@@ -56,11 +54,28 @@ export default function HistoricoScreen() {
   const [editData, setEditData] = useState("");
   const [editObs, setEditObs] = useState("");
   const [salvandoEdit, setSalvandoEdit] = useState(false);
-
-  // Modal de confirmação de exclusão
   const [confirmandoExclusao, setConfirmandoExclusao] =
     useState<Installation | null>(null);
   const [excluindo, setExcluindo] = useState(false);
+  const [buscaCliente, setBuscaCliente] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState<ServiceType | "Todos">("Todos");
+
+  // Filtrar instalações do mês selecionado
+  let instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
+
+  // Aplicar filtro de tipo
+  if (filtroTipo !== "Todos") {
+    instalacoesDoMes = instalacoesDoMes.filter(
+      (inst) => inst.tipoServico === filtroTipo
+    );
+  }
+
+  // Aplicar busca por cliente
+  if (buscaCliente.trim()) {
+    instalacoesDoMes = instalacoesDoMes.filter((inst) =>
+      inst.cliente.toLowerCase().includes(buscaCliente.toLowerCase())
+    );
+  }
 
   function abrirEdicao(inst: Installation) {
     haptic();
@@ -178,6 +193,47 @@ export default function HistoricoScreen() {
         >
           <Text style={styles.badgeTotalTexto}>{instalacoesDoMes.length}</Text>
         </View>
+      </View>
+
+      {/* Filtro e Busca */}
+      <View style={[styles.filtroContainer, { backgroundColor: colors.surface }]}>
+        <TextInput
+          style={[
+            styles.searchInput,
+            { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background },
+          ]}
+          placeholder="Buscar cliente..."
+          placeholderTextColor={colors.muted}
+          value={buscaCliente}
+          onChangeText={setBuscaCliente}
+        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filtroScroll}
+        >
+          {(["Todos", "Instalação", "Tipo 3", "Mudança"] as const).map((tipo) => (
+            <Pressable
+              key={tipo}
+              style={[
+                styles.filtroBotao,
+                filtroTipo === tipo
+                  ? { backgroundColor: colors.primary }
+                  : { backgroundColor: colors.border },
+              ]}
+              onPress={() => setFiltroTipo(tipo)}
+            >
+              <Text
+                style={[
+                  styles.filtroBotaoTexto,
+                  { color: filtroTipo === tipo ? "#fff" : colors.foreground },
+                ]}
+              >
+                {tipo}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       </View>
 
       {instalacoesDoMes.length === 0 ? (
@@ -711,6 +767,34 @@ const styles = StyleSheet.create({
   },
   ItemSeparatorComponent: {
     height: 10,
+  },
+  // Filtro e Busca
+  filtroContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 10,
+    borderBottomWidth: 1,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    height: 40,
+  },
+  filtroScroll: {
+    flexDirection: "row",
+  },
+  filtroBotao: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  filtroBotaoTexto: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   // Modal de Edição
   modalOverlay: {

@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/lib/theme-provider";
 import { InstallationsProvider } from "@/context/InstallationsContext";
 import { GBKThemeProvider } from "@/context/ThemeContext";
 import { MonthProvider } from "@/context/MonthContext";
+import { ReminderProvider } from "@/context/ReminderContext";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -85,6 +86,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <InstallationsProvider>
       <MonthProvider>
+      <ReminderProvider>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
@@ -97,6 +99,7 @@ export default function RootLayout() {
           <StatusBar style="auto" />
         </QueryClientProvider>
       </trpc.Provider>
+      </ReminderProvider>
       </MonthProvider>
       </InstallationsProvider>
     </GestureHandlerRootView>

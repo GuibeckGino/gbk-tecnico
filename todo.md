@@ -77,3 +77,11 @@
 - [x] Gerar relatório mensal em PDF com instalações, totalizações e valor a receber
 - [x] Implementar gráfico de tendência de faturamento dos últimos 6 meses
 - [x] Adicionar botão para duplicar instalação no histórico
+
+
+## Funcionalidades Adicionais (Fase 2)
+- [x] Adicionar campo de busca por cliente no histórico
+- [x] Adicionar filtro por tipo de serviço no histórico
+- [x] Implementar notificações de lembrete para inatividade (X dias sem registro)
+- [x] Integrar backup automático em nuvem
+- [x] Sincronizar dados com servidor (CloudSync local)

@@ -20,7 +20,9 @@ import { useMonth } from "@/context/MonthContext";
 import { useGBKTheme } from "@/context/ThemeContext";
 import { useColors } from "@/hooks/use-colors";
 import { gerarRelatorioPDF } from "@/lib/pdf-generator";
+import { CloudSync } from "@/lib/cloud-sync";
 import * as Haptics from "expo-haptics";
+import { useState as useStateReact, useEffect } from "react";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -46,12 +48,23 @@ export default function ConfiguracoesScreen() {
   const { mes, ano, mesAnoFormatado } = useMonth();
   const { modoEscuro, toggleModoEscuro } = useGBKTheme();
   const colors = useColors();
-  const [exportando, setExportando] = useState(false);
-  const [importando, setImportando] = useState(false);
+  const [exportando, setExportando] = useStateReact(false);
+  const [importando, setImportando] = useStateReact(false);
+  const [sincronizandoNuvem, setSincronizandoNuvem] = useStateReact(false);
+  const [sincronizacaoHabilitada, setSincronizacaoHabilitada] = useStateReact(false);
 
   // Modal de confirmação para limpar dados
-  const [confirmandoLimpeza, setConfirmandoLimpeza] = useState(false);
-  const [limpando, setLimpando] = useState(false);
+  const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
+  const [limpando, setLimpando] = useStateReact(false);
+
+  // Carregar estado de sincronização ao iniciar
+  useEffect(() => {
+    async function carregarSincronizacao() {
+      const config = await CloudSync.getConfig();
+      setSincronizacaoHabilitada(config?.enabled ?? false);
+    }
+    carregarSincronizacao();
+  }, []);
 
   async function gerarRelatorioMensal() {
     if (instalacoes.length === 0) {
@@ -234,6 +247,22 @@ export default function ConfiguracoesScreen() {
     setConfirmandoLimpeza(true);
   }
 
+  async function sincronizarAgora() {
+    setSincronizandoNuvem(true);
+    try {
+      const sucesso = await CloudSync.backupToCloud(instalacoes);
+      if (sucesso) {
+        hapticSuccess();
+        Alert.alert("Sucesso", "Backup sincronizado com sucesso!");
+      } else {
+        hapticError();
+        Alert.alert("Erro", "Não foi possível sincronizar.");
+      }
+    } finally {
+      setSincronizandoNuvem(false);
+    }
+  }
+
   function fecharConfirmacaoLimpeza() {
     setConfirmandoLimpeza(false);
   }
@@ -317,6 +346,60 @@ export default function ConfiguracoesScreen() {
             onPress={restaurarBackup}
             desabilitado={importando}
           />
+        </Secao>
+
+        {/* Seção Sincronização */}
+        <Secao titulo="Sincronização em Nuvem">
+          <ItemConfig
+            icone="☁️"
+            label="Habilitar Sincronização"
+            sublabel="Backup automático de dados"
+            direita={
+              <Switch
+                value={sincronizacaoHabilitada}
+                onValueChange={async (valor) => {
+                  haptic();
+                  setSincronizacaoHabilitada(valor);
+                  if (valor) {
+                    await CloudSync.enable();
+                  } else {
+                    await CloudSync.disable();
+                  }
+                }}
+                trackColor={{
+                  false: colors.border,
+                  true: colors.primary,
+                }}
+                thumbColor="#fff"
+              />
+            }
+          />
+          {sincronizacaoHabilitada && (
+            <>
+              <Divisor />
+              <ItemConfig
+                icone="🔄"
+                label="Fazer Backup Agora"
+                sublabel="Sincronizar dados com nuvem"
+                onPress={async () => {
+                  setSincronizandoNuvem(true);
+                  try {
+                    const sucesso = await CloudSync.backupToCloud(instalacoes);
+                    if (sucesso) {
+                      hapticSuccess();
+                      Alert.alert("Sucesso", "Backup sincronizado com sucesso!");
+                    } else {
+                      hapticError();
+                      Alert.alert("Erro", "Não foi possível sincronizar.");
+                    }
+                  } finally {
+                    setSincronizandoNuvem(false);
+                  }
+                }}
+                desabilitado={sincronizandoNuvem}
+              />
+            </>
+          )}
         </Secao>
 
         {/* Seção Perigo */}
