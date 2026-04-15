@@ -59,6 +59,12 @@ export default function HistoricoScreen() {
   const [excluindo, setExcluindo] = useState(false);
   const [buscaCliente, setBuscaCliente] = useState("");
   const [filtroTipo, setFiltroTipo] = useState<ServiceType | "Todos">("Todos");
+  const [buscaAvancadaAberta, setBuscaAvancadaAberta] = useState(false);
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
+  const [valorMin, setValorMin] = useState("");
+  const [valorMax, setValorMax] = useState("");
+  const [filtroTipoBuscaAvancada, setFiltroTipoBuscaAvancada] = useState<ServiceType | "Todos">("Todos");
 
   // Filtrar instalações do mês selecionado
   let instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
@@ -75,6 +81,39 @@ export default function HistoricoScreen() {
     instalacoesDoMes = instalacoesDoMes.filter((inst) =>
       inst.cliente.toLowerCase().includes(buscaCliente.toLowerCase())
     );
+  }
+
+  // Aplicar busca avançada se ativa
+  if (buscaAvancadaAberta) {
+    if (dataInicio) {
+      const [dI, mI, aI] = dataInicio.split("/");
+      const timestampInicio = new Date(parseInt(aI), parseInt(mI) - 1, parseInt(dI)).getTime();
+      instalacoesDoMes = instalacoesDoMes.filter((inst) => {
+        const [d, m, a] = inst.data.split("/");
+        const timestamp = new Date(parseInt(a), parseInt(m) - 1, parseInt(d)).getTime();
+        return timestamp >= timestampInicio;
+      });
+    }
+    if (dataFim) {
+      const [dF, mF, aF] = dataFim.split("/");
+      const timestampFim = new Date(parseInt(aF), parseInt(mF) - 1, parseInt(dF)).getTime();
+      instalacoesDoMes = instalacoesDoMes.filter((inst) => {
+        const [d, m, a] = inst.data.split("/");
+        const timestamp = new Date(parseInt(a), parseInt(m) - 1, parseInt(d)).getTime();
+        return timestamp <= timestampFim;
+      });
+    }
+    if (filtroTipoBuscaAvancada !== "Todos") {
+      instalacoesDoMes = instalacoesDoMes.filter((inst) => inst.tipoServico === filtroTipoBuscaAvancada);
+    }
+    if (valorMin) {
+      const min = parseFloat(valorMin);
+      instalacoesDoMes = instalacoesDoMes.filter((inst) => inst.valor >= min);
+    }
+    if (valorMax) {
+      const max = parseFloat(valorMax);
+      instalacoesDoMes = instalacoesDoMes.filter((inst) => inst.valor <= max);
+    }
   }
 
   function abrirEdicao(inst: Installation) {
@@ -197,16 +236,30 @@ export default function HistoricoScreen() {
 
       {/* Filtro e Busca */}
       <View style={[styles.filtroContainer, { backgroundColor: colors.surface }]}>
-        <TextInput
-          style={[
-            styles.searchInput,
-            { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background },
-          ]}
-          placeholder="Buscar cliente..."
-          placeholderTextColor={colors.muted}
-          value={buscaCliente}
-          onChangeText={setBuscaCliente}
-        />
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <TextInput
+            style={[
+              styles.searchInput,
+              { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background, flex: 1 },
+            ]}
+            placeholder="Buscar cliente..."
+            placeholderTextColor={colors.muted}
+            value={buscaCliente}
+            onChangeText={setBuscaCliente}
+          />
+          <Pressable
+            style={[
+              styles.filtroBotao,
+              { backgroundColor: buscaAvancadaAberta ? colors.primary : colors.border },
+            ]}
+            onPress={() => setBuscaAvancadaAberta(!buscaAvancadaAberta)}
+          >
+            <Text style={[
+              styles.filtroBotaoTexto,
+              { color: buscaAvancadaAberta ? "#fff" : colors.foreground },
+            ]}>🔍</Text>
+          </Pressable>
+        </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -543,6 +596,211 @@ export default function HistoricoScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Busca Avançada */}
+      <Modal
+        visible={buscaAvancadaAberta}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setBuscaAvancadaAberta(false)}
+      >
+        <View style={[styles.modalOverlay, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitulo, { color: colors.foreground }]}>
+                Busca Avançada
+              </Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalFechar,
+                  pressed && { opacity: 0.6 },
+                ]}
+                onPress={() => setBuscaAvancadaAberta(false)}
+              >
+                <Text style={[styles.modalFecharTexto, { color: colors.muted }]}>
+                  ✗
+                </Text>
+              </Pressable>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.modalScroll}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Data Início */}
+              <Text style={[styles.campoLabel, { color: colors.foreground }]}>
+                Data Início (dd/mm/aaaa)
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                  },
+                ]}
+                value={dataInicio}
+                onChangeText={setDataInicio}
+                placeholder="01/01/2026"
+                placeholderTextColor={colors.muted}
+              />
+
+              {/* Data Fim */}
+              <Text
+                style={[
+                  styles.campoLabel,
+                  { color: colors.foreground, marginTop: 12 },
+                ]}
+              >
+                Data Fim (dd/mm/aaaa)
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                  },
+                ]}
+                value={dataFim}
+                onChangeText={setDataFim}
+                placeholder="31/12/2026"
+                placeholderTextColor={colors.muted}
+              />
+
+              {/* Tipo de Serviço */}
+              <Text
+                style={[
+                  styles.campoLabel,
+                  { color: colors.foreground, marginTop: 12 },
+                ]}
+              >
+                Tipo de Serviço
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginTop: 8 }}
+              >
+                {(["Todos", "Instalação", "Tipo 3", "Mudança"] as const).map((tipo) => (
+                  <Pressable
+                    key={tipo}
+                    style={[
+                      styles.filtroBotao,
+                      filtroTipoBuscaAvancada === tipo
+                        ? { backgroundColor: colors.primary }
+                        : { backgroundColor: colors.border },
+                    ]}
+                    onPress={() => setFiltroTipoBuscaAvancada(tipo)}
+                  >
+                    <Text
+                      style={[
+                        styles.filtroBotaoTexto,
+                        {
+                          color:
+                            filtroTipoBuscaAvancada === tipo
+                              ? "#fff"
+                              : colors.foreground,
+                        },
+                      ]}
+                    >
+                      {tipo}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+
+              {/* Valor Mínimo */}
+              <Text
+                style={[
+                  styles.campoLabel,
+                  { color: colors.foreground, marginTop: 12 },
+                ]}
+              >
+                Valor Mínimo (R$)
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                  },
+                ]}
+                value={valorMin}
+                onChangeText={setValorMin}
+                placeholder="0"
+                placeholderTextColor={colors.muted}
+                keyboardType="decimal-pad"
+              />
+
+              {/* Valor Máximo */}
+              <Text
+                style={[
+                  styles.campoLabel,
+                  { color: colors.foreground, marginTop: 12 },
+                ]}
+              >
+                Valor Máximo (R$)
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                  },
+                ]}
+                value={valorMax}
+                onChangeText={setValorMax}
+                placeholder="10000"
+                placeholderTextColor={colors.muted}
+                keyboardType="decimal-pad"
+              />
+
+              {/* Botões */}
+              <View style={styles.confirmBotoes}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.botaoCancelar,
+                    {
+                      backgroundColor: colors.muted,
+                      opacity: pressed ? 0.7 : 1,
+                    },
+                  ]}
+                  onPress={() => {
+                    setDataInicio("");
+                    setDataFim("");
+                    setValorMin("");
+                    setValorMax("");
+                    setFiltroTipoBuscaAvancada("Todos");
+                  }}
+                >
+                  <Text style={styles.botaoCancelarTexto}>Limpar</Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.botaoSalvar,
+                    {
+                      backgroundColor: colors.primary,
+                      opacity: pressed ? 0.85 : 1,
+                      transform: pressed ? [{ scale: 0.97 }] : [],
+                    },
+                  ]}
+                  onPress={() => setBuscaAvancadaAberta(false)}
+                >
+                  <Text style={styles.botaoSalvarTexto}>Aplicar</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -803,6 +1061,11 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContainer: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "90%",
+  },
+  modalContent: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "90%",

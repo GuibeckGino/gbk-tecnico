@@ -54,6 +54,55 @@ export default function ConfiguracoesScreen() {
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
   const [limpando, setLimpando] = useStateReact(false);
 
+  async function compartilharMes() {
+    const instalacoesDoMes = instalacoes.filter((inst) => {
+      const [d, m, a] = inst.data.split("/");
+      return parseInt(m) === mes && parseInt(a) === ano;
+    });
+
+    if (instalacoesDoMes.length === 0) {
+      Alert.alert("Sem dados", `Não há instalações em ${mesAnoFormatado}.`);
+      return;
+    }
+
+    const totalInstalacoes = instalacoesDoMes.length;
+    const valorIndividual = totalInstalacoes >= 104 ? 70 : 65;
+    const totalValor = totalInstalacoes * valorIndividual;
+    const valorFormatado = totalValor.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+    const contagem = {
+      Instalacao: instalacoesDoMes.filter((i) => i.tipoServico === "Instalação").length,
+      Tipo3: instalacoesDoMes.filter((i) => i.tipoServico === "Tipo 3").length,
+      Mudanca: instalacoesDoMes.filter((i) => i.tipoServico === "Mudança").length,
+    };
+
+    const mensagem = `📊 *Relatório GBK Técnico - ${mesAnoFormatado}*\n\n` +
+      `📦 Total de Instalações: ${totalInstalacoes}\n` +
+      `💰 Valor Total: ${valorFormatado}\n\n` +
+      `📋 Por Tipo:\n` +
+      `  • Instalação: ${contagem.Instalacao}\n` +
+      `  • Tipo 3: ${contagem.Tipo3}\n` +
+      `  • Mudança: ${contagem.Mudanca}\n\n` +
+      `Gerado em: ${new Date().toLocaleDateString("pt-BR")}`;
+
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Compartilhar",
+        "Compartilhamento disponível apenas no dispositivo móvel."
+      );
+      return;
+    }
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(mensagem, {
+        dialogTitle: "Compartilhar Relatório",
+      });
+    }
+  }
+
 
 
 
@@ -276,7 +325,15 @@ export default function ConfiguracoesScreen() {
           />
         </Secao>
 
-
+        {/* Seção Compartilhamento */}
+        <Secao titulo="Compartilhamento">
+          <ItemConfig
+            icone="📤"
+            label="Compartilhar Relatório"
+            sublabel={`Mês: ${mesAnoFormatado}`}
+            onPress={compartilharMes}
+          />
+        </Secao>
 
         {/* Seção Perigo */}
         <Secao titulo="Zona de Perigo">

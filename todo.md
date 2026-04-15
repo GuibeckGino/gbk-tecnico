@@ -92,3 +92,12 @@
 - [x] Remover ReminderProvider
 - [x] Remover seção de relatório PDF
 - [x] Remover seção de sincronização em nuvem
+
+
+## Novas Funcionalidades (Fase 3)
+- [x] Implementar busca avançada com filtro por data range
+- [x] Adicionar filtro por tipo de serviço na busca avançada
+- [x] Adicionar filtro por valor (mín/máx) na busca avançada
+- [x] Implementar botão de compartilhamento via WhatsApp
+- [x] Implementar botão de compartilhamento via Email
+- [x] Formatar mensagem de compartilhamento com dados do mês
