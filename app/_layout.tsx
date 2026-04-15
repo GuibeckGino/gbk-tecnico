@@ -10,6 +10,7 @@ import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { InstallationsProvider } from "@/context/InstallationsContext";
 import { GBKThemeProvider } from "@/context/ThemeContext";
+import { MonthProvider } from "@/context/MonthContext";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -83,6 +84,7 @@ export default function RootLayout() {
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <InstallationsProvider>
+      <MonthProvider>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
@@ -95,6 +97,7 @@ export default function RootLayout() {
           <StatusBar style="auto" />
         </QueryClientProvider>
       </trpc.Provider>
+      </MonthProvider>
       </InstallationsProvider>
     </GestureHandlerRootView>
   );

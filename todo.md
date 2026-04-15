@@ -61,3 +61,13 @@
 - [x] Confirmação de exclusão deve funcionar corretamente
 - [x] Limpar dados não pede confirmação
 - [x] Limpar dados não funciona
+
+
+## Navegação de Meses (Nova Funcionalidade)
+- [x] Criar contexto MonthContext para armazenar mês/ano selecionado
+- [x] Implementar funções de navegação (próximo mês, mês anterior)
+- [x] Adicionar setas de navegação (◀ ▶) no Dashboard
+- [x] Filtrar instalações por mês selecionado no Dashboard
+- [x] Recalcular totais conforme mês selecionado
+- [x] Atualizar Histórico para mostrar apenas instalações do mês
+- [x] Persistir mês selecionado no AsyncStorage

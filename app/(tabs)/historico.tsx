@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
+import { useMonth, filtrarPorMes } from "@/context/MonthContext";
 import { useColors } from "@/hooks/use-colors";
 import type { Installation, ServiceType } from "@/types/installation";
 import * as Haptics from "expo-haptics";
@@ -41,7 +42,11 @@ function hapticSuccess() {
 export default function HistoricoScreen() {
   const { instalacoes, stats, removerInstalacao, atualizarInstalacao } =
     useInstallations();
+  const { mes, ano, mesAnoFormatado } = useMonth();
   const colors = useColors();
+
+  // Filtrar instalações do mês selecionado
+  const instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
 
   const [editando, setEditando] = useState<Installation | null>(null);
   const [editCliente, setEditCliente] = useState("");
@@ -130,31 +135,40 @@ export default function HistoricoScreen() {
     return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4, 8)}`;
   }
 
-  const listaOrdenada = [...instalacoes].reverse();
+  const listaOrdenada = [...instalacoesDoMes].reverse();
 
   return (
     <ScreenContainer>
-      {/* Header */}
+      {/* Header com Mês */}
       <View
         style={[styles.header, { borderBottomColor: colors.border }]}
       >
-        <Text style={[styles.titulo, { color: colors.foreground }]}>
-          Histórico
-        </Text>
+        <View style={styles.headerContent}>
+          <Text style={[styles.titulo, { color: colors.foreground }]}>
+            Histórico
+          </Text>
+          <Text style={[styles.mesSubtexto, { color: colors.muted }]}>
+            {mesAnoFormatado}
+          </Text>
+        </View>
         <View
           style={[styles.badgeTotal, { backgroundColor: colors.primary }]}
         >
-          <Text style={styles.badgeTotalTexto}>{instalacoes.length}</Text>
+          <Text style={styles.badgeTotalTexto}>{instalacoesDoMes.length}</Text>
         </View>
       </View>
 
-      {instalacoes.length === 0 ? (
+      {instalacoesDoMes.length === 0 ? (
         <View style={styles.vazio}>
           <Text style={[styles.vazioTexto, { color: colors.muted }]}>
-            Nenhuma instalação cadastrada.
+            {instalacoes.length === 0
+              ? "Nenhuma instalação cadastrada."
+              : `Nenhuma instalação em ${mesAnoFormatado}`}
           </Text>
           <Text style={[styles.vazioSub, { color: colors.muted }]}>
-            Use "Novo Cadastro" para adicionar.
+            {instalacoes.length === 0
+              ? "Use \"Novo Cadastro\" para adicionar."
+              : "Selecione outro mês."}
           </Text>
         </View>
       ) : (
@@ -545,35 +559,47 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
     gap: 10,
   },
+  headerContent: {
+    flex: 1,
+  },
   titulo: {
     fontSize: 22,
     fontWeight: "700",
-    flex: 1,
+  },
+  mesSubtexto: {
+    fontSize: 12,
+    marginTop: 2,
   },
   badgeTotal: {
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 4,
+    minWidth: 40,
+    alignItems: "center",
   },
   badgeTotalTexto: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "700",
+    textAlign: "center",
   },
   lista: {
     padding: 16,
     paddingBottom: 32,
+    flexGrow: 1,
   },
   vazio: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 32,
+    minHeight: 300,
   },
   vazioTexto: {
     fontSize: 16,
@@ -591,6 +617,7 @@ const styles = StyleSheet.create({
     padding: 14,
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 10,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 3,
@@ -646,6 +673,9 @@ const styles = StyleSheet.create({
   },
   acaoBotaoTexto: {
     fontSize: 16,
+  },
+  ItemSeparatorComponent: {
+    height: 10,
   },
   // Modal de Edição
   modalOverlay: {

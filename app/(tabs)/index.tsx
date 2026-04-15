@@ -1,18 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
-  View,
-  Text,
   ScrollView,
+  Text,
+  View,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
+  Platform,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
+import { useMonth, filtrarPorMes } from "@/context/MonthContext";
 import { useColors } from "@/hooks/use-colors";
 import * as Haptics from "expo-haptics";
-import { Platform } from "react-native";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -20,25 +21,40 @@ function haptic() {
   }
 }
 
-export default function DashboardScreen() {
-  const { stats, carregando } = useInstallations();
-  const colors = useColors();
+export default function HomeScreen() {
   const router = useRouter();
+  const { instalacoes } = useInstallations();
+  const { mes, ano, mesAnoFormatado, proximoMes, mesPrevio } = useMonth();
+  const colors = useColors();
 
-  const mesAtual = new Date().toLocaleDateString("pt-BR", {
-    month: "long",
-    year: "numeric",
-  });
+  // Filtrar instalações do mês selecionado
+  const instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
 
-  if (carregando) {
-    return (
-      <ScreenContainer>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </ScreenContainer>
-    );
+  // Calcular stats do mês
+  function calcularStatsMes() {
+    const total = instalacoesDoMes.length;
+    const valorIndividual = total < 104 ? 65 : 70;
+    const valorTotal = total * valorIndividual;
+
+    const porTipo = {
+      instalacao: instalacoesDoMes.filter((i) => i.tipoServico === "Instalação")
+        .length,
+      tipo3: instalacoesDoMes.filter((i) => i.tipoServico === "Tipo 3").length,
+      mudanca: instalacoesDoMes.filter((i) => i.tipoServico === "Mudança")
+        .length,
+    };
+
+    return { total, valorIndividual, valorTotal, porTipo };
   }
+
+  const stats = calcularStatsMes();
+
+  // Atualizar quando focar na tela
+  useFocusEffect(
+    React.useCallback(() => {
+      // Força re-render ao focar
+    }, [])
+  );
 
   return (
     <ScreenContainer>
@@ -46,93 +62,107 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.appTitle, { color: colors.primary }]}>
-            GBK Técnico
+        {/* Header com Navegação de Meses */}
+        <View
+          style={[
+            styles.headerMes,
+            { borderBottomColor: colors.border },
+          ]}
+        >
+          <Pressable
+            style={({ pressed }) => [
+              styles.botaoMes,
+              { opacity: pressed ? 0.6 : 1 },
+            ]}
+            onPress={() => {
+              haptic();
+              mesPrevio();
+            }}
+          >
+            <Text style={[styles.botaoMesTexto, { color: colors.primary }]}>
+              ◀
+            </Text>
+          </Pressable>
+
+          <Text style={[styles.mesAnoTexto, { color: colors.foreground }]}>
+            {mesAnoFormatado}
           </Text>
-          <Text style={[styles.mesLabel, { color: colors.muted }]}>
-            {mesAtual.charAt(0).toUpperCase() + mesAtual.slice(1)}
-          </Text>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.botaoMes,
+              { opacity: pressed ? 0.6 : 1 },
+            ]}
+            onPress={() => {
+              haptic();
+              proximoMes();
+            }}
+          >
+            <Text style={[styles.botaoMesTexto, { color: colors.primary }]}>
+              ▶
+            </Text>
+          </Pressable>
         </View>
 
         {/* Card Principal */}
         <View
           style={[
             styles.cardPrincipal,
-            { backgroundColor: colors.primary },
+            {
+              backgroundColor: colors.primary,
+              shadowColor: colors.foreground,
+            },
           ]}
         >
           <Text style={styles.cardPrincipalLabel}>Total de Instalações</Text>
           <Text style={styles.cardPrincipalNumero}>{stats.total}</Text>
-          <View style={styles.separador} />
+
+          <View style={styles.divisorCard} />
+
           <Text style={styles.cardPrincipalLabel}>Valor Total a Receber</Text>
           <Text style={styles.cardPrincipalValor}>
             R$ {stats.valorTotal.toLocaleString("pt-BR")}
           </Text>
-          <Text style={styles.cardPrincipalTarifa}>
+          <Text style={styles.cardPrincipalSubtexto}>
             R$ {stats.valorIndividual}/instalação
           </Text>
         </View>
 
-        {/* Mini-cards por tipo */}
-        <Text style={[styles.secaoTitulo, { color: colors.foreground }]}>
-          Por Tipo de Serviço
-        </Text>
-        <View style={styles.miniCardsRow}>
-          <MiniCard
-            label="Instalação"
-            valor={stats.porTipo.instalacao}
-            cor="#1565C0"
-            corTexto="#fff"
-          />
-          <MiniCard
-            label="Tipo 3"
-            valor={stats.porTipo.tipo3}
-            cor="#0D47A1"
-            corTexto="#fff"
-          />
-          <MiniCard
-            label="Mudança"
-            valor={stats.porTipo.mudanca}
-            cor="#1976D2"
-            corTexto="#fff"
-          />
+        {/* Seção Por Tipo */}
+        <View style={styles.secao}>
+          <Text style={[styles.secaoTitulo, { color: colors.foreground }]}>
+            Por Tipo de Serviço
+          </Text>
+
+          <View style={styles.tiposContainer}>
+            <MiniCard
+              titulo="Instalação"
+              valor={stats.porTipo.instalacao}
+              cor="#1565C0"
+            />
+            <MiniCard
+              titulo="Tipo 3"
+              valor={stats.porTipo.tipo3}
+              cor="#0D47A1"
+            />
+            <MiniCard
+              titulo="Mudança"
+              valor={stats.porTipo.mudanca}
+              cor="#1976D2"
+            />
+          </View>
         </View>
 
-        {/* Indicador de tarifa */}
-        {stats.total > 0 && stats.total < 104 && (
-          <View
-            style={[
-              styles.alertaTarifa,
-              { backgroundColor: colors.surface, borderColor: colors.warning },
-            ]}
-          >
-            <Text style={[styles.alertaTarifaTexto, { color: colors.warning }]}>
-              Faltam {104 - stats.total} instalações para atingir R$70/cada
-            </Text>
-          </View>
-        )}
-        {stats.total >= 104 && (
-          <View
-            style={[
-              styles.alertaTarifa,
-              { backgroundColor: colors.surface, borderColor: colors.success },
-            ]}
-          >
-            <Text style={[styles.alertaTarifaTexto, { color: colors.success }]}>
-              Meta atingida! Todas as instalações valem R$70
-            </Text>
-          </View>
-        )}
-
-        {/* Botões de ação */}
-        <View style={styles.botoesContainer}>
+        {/* Botões de Ação */}
+        <View style={styles.acoes}>
           <Pressable
             style={({ pressed }) => [
               styles.botaoPrimario,
-              { backgroundColor: colors.primary },
-              pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
+              {
+                backgroundColor: colors.primary,
+                opacity: pressed ? 0.85 : 1,
+                transform: pressed ? [{ scale: 0.97 }] : [],
+              },
             ]}
             onPress={() => {
               haptic();
@@ -146,10 +176,10 @@ export default function DashboardScreen() {
             style={({ pressed }) => [
               styles.botaoSecundario,
               {
-                backgroundColor: colors.surface,
                 borderColor: colors.primary,
+                opacity: pressed ? 0.85 : 1,
+                transform: pressed ? [{ scale: 0.97 }] : [],
               },
-              pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
             ]}
             onPress={() => {
               haptic();
@@ -161,165 +191,182 @@ export default function DashboardScreen() {
             </Text>
           </Pressable>
         </View>
+
+        {/* Info de Filtro */}
+        {instalacoesDoMes.length === 0 && instalacoes.length > 0 && (
+          <View style={styles.infoFiltro}>
+            <Text style={[styles.infoTexto, { color: colors.muted }]}>
+              Nenhuma instalação em {mesAnoFormatado}
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </ScreenContainer>
   );
 }
 
 function MiniCard({
-  label,
+  titulo,
   valor,
   cor,
-  corTexto,
 }: {
-  label: string;
+  titulo: string;
   valor: number;
   cor: string;
-  corTexto: string;
 }) {
   return (
-    <View style={[styles.miniCard, { backgroundColor: cor }]}>
-      <Text style={[styles.miniCardNumero, { color: corTexto }]}>{valor}</Text>
-      <Text style={[styles.miniCardLabel, { color: corTexto }]}>{label}</Text>
+    <View
+      style={[
+        styles.miniCard,
+        {
+          backgroundColor: cor,
+          shadowColor: cor,
+        },
+      ]}
+    >
+      <Text style={styles.miniCardNumero}>{valor}</Text>
+      <Text style={styles.miniCardTitulo}>{titulo}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
+  scroll: {
+    paddingBottom: 40,
+  },
+  headerMes: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  botaoMes: {
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 10,
   },
-  scroll: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  header: {
-    marginBottom: 20,
-  },
-  appTitle: {
-    fontSize: 26,
+  botaoMesTexto: {
+    fontSize: 20,
     fontWeight: "700",
-    letterSpacing: 0.5,
   },
-  mesLabel: {
-    fontSize: 14,
-    marginTop: 2,
+  mesAnoTexto: {
+    fontSize: 16,
+    fontWeight: "600",
+    flex: 1,
+    textAlign: "center",
   },
   cardPrincipal: {
-    borderRadius: 16,
-    padding: 24,
+    marginHorizontal: 16,
+    marginTop: 16,
     marginBottom: 20,
-    alignItems: "center",
-    shadowColor: "#000",
+    borderRadius: 16,
+    padding: 20,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 6,
+    elevation: 5,
   },
   cardPrincipalLabel: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 14,
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 13,
     fontWeight: "500",
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
   cardPrincipalNumero: {
     color: "#fff",
-    fontSize: 56,
-    fontWeight: "800",
-    lineHeight: 68,
+    fontSize: 48,
+    fontWeight: "700",
+    marginVertical: 4,
   },
-  separador: {
-    width: "80%",
+  divisorCard: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.3)",
-    marginVertical: 12,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    marginVertical: 14,
   },
   cardPrincipalValor: {
     color: "#fff",
     fontSize: 32,
     fontWeight: "700",
-    lineHeight: 40,
+    marginVertical: 4,
   },
-  cardPrincipalTarifa: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 13,
+  cardPrincipalSubtexto: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
     marginTop: 4,
+  },
+  secao: {
+    paddingHorizontal: 16,
+    marginBottom: 20,
   },
   secaoTitulo: {
     fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 10,
+    fontWeight: "700",
+    marginBottom: 12,
   },
-  miniCardsRow: {
+  tiposContainer: {
     flexDirection: "row",
-    gap: 10,
-    marginBottom: 16,
+    gap: 12,
   },
   miniCard: {
     flex: 1,
     borderRadius: 12,
-    padding: 14,
+    padding: 16,
     alignItems: "center",
-    shadowColor: "#000",
+    justifyContent: "center",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   miniCardNumero: {
-    fontSize: 28,
+    color: "#fff",
+    fontSize: 32,
     fontWeight: "700",
-    lineHeight: 34,
   },
-  miniCardLabel: {
-    fontSize: 11,
-    fontWeight: "500",
-    marginTop: 2,
+  miniCardTitulo: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 6,
     textAlign: "center",
   },
-  alertaTarifa: {
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 12,
-    marginBottom: 16,
-    alignItems: "center",
-  },
-  alertaTarifaTexto: {
-    fontSize: 13,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  botoesContainer: {
+  acoes: {
+    paddingHorizontal: 16,
     gap: 12,
-    marginTop: 4,
   },
   botaoPrimario: {
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
+    justifyContent: "center",
   },
   botaoPrimarioTexto: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
-    letterSpacing: 0.3,
   },
   botaoSecundario: {
     borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
     borderWidth: 2,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
   botaoSecundarioTexto: {
     fontSize: 16,
-    fontWeight: "600",
-    letterSpacing: 0.3,
+    fontWeight: "700",
+  },
+  infoFiltro: {
+    marginTop: 20,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  infoTexto: {
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
