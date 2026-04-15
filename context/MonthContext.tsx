@@ -97,10 +97,6 @@ export function MonthProvider({ children }: { children: React.ReactNode }) {
     irParaMes,
   };
 
-  if (!carregado) {
-    return null; // Aguardar carregamento
-  }
-
   return (
     <MonthContext.Provider value={value}>{children}</MonthContext.Provider>
   );
