@@ -73,15 +73,22 @@
 - [x] Persistir mês selecionado no AsyncStorage
 
 
-## Novas Funcionalidades
-- [x] Gerar relatório mensal em PDF com instalações, totalizações e valor a receber
+## Novas Funcionalidades (Mantidas)
 - [x] Implementar gráfico de tendência de faturamento dos últimos 6 meses
 - [x] Adicionar botão para duplicar instalação no histórico
+- [ ] Gerar relatório mensal em PDF (REMOVIDO - conflito com pdf-lib)
 
 
 ## Funcionalidades Adicionais (Fase 2)
 - [x] Adicionar campo de busca por cliente no histórico
 - [x] Adicionar filtro por tipo de serviço no histórico
-- [x] Implementar notificações de lembrete para inatividade (X dias sem registro)
-- [x] Integrar backup automático em nuvem
-- [x] Sincronizar dados com servidor (CloudSync local)
+- [ ] Implementar notificações de lembrete para inatividade (REMOVIDO)
+- [ ] Integrar backup automático em nuvem (REMOVIDO)
+- [ ] Sincronizar dados com servidor (REMOVIDO)
+
+## Limpeza Final
+- [x] Remover pdf-lib
+- [x] Remover sincronização em nuvem (CloudSync)
+- [x] Remover ReminderProvider
+- [x] Remover seção de relatório PDF
+- [x] Remover seção de sincronização em nuvem
