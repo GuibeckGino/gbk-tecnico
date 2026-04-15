@@ -71,3 +71,9 @@
 - [x] Recalcular totais conforme mês selecionado
 - [x] Atualizar Histórico para mostrar apenas instalações do mês
 - [x] Persistir mês selecionado no AsyncStorage
+
+
+## Novas Funcionalidades
+- [x] Gerar relatório mensal em PDF com instalações, totalizações e valor a receber
+- [x] Implementar gráfico de tendência de faturamento dos últimos 6 meses
+- [x] Adicionar botão para duplicar instalação no histórico

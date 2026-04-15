@@ -12,6 +12,7 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
 import { useMonth, filtrarPorMes } from "@/context/MonthContext";
@@ -40,7 +41,7 @@ function hapticSuccess() {
 }
 
 export default function HistoricoScreen() {
-  const { instalacoes, stats, removerInstalacao, atualizarInstalacao } =
+  const { instalacoes, stats, removerInstalacao, atualizarInstalacao, setInstallations } =
     useInstallations();
   const { mes, ano, mesAnoFormatado } = useMonth();
   const colors = useColors();
@@ -105,6 +106,27 @@ export default function HistoricoScreen() {
     } finally {
       setSalvandoEdit(false);
     }
+  }
+
+  function duplicarInstalacao(instalacao: Installation) {
+    // Criar nova instalação com dados da atual mas com data de hoje
+    const hoje = new Date();
+    const dia = String(hoje.getDate()).padStart(2, "0");
+    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+    const ano = hoje.getFullYear();
+    const dataHoje = `${dia}/${mes}/${ano}`;
+
+    const novaInstalacao: Installation = {
+      ...instalacao,
+      id: Math.random().toString(36).substring(2, 11),
+      data: dataHoje,
+    };
+
+    // Adicionar à lista de instalações
+    const novaLista = [...instalacoes, novaInstalacao];
+    AsyncStorage.setItem("@gbk_instalacoes", JSON.stringify(novaLista)).catch(() => {});
+    setInstallations(novaLista);
+    hapticSuccess();
   }
 
   function abrirConfirmacaoExclusao(inst: Installation) {
@@ -183,6 +205,7 @@ export default function HistoricoScreen() {
               valorIndividual={stats.valorIndividual}
               onEditar={() => abrirEdicao(item)}
               onExcluir={() => abrirConfirmacaoExclusao(item)}
+              onDuplicar={() => duplicarInstalacao(item)}
             />
           )}
           ItemSeparatorComponent={() => (
@@ -473,11 +496,13 @@ function CardInstalacao({
   valorIndividual,
   onEditar,
   onExcluir,
+  onDuplicar,
 }: {
   instalacao: Installation;
   valorIndividual: number;
   onEditar: () => void;
   onExcluir: () => void;
+  onDuplicar: () => void;
 }) {
   const colors = useColors();
 
@@ -539,6 +564,16 @@ function CardInstalacao({
           onPress={onEditar}
         >
           <Text style={styles.acaoBotaoTexto}>✏️</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [
+            styles.acaoBotao,
+            { backgroundColor: colors.warning },
+            pressed && { opacity: 0.7 },
+          ]}
+          onPress={onDuplicar}
+        >
+          <Text style={styles.acaoBotaoTexto}>📋</Text>
         </Pressable>
         <Pressable
           style={({ pressed }) => [

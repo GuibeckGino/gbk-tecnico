@@ -45,7 +45,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="novo-cadastro"
         options={{
-          title: "Novo Cadastro",
+          title: "Novo",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="plus.circle.fill" color={color} />
           ),
@@ -61,9 +61,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="tendencia"
+        options={{
+          title: "Tendência",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="chart.line.uptrend.xyaxis" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="configuracoes"
         options={{
-          title: "Configurações",
+          title: "Config",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="gearshape.fill" color={color} />
           ),

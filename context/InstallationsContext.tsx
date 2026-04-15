@@ -91,7 +91,7 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
+// ─── Context ────────────────────────────────────────────────────────────────────
 
 interface InstallationsContextValue {
   instalacoes: Installation[];
@@ -109,6 +109,7 @@ interface InstallationsContextValue {
   limparDados: () => Promise<void>;
   exportarJSON: () => string;
   importarJSON: (json: string) => Promise<boolean>;
+  setInstallations: (instalacoes: Installation[]) => Promise<void>;
 }
 
 const InstallationsContext = createContext<InstallationsContextValue | null>(
@@ -128,10 +129,10 @@ export function InstallationsProvider({
   useEffect(() => {
     async function carregarDados() {
       try {
-        const json = await AsyncStorage.getItem(STORAGE_KEY);
-        if (json) {
-          const dados: Installation[] = JSON.parse(json);
-          dispatch({ type: "CARREGAR", payload: dados });
+        const dados = await AsyncStorage.getItem(STORAGE_KEY);
+        if (dados) {
+          const instalacoes: Installation[] = JSON.parse(dados);
+          dispatch({ type: "CARREGAR", payload: instalacoes });
         } else {
           dispatch({ type: "CARREGAR", payload: [] });
         }
@@ -142,13 +143,12 @@ export function InstallationsProvider({
     carregarDados();
   }, []);
 
-  // Salvar no AsyncStorage sempre que instalações mudarem (exceto durante carregamento)
+  // Salvar dados no AsyncStorage sempre que mudarem
   useEffect(() => {
     if (!state.carregando) {
-      AsyncStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(state.instalacoes)
-      ).catch(() => {});
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state.instalacoes)).catch(
+        () => {}
+      );
     }
   }, [state.instalacoes, state.carregando]);
 
@@ -160,12 +160,12 @@ export function InstallationsProvider({
       data: string;
       observacoes: string;
     }) => {
-      const nova: Installation = {
+      const novaInstalacao: Installation = {
         id: gerarId(),
-        ...dados,
         createdAt: new Date().toISOString(),
+        ...dados,
       };
-      dispatch({ type: "ADICIONAR", payload: nova });
+      dispatch({ type: "ADICIONAR", payload: novaInstalacao });
     },
     []
   );
@@ -181,8 +181,23 @@ export function InstallationsProvider({
     dispatch({ type: "REMOVER", payload: id });
   }, []);
 
+  const setInstallations = useCallback(
+    async (novasInstalacoes: Installation[]) => {
+      const instalacoesComCreatedAt = novasInstalacoes.map((inst) => ({
+        ...inst,
+        createdAt: inst.createdAt || new Date().toISOString(),
+      }));
+      dispatch({ type: "CARREGAR", payload: instalacoesComCreatedAt });
+      await AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(instalacoesComCreatedAt)
+      ).catch(() => {});
+    },
+    []
+  );
+
   const limparDados = useCallback(async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+    await AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
     dispatch({ type: "LIMPAR" });
   }, []);
 
@@ -194,13 +209,20 @@ export function InstallationsProvider({
     try {
       const dados: Installation[] = JSON.parse(json);
       if (!Array.isArray(dados)) return false;
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
-      dispatch({ type: "CARREGAR", payload: dados });
+      // Adicionar createdAt em instalações que não têm
+      const instalacoesComCreatedAt = dados.map((inst) => ({
+        ...inst,
+        createdAt: inst.createdAt || new Date().toISOString(),
+      }));
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(instalacoesComCreatedAt));
+      dispatch({ type: "CARREGAR", payload: instalacoesComCreatedAt });
       return true;
     } catch {
       return false;
     }
   }, []);
+
+
 
   return (
     <InstallationsContext.Provider
@@ -214,6 +236,7 @@ export function InstallationsProvider({
         limparDados,
         exportarJSON,
         importarJSON,
+        setInstallations,
       }}
     >
       {children}
@@ -223,12 +246,10 @@ export function InstallationsProvider({
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useInstallations() {
-  const ctx = useContext(InstallationsContext);
-  if (!ctx) {
-    throw new Error(
-      "useInstallations deve ser usado dentro de InstallationsProvider"
-    );
+export function useInstallations(): InstallationsContextValue {
+  const context = useContext(InstallationsContext);
+  if (!context) {
+    throw new Error("useInstallations deve ser usado dentro de InstallationsProvider");
   }
-  return ctx;
+  return context;
 }

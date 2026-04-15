@@ -16,8 +16,10 @@ import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
+import { useMonth } from "@/context/MonthContext";
 import { useGBKTheme } from "@/context/ThemeContext";
 import { useColors } from "@/hooks/use-colors";
+import { gerarRelatorioPDF } from "@/lib/pdf-generator";
 import * as Haptics from "expo-haptics";
 
 function haptic() {
@@ -39,8 +41,9 @@ function hapticSuccess() {
 }
 
 export default function ConfiguracoesScreen() {
-  const { instalacoes, limparDados, exportarJSON, importarJSON } =
+  const { instalacoes, stats, limparDados, exportarJSON, importarJSON } =
     useInstallations();
+  const { mes, ano, mesAnoFormatado } = useMonth();
   const { modoEscuro, toggleModoEscuro } = useGBKTheme();
   const colors = useColors();
   const [exportando, setExportando] = useState(false);
@@ -49,6 +52,45 @@ export default function ConfiguracoesScreen() {
   // Modal de confirmação para limpar dados
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useState(false);
   const [limpando, setLimpando] = useState(false);
+
+  async function gerarRelatorioMensal() {
+    if (instalacoes.length === 0) {
+      Alert.alert("Sem dados", "Não há instalações para gerar relatório.");
+      return;
+    }
+    setExportando(true);
+    try {
+      const instalacoesDoMes = instalacoes.filter((inst) => {
+        const partes = inst.data.split("/");
+        if (partes.length !== 3) return false;
+        const instMes = parseInt(partes[1], 10) - 1;
+        const instAno = parseInt(partes[2], 10);
+        return instMes === mes && instAno === ano;
+      });
+
+      if (instalacoesDoMes.length === 0) {
+        Alert.alert(
+          "Sem dados",
+          `Nenhuma instalação em ${mesAnoFormatado}`
+        );
+        return;
+      }
+
+      await gerarRelatorioPDF({
+        mes,
+        ano,
+        instalacoes: instalacoesDoMes,
+        valorIndividual: stats.valorIndividual,
+        valorTotal: instalacoesDoMes.length * stats.valorIndividual,
+      });
+      hapticSuccess();
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Erro", "Não foi possível gerar o relatório PDF.");
+    } finally {
+      setExportando(false);
+    }
+  }
 
   async function exportarCSV() {
     if (instalacoes.length === 0) {
@@ -236,6 +278,17 @@ export default function ConfiguracoesScreen() {
                 thumbColor="#fff"
               />
             }
+          />
+        </Secao>
+
+        {/* Seção Relatórios */}
+        <Secao titulo="Relatórios">
+          <ItemConfig
+            icone="📋"
+            label="Relatório Mensal (PDF)"
+            sublabel={mesAnoFormatado}
+            onPress={gerarRelatorioMensal}
+            desabilitado={exportando}
           />
         </Secao>
 
