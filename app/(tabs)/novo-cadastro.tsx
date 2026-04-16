@@ -15,6 +15,7 @@ import { useInstallations } from "@/context/InstallationsContext";
 import { useColors } from "@/hooks/use-colors";
 import type { ServiceType } from "@/types/installation";
 import * as Haptics from "expo-haptics";
+import { formatarData, validarData, validarCliente, validarEndereco } from "@/lib/input-masks";
 
 const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança"];
 
@@ -41,21 +42,19 @@ export default function NovoCadastroScreen() {
   const [data, setData] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [salvando, setSalvando] = useState(false);
-
-  function formatarData(texto: string) {
-    const numeros = texto.replace(/\D/g, "");
-    if (numeros.length <= 2) return numeros;
-    if (numeros.length <= 4) return `${numeros.slice(0, 2)}/${numeros.slice(2)}`;
-    return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4, 8)}`;
-  }
+  const [temAlteracoes, setTemAlteracoes] = useState(false);
 
   async function salvar() {
-    if (!cliente.trim()) {
-      Alert.alert("Campo obrigatório", "Informe o nome do cliente.");
+    if (!validarCliente(cliente)) {
+      Alert.alert("Cliente inválido", "Informe um nome de cliente válido (1-100 caracteres).");
       return;
     }
-    if (!endereco.trim()) {
-      Alert.alert("Campo obrigatório", "Informe o endereço.");
+    if (!validarEndereco(endereco)) {
+      Alert.alert("Endereço inválido", "Informe um endereço válido (1-200 caracteres).");
+      return;
+    }
+    if (!validarData(data)) {
+      Alert.alert("Data inválida", "Informe uma data válida no formato dd/mm/aaaa.");
       return;
     }
     if (!data.trim() || data.length < 10) {

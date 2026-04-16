@@ -101,3 +101,31 @@
 - [x] Implementar botão de compartilhamento via WhatsApp
 - [x] Implementar botão de compartilhamento via Email
 - [x] Formatar mensagem de compartilhamento com dados do mês
+
+
+## Funcionalidades Avançadas (Fase 4)
+
+### Validações & UX
+- [ ] M\u00e1scara de entrada para datas (dd/mm/aaaa)
+- [ ] Valida\u00e7\u00e3o de cliente n\u00e3o vazio
+- [ ] Confirma\u00e7\u00e3o ao sair do formul\u00e1rio sem salvar
+
+### An\u00e1lise & Relat\u00f3rios
+- [ ] Resumo semanal (total de instala\u00e7\u00f5es e valor)
+- [ ] Compara\u00e7\u00e3o m\u00eas-a-m\u00eas (crescimento %)
+- [ ] Estat\u00edsticas por cliente (quantas instala\u00e7\u00f5es, valor total)
+
+### Organiza\u00e7\u00e3o
+- [ ] Ordena\u00e7\u00e3o do hist\u00f3rico (mais recente, mais antigo, maior valor)
+- [ ] Favoritar clientes frequentes
+- [ ] Tags/categorias customizadas
+
+### Notifica\u00e7\u00f5es & Lembretes
+- [ ] Notifica\u00e7\u00e3o di\u00e1ria para registrar instala\u00e7\u00e3o
+- [ ] Lembrete de cliente recorrente
+- [ ] Alerta se n\u00e3o houver registros h\u00e1 X dias
+
+### Integra\u00e7\u00e3o & Exporta\u00e7\u00e3o
+- [ ] Gerar QR code com dados da instala\u00e7\u00e3o
+- [ ] Enviar relat\u00f3rio autom\u00e1tico por email (agendado)
+- [ ] Integra\u00e7\u00e3o com WhatsApp Business API
