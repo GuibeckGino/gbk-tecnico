@@ -8,6 +8,7 @@ export interface Installation {
   data: string; // formato dd/mm/aaaa
   observacoes: string;
   createdAt: string; // ISO string
+  isFavorito?: boolean; // marcado como favorito
 }
 
 export interface InstallationStats {

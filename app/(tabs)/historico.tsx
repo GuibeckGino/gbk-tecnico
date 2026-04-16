@@ -41,7 +41,7 @@ function hapticSuccess() {
 }
 
 export default function HistoricoScreen() {
-  const { instalacoes, stats, removerInstalacao, atualizarInstalacao, setInstallations } =
+  const { instalacoes, stats, removerInstalacao, atualizarInstalacao, setInstallations, toggleFavorito } =
     useInstallations();
   const { mes, ano, mesAnoFormatado } = useMonth();
   const colors = useColors();
@@ -65,6 +65,7 @@ export default function HistoricoScreen() {
   const [valorMin, setValorMin] = useState("");
   const [valorMax, setValorMax] = useState("");
   const [filtroTipoBuscaAvancada, setFiltroTipoBuscaAvancada] = useState<ServiceType | "Todos">("Todos");
+  const [ordenacao, setOrdenacao] = useState<"recente" | "antigo" | "valor">("recente");
 
   // Filtrar instalações do mês selecionado
   let instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
@@ -211,7 +212,14 @@ export default function HistoricoScreen() {
     return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4, 8)}`;
   }
 
-  const listaOrdenada = [...instalacoesDoMes].reverse();
+  let listaOrdenada = [...instalacoesDoMes];
+  if (ordenacao === "recente") {
+    listaOrdenada.reverse();
+  } else if (ordenacao === "antigo") {
+    // manter ordem original (mais antigo primeiro)
+  } else if (ordenacao === "valor") {
+    listaOrdenada.sort((a, b) => stats.valorIndividual * (b.tipoServico === "Instalação" ? 1 : 1) - stats.valorIndividual * (a.tipoServico === "Instalação" ? 1 : 1));
+  }
 
   return (
     <ScreenContainer>
@@ -236,6 +244,30 @@ export default function HistoricoScreen() {
 
       {/* Filtro e Busca */}
       <View style={[styles.filtroContainer, { backgroundColor: colors.surface }]}>
+        {/* Botões de Ordenação */}
+        <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
+          {(["recente", "antigo", "valor"] as const).map((tipo) => (
+            <Pressable
+              key={tipo}
+              style={[
+                styles.filtroBotao,
+                ordenacao === tipo
+                  ? { backgroundColor: colors.primary }
+                  : { backgroundColor: colors.border },
+              ]}
+              onPress={() => setOrdenacao(tipo)}
+            >
+              <Text
+                style={[
+                  styles.filtroBotaoTexto,
+                  { color: ordenacao === tipo ? "#fff" : colors.foreground },
+                ]}
+              >
+                {tipo === "recente" ? "Recente" : tipo === "antigo" ? "Antigo" : "Valor"}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TextInput
             style={[
@@ -315,6 +347,7 @@ export default function HistoricoScreen() {
               onEditar={() => abrirEdicao(item)}
               onExcluir={() => abrirConfirmacaoExclusao(item)}
               onDuplicar={() => duplicarInstalacao(item)}
+              onToggleFavorito={() => toggleFavorito(item.id)}
             />
           )}
           ItemSeparatorComponent={() => (
@@ -811,12 +844,14 @@ function CardInstalacao({
   onEditar,
   onExcluir,
   onDuplicar,
+  onToggleFavorito,
 }: {
   instalacao: Installation;
   valorIndividual: number;
   onEditar: () => void;
   onExcluir: () => void;
   onDuplicar: () => void;
+  onToggleFavorito: () => void;
 }) {
   const colors = useColors();
 
@@ -838,12 +873,17 @@ function CardInstalacao({
       ]}
     >
       <View style={styles.cardInfo}>
-        <Text
-          style={[styles.cardCliente, { color: colors.foreground }]}
-          numberOfLines={1}
-        >
-          {instalacao.cliente}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Text
+            style={[styles.cardCliente, { color: colors.foreground, flex: 1 }]}
+            numberOfLines={1}
+          >
+            {instalacao.cliente}
+          </Text>
+          <Pressable onPress={onToggleFavorito}>
+            <Text style={{ fontSize: 18 }}>{instalacao.isFavorito ? "⭐" : "☆"}</Text>
+          </Pressable>
+        </View>
         <Text
           style={[styles.cardEndereco, { color: colors.muted }]}
           numberOfLines={1}

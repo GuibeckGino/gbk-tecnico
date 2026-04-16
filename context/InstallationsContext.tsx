@@ -110,6 +110,7 @@ interface InstallationsContextValue {
   exportarJSON: () => string;
   importarJSON: (json: string) => Promise<boolean>;
   setInstallations: (instalacoes: Installation[]) => Promise<void>;
+  toggleFavorito: (id: string) => Promise<void>;
 }
 
 const InstallationsContext = createContext<InstallationsContextValue | null>(
@@ -222,7 +223,12 @@ export function InstallationsProvider({
     }
   }, []);
 
-
+  const toggleFavorito = useCallback(async (id: string) => {
+    const instalacao = state.instalacoes.find((inst) => inst.id === id);
+    if (!instalacao) return;
+    const atualizada = { ...instalacao, isFavorito: !instalacao.isFavorito };
+    await atualizarInstalacao(atualizada);
+  }, [state.instalacoes]);
 
   return (
     <InstallationsContext.Provider
@@ -237,6 +243,7 @@ export function InstallationsProvider({
         exportarJSON,
         importarJSON,
         setInstallations,
+        toggleFavorito,
       }}
     >
       {children}
