@@ -249,3 +249,59 @@
 - [x] Abrir compartilhamento automático (WhatsApp, Email)
 - [x] Mostrar mensagem de sucesso
 - [x] Logs detalhados para debug
+
+
+## Atualização v2.0.0 — FINAL COMPLETA (Meta do Mês + Dias Úteis)
+
+### Meta do Mês (Segunda a Sábado)
+- [x] Adicionar painel na aba Análise
+- [x] Calcular dias úteis restantes (seg-sab, ignorar dom)
+- [x] Mostrar: Meta (104), Feitas (X), Faltam (Y)
+- [x] Calcular meta por dia: (faltam / diasUteisRestantes)
+- [x] Arredondar para cima
+- [x] Mostrar: "Você precisa fazer X por dia"
+
+### Estatísticas Detalhadas
+- [x] Dias úteis restantes
+- [x] Meta por dia
+- [x] Hoje fez
+- [x] Média diária
+- [x] Projeção do mês
+
+### Cálculo de Projeção
+- [x] media = feitas / diasUteisPassados
+- [x] projecao = media × diasUteisTotais
+- [x] Mostrar: "Projeção: 118"
+
+### Dashboard Atualizado
+- [x] Card principal com total e valor
+- [x] 4 mini-cards (Instalação, Tipo 3, Mudança, Empresarial)
+- [x] Painel de meta do mês integrado
+- [x] Atualização automática
+
+### Histórico Atualizado
+- [x] Mostrar: Cliente, Tipo, Data, Valor
+- [x] Empresarial = R$100
+- [x] Outros = conforme modo
+- [x] Atualizar automático
+
+### Exportações Funcionais
+- [x] JSON: arquivo físico, compartilhamento, logs
+- [x] CSV: Cliente, Tipo, Data, Valor
+- [x] PDF: HTML com resumo, tabela, meta
+- [x] Try/catch com erro real
+
+### Atualização Automática
+- [x] Cadastrar → atualiza dashboard/histórico
+- [x] Editar → atualiza valores
+- [x] Excluir → recalcula totais
+- [x] Trocar modo → recalcula todos
+- [x] Restaurar backup → atualiza tudo
+- [x] Sem reiniciar app
+
+### Build Final
+- [x] Manter package name
+- [x] Incrementar versionCode: 5 → 6
+- [x] Incrementar versionName: 1.3.0 → 2.0.0
+- [x] Mesma assinatura
+- [x] Sem perder dados

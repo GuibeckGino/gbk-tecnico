@@ -1,10 +1,13 @@
 import { View, Text, ScrollView, StyleSheet, Pressable, Platform } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
+import { useMonth } from "@/context/MonthContext";
 import { useColors } from "@/hooks/use-colors";
 import { analisarSemanal, analisarPorCliente, analisarMesAMes } from "@/lib/analytics";
+import { calcularMetaStats, formatarMetaDia } from "@/lib/dias-uteis";
 import * as Haptics from "expo-haptics";
 import { useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -13,9 +16,37 @@ function haptic() {
 }
 
 export default function AnaliseScreen() {
-  const { instalacoes } = useInstallations();
+  const { instalacoes, paymentMode } = useInstallations();
+  const { mes, ano } = useMonth();
   const colors = useColors();
-  const [abaSelecionada, setAbaSelecionada] = useState<"semanal" | "cliente" | "mesames">("semanal");
+  const [abaSelecionada, setAbaSelecionada] = useState<"semanal" | "cliente" | "mesames" | "meta">("meta");
+  const [metaStats, setMetaStats] = useState({
+    diasUteisPassados: 0,
+    diasUteisRestantes: 0,
+    diasUteisTotais: 0,
+    metaDia: 0,
+    mediadiaria: 0,
+    projecao: 0,
+    hojeFeZ: 0,
+  });
+
+  useFocusEffect(() => {
+    const instalacoesDoMes = instalacoes.filter((inst) => {
+      const [d, m, a] = inst.data.split("/");
+      return parseInt(m) === mes && parseInt(a) === ano;
+    });
+
+    const hojeFeZ = instalacoes.filter((inst) => {
+      const hoje = new Date();
+      const hojeFormatado = `${String(hoje.getDate()).padStart(2, "0")}/${String(
+        hoje.getMonth() + 1
+      ).padStart(2, "0")}/${hoje.getFullYear()}`;
+      return inst.data === hojeFormatado;
+    }).length;
+
+    const stats = calcularMetaStats(instalacoesDoMes.length, mes, ano, hojeFeZ);
+    setMetaStats(stats);
+  });
 
   const analisesSemanal = analisarSemanal(instalacoes);
   const analisesPorCliente = analisarPorCliente(instalacoes);
@@ -30,7 +61,7 @@ export default function AnaliseScreen() {
 
         {/* Abas */}
         <View style={[styles.abasContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {(["semanal", "cliente", "mesames"] as const).map((aba) => (
+          {(["meta", "semanal", "cliente", "mesames"] as const).map((aba) => (
             <Pressable
               key={aba}
               style={[
@@ -53,11 +84,64 @@ export default function AnaliseScreen() {
                   },
                 ]}
               >
-                {aba === "semanal" ? "Semanal" : aba === "cliente" ? "Por Cliente" : "Mês a Mês"}
+                {aba === "meta" ? "Meta" : aba === "semanal" ? "Semanal" : aba === "cliente" ? "Por Cliente" : "Mês a Mês"}
               </Text>
             </Pressable>
           ))}
         </View>
+
+        {/* Conteúdo Meta */}
+        {abaSelecionada === "meta" && (
+          <View style={styles.conteudo}>
+            <View style={[styles.card, { backgroundColor: colors.primary, borderColor: colors.primary }]}>
+              <Text style={[styles.cardTitulo, { color: "#ffffff" }]}>Meta do Mês</Text>
+              <Text style={[styles.cardValor, { color: "#ffffff", fontSize: 32, marginTop: 8 }]}>
+                {instalacoes.filter((inst) => {
+                  const [d, m, a] = inst.data.split("/");
+                  return parseInt(m) === mes && parseInt(a) === ano;
+                }).length}/104
+              </Text>
+              <Text style={[styles.cardSub, { color: "rgba(255,255,255,0.8)", marginTop: 8 }]}>
+                {Math.max(0, 104 - instalacoes.filter((inst) => {
+                  const [d, m, a] = inst.data.split("/");
+                  return parseInt(m) === mes && parseInt(a) === ano;
+                }).length)} faltam
+              </Text>
+            </View>
+
+            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.cardTitulo, { color: colors.foreground }]}>Estatísticas</Text>
+              <View style={{ marginTop: 12 }}>
+                <View style={styles.statRow}>
+                  <Text style={[styles.statLabel, { color: colors.muted }]}>Dias úteis restantes</Text>
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>{metaStats.diasUteisRestantes}</Text>
+                </View>
+                <View style={styles.statRow}>
+                  <Text style={[styles.statLabel, { color: colors.muted }]}>Meta por dia</Text>
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>{metaStats.metaDia}</Text>
+                </View>
+                <View style={styles.statRow}>
+                  <Text style={[styles.statLabel, { color: colors.muted }]}>Hoje fez</Text>
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>{metaStats.hojeFeZ}</Text>
+                </View>
+                <View style={styles.statRow}>
+                  <Text style={[styles.statLabel, { color: colors.muted }]}>Média diária</Text>
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>{metaStats.mediadiaria.toFixed(1)}</Text>
+                </View>
+                <View style={styles.statRow}>
+                  <Text style={[styles.statLabel, { color: colors.muted }]}>Projeção do mês</Text>
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>{metaStats.projecao}</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.cardTitulo, { color: colors.foreground }]}>
+                {formatarMetaDia(metaStats.metaDia)}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Conteúdo Semanal */}
         {abaSelecionada === "semanal" && (
@@ -227,5 +311,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 14,
     marginTop: 32,
+  },
+  statRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.05)",
+  },
+  statLabel: {
+    fontSize: 13,
+  },
+  statValue: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
