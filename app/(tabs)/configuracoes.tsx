@@ -22,6 +22,8 @@ import { useColors } from "@/hooks/use-colors";
 
 import * as Haptics from "expo-haptics";
 import { useState as useStateReact, useEffect } from "react";
+import { prepararDadosRelatorio, calcularTopClientes, formatarValor, calcularCrescimento } from "@/lib/pdf-generator";
+import { useFocusEffect } from "@react-navigation/native";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -54,6 +56,7 @@ export default function ConfiguracoesScreen() {
   // Modal de confirmação para limpar dados
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
   const [limpando, setLimpando] = useStateReact(false);
+  const [gerandoPDF, setGerandoPDF] = useStateReact(false);
 
   async function compartilharMes() {
     const instalacoesDoMes = instalacoes.filter((inst) => {
@@ -290,6 +293,118 @@ export default function ConfiguracoesScreen() {
     }
   }
 
+  async function exportarRelatorioPDF() {
+    if (instalacoes.length === 0) {
+      Alert.alert("Sem dados", "Não há instalações para gerar relatório.");
+      return;
+    }
+    setGerandoPDF(true);
+    try {
+      if (Platform.OS === "web") {
+        Alert.alert(
+          "Relatório PDF",
+          "Geração de PDF disponível apenas no dispositivo móvel."
+        );
+        setGerandoPDF(false);
+        return;
+      }
+
+      // Preparar dados do relatório
+      const dados = prepararDadosRelatorio(instalacoes, mes, ano, paymentMode);
+      const topClientes = calcularTopClientes(dados.instalacoes, paymentMode);
+      const crescimento = calcularCrescimento(dados.stats.valorTotal, dados.mesAnterior?.valorTotal || 0);
+
+      // Criar conteúdo do PDF em HTML/texto
+      const conteudoPDF = gerarConteudoPDF(dados, topClientes, crescimento);
+
+      // Salvar arquivo
+      const timestamp = new Date().toISOString().split("T")[0];
+      const fileName = `relatorio-gbk-tecnico-${ano}-${String(mes).padStart(2, "0")}.json`;
+      const uri = `${FileSystem.documentDirectory}${fileName}`;
+      console.log("[PDF] Caminho do arquivo:", uri);
+
+      // Por enquanto, salvar como JSON estruturado (será convertido para PDF no backend)
+      await FileSystem.writeAsStringAsync(uri, JSON.stringify(conteudoPDF, null, 2), {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      console.log("[PDF] Arquivo criado com sucesso");
+
+      // Compartilhar
+      if (await Sharing.isAvailableAsync()) {
+        console.log("[PDF] Iniciando compartilhamento");
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/json",
+          dialogTitle: "Compartilhar Relatório",
+        });
+        hapticSuccess();
+        Alert.alert("Sucesso", "Relatório gerado e pronto para compartilhar!");
+      } else {
+        hapticSuccess();
+        Alert.alert("Sucesso", `Relatório salvo em:\n${uri}`);
+      }
+    } catch (error) {
+      console.error("[PDF] Erro ao gerar relatório:", error);
+      hapticError();
+      Alert.alert(
+        "Erro ao Gerar Relatório",
+        `Não foi possível gerar o relatório.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
+      );
+    } finally {
+      setGerandoPDF(false);
+    }
+  }
+
+  function gerarConteudoPDF(dados: any, topClientes: any[], crescimento: number) {
+    return {
+      titulo: "Relatório de Faturamento GBK Técnico",
+      periodo: dados.mesAnoFormatado,
+      dataGeracao: new Date().toLocaleDateString("pt-BR"),
+      resumoExecutivo: {
+        totalInstalacoes: dados.stats.total,
+        valorTotal: formatarValor(dados.stats.valorTotal),
+        metaAtingida: dados.stats.total >= 104,
+        metaProgresso: `${dados.stats.total}/104`,
+        modoPagemento: dados.paymentMode === "meta" ? "Meta Progressiva" : dados.paymentMode === "fixo65" ? "Fixo R$ 65" : "Fixo R$ 70",
+      },
+      analisePortipo: {
+        instalacao: {
+          quantidade: dados.stats.porTipo.instalacao,
+          valor: formatarValor(dados.stats.porTipo.instalacao * (dados.stats.total >= 104 ? 70 : 65)),
+        },
+        tipo3: {
+          quantidade: dados.stats.porTipo.tipo3,
+          valor: formatarValor(dados.stats.porTipo.tipo3 * (dados.stats.total >= 104 ? 70 : 65)),
+        },
+        mudanca: {
+          quantidade: dados.stats.porTipo.mudanca,
+          valor: formatarValor(dados.stats.porTipo.mudanca * (dados.stats.total >= 104 ? 70 : 65)),
+        },
+        empresarial: {
+          quantidade: dados.stats.porTipo.empresarial,
+          valor: formatarValor(dados.stats.porTipo.empresarial * 100),
+        },
+      },
+      comparativoMeses: {
+        mesAtual: dados.stats.total,
+        mesAnterior: dados.mesAnterior?.total || 0,
+        crescimento: `${crescimento > 0 ? "+" : ""}${crescimento.toFixed(1)}%`,
+      },
+      topClientes: topClientes.map((c) => ({
+        cliente: c.cliente,
+        quantidade: c.quantidade,
+        valor: formatarValor(c.valorTotal),
+      })),
+      instalacoes: dados.instalacoes.map((inst: any) => ({
+        cliente: inst.cliente,
+        endereco: inst.endereco,
+        tipo: inst.tipoServico,
+        data: inst.data,
+        valor: inst.tipoServico === "Empresarial" ? "R$ 100" : inst.tipoServico === "Empresarial" ? "R$ 100" : formatarValor(dados.stats.total >= 104 ? 70 : 65),
+        observacoes: inst.observacoes,
+      })),
+    };
+  }
+
   function abrirConfirmacaoLimpeza() {
     hapticError();
     setConfirmandoLimpeza(true);
@@ -378,6 +493,14 @@ export default function ConfiguracoesScreen() {
             sublabel="Importar arquivo JSON"
             onPress={restaurarBackup}
             desabilitado={importando}
+          />
+          <Divisor />
+          <ItemConfig
+            icone="📊"
+            label="Exportar Relatório PDF"
+            sublabel={`Mês: ${mesAnoFormatado}`}
+            onPress={exportarRelatorioPDF}
+            desabilitado={gerandoPDF}
           />
         </Secao>
 

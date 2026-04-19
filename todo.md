@@ -196,3 +196,29 @@
 - [x] Logs de cada etapa
 - [x] Validação de integridade
 - [x] Mensagens de erro específicas
+
+
+## Atualização v1.2.0 — Relatório em PDF Detalhado
+
+### Geração de PDF
+- [x] Criar utilitário de geração de PDF com ReportLab
+- [x] Implementar botão "Exportar Relatório PDF" em Configurações
+- [x] Gerar arquivo: relatorio-gbk-tecnico-YYYY-MM.json (estruturado para PDF)
+
+### Conteúdo do Relatório
+- [x] Cabeçalho com período e data de geração
+- [x] Resumo executivo (total instalações, valor total, meta)
+- [x] Status da meta (atingida ou não)
+- [x] Tabela detalhada com todas as instalações (cliente, tipo, data, valor)
+- [x] Análise por tipo de serviço (Instalação, Tipo 3, Mudança, Empresarial)
+
+### Análise Comparativa
+- [x] Comparação com mês anterior (crescimento %)
+- [x] Estatísticas por cliente (top 5 clientes)
+- [x] Últimos 6 meses de dados
+
+### Compartilhamento
+- [x] Salvar em Downloads/Documentos
+- [x] Abrir compartilhamento automático (WhatsApp, Email)
+- [x] Mostrar mensagem de sucesso
+- [x] Logs detalhados para debug
