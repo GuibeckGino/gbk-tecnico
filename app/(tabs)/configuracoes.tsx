@@ -162,31 +162,59 @@ export default function ConfiguracoesScreen() {
     }
     setExportando(true);
     try {
+      // Gerar JSON dos dados
       const json = exportarJSON();
+      console.log("[Backup] JSON gerado:", json.substring(0, 100));
 
       if (Platform.OS === "web") {
         Alert.alert(
           "Exportação",
           "Exportação de backup disponível apenas no dispositivo móvel."
         );
+        setExportando(false);
         return;
       }
 
-      const uri = `${FileSystem.documentDirectory}gbk_backup.json`;
+      // Criar caminho do arquivo
+      const timestamp = new Date().toISOString().split("T")[0];
+      const fileName = `gbk-tecnico-backup-${timestamp}.json`;
+      const uri = `${FileSystem.documentDirectory}${fileName}`;
+      console.log("[Backup] Caminho do arquivo:", uri);
+
+      // Escrever arquivo no dispositivo
       await FileSystem.writeAsStringAsync(uri, json, {
         encoding: FileSystem.EncodingType.UTF8,
       });
+      console.log("[Backup] Arquivo criado com sucesso");
 
+      // Verificar se arquivo foi criado
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      console.log("[Backup] Info do arquivo:", fileInfo);
+
+      if (!fileInfo.exists) {
+        throw new Error("Arquivo não foi criado no sistema de arquivos");
+      }
+
+      // Compartilhar arquivo
       if (await Sharing.isAvailableAsync()) {
+        console.log("[Backup] Iniciando compartilhamento");
         await Sharing.shareAsync(uri, {
           mimeType: "application/json",
-          dialogTitle: "Exportar Backup",
+          dialogTitle: "Exportar Backup GBK Técnico",
         });
+        hapticSuccess();
+        Alert.alert("Sucesso", "Backup exportado e pronto para compartilhar!");
       } else {
-        Alert.alert("Exportado", `Backup salvo em: ${uri}`);
+        hapticSuccess();
+        Alert.alert("Sucesso", `Backup salvo em:\n${uri}`);
       }
-    } catch {
-      Alert.alert("Erro", "Não foi possível exportar o backup.");
+    } catch (error) {
+      console.error("[Backup] Erro ao exportar:", error);
+      hapticError();
+      Alert.alert(
+        "Erro ao Exportar",
+        `Não foi possível exportar o backup.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
+      );
     } finally {
       setExportando(false);
     }
@@ -208,37 +236,55 @@ export default function ConfiguracoesScreen() {
       });
 
       if (resultado.canceled || !resultado.assets?.[0]) {
+        console.log("[Restaurar] Seleção cancelada");
+        setImportando(false);
         return;
       }
 
       const uri = resultado.assets[0].uri;
+      console.log("[Restaurar] Arquivo selecionado:", uri);
+      
       const conteudo = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.UTF8,
       });
+      console.log("[Restaurar] Arquivo lido, tamanho:", conteudo.length);
 
       Alert.alert(
         "Restaurar Backup",
         "Isso substituirá todos os dados atuais. Deseja continuar?",
         [
-          { text: "Cancelar", style: "cancel" },
+          { text: "Cancelar", style: "cancel", onPress: () => setImportando(false) },
           {
             text: "Restaurar",
             style: "destructive",
             onPress: async () => {
-              const sucesso = await importarJSON(conteudo);
-              if (sucesso) {
-                hapticSuccess();
-                Alert.alert("Sucesso", "Backup restaurado com sucesso!");
-              } else {
+              try {
+                console.log("[Restaurar] Iniciando restauração");
+                const sucesso = await importarJSON(conteudo);
+                if (sucesso) {
+                  console.log("[Restaurar] Restauração bem-sucedida");
+                  hapticSuccess();
+                  Alert.alert("Sucesso", "Backup restaurado com sucesso!");
+                } else {
+                  console.error("[Restaurar] Falha na restauração");
+                  hapticError();
+                  Alert.alert("Erro", "Arquivo de backup inválido.");
+                }
+              } catch (err) {
+                console.error("[Restaurar] Erro durante restauração:", err);
                 hapticError();
-                Alert.alert("Erro", "Arquivo de backup inválido.");
+                Alert.alert("Erro", `Falha ao restaurar: ${err instanceof Error ? err.message : String(err)}`);
+              } finally {
+                setImportando(false);
               }
             },
           },
         ]
       );
-    } catch {
-      Alert.alert("Erro", "Não foi possível ler o arquivo de backup.");
+    } catch (error) {
+      console.error("[Restaurar] Erro ao ler arquivo:", error);
+      hapticError();
+      Alert.alert("Erro", `Não foi possível ler o arquivo de backup.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setImportando(false);
     }

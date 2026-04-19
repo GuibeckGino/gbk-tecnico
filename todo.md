@@ -174,7 +174,25 @@
 - [x] Sem reiniciar app
 
 ### Build
-- [ ] Manter package name: com.gbk.tecnico
-- [ ] Incrementar versionCode: 2 → 3
-- [ ] Incrementar versionName: 1.0.1 → 1.1.0
-- [ ] Sem perder dados do usuário
+- [x] Manter package name: com.gbk.tecnico
+- [x] Incrementar versionCode: 3 → 4
+- [x] Incrementar versionName: 1.1.0 → 1.1.1
+- [x] Sem perder dados do usuário
+
+## Atualização v1.1.1 — Correção de Backup JSON
+
+### Backup JSON Corrigido
+- [x] Criar arquivo físico real com timestamp
+- [x] Usar expo-file-system para escrita
+- [x] Usar expo-sharing para compartilhamento
+- [x] Validar se arquivo foi criado
+- [x] Abrir compartilhamento automático
+- [x] Logs detalhados para debug
+- [x] Feedback haptic de sucesso
+- [x] Nome: gbk-tecnico-backup-YYYY-MM-DD.json
+
+### Restauração Corrigida
+- [x] Tratamento de erro robusto
+- [x] Logs de cada etapa
+- [x] Validação de integridade
+- [x] Mensagens de erro específicas
