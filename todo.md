@@ -198,6 +198,33 @@
 - [x] Mensagens de erro específicas
 
 
+## Atualização v1.3.0 — Correção Completa de Exportações (JSON, CSV, PDF)
+
+### Exportação JSON
+- [x] Corrigir com validação de arquivo
+- [x] Logs detalhados para debug
+- [x] Arquivo físico real com timestamp
+- [x] Compartilhamento automático
+- [x] Mensagens de erro específicas
+
+### Exportação CSV
+- [x] Gerar CSV com Cliente, Endereço, Tipo, Data, Observações, Valor
+- [x] Validar se arquivo foi criado
+- [x] Logs detalhados para debug
+- [x] Compartilhamento automático
+- [x] Mensagens de erro específicas
+
+### Exportação PDF
+- [x] Implementar com expo-print
+- [x] Gerar HTML estruturado
+- [x] Incluir resumo executivo
+- [x] Tabela de instalações
+- [x] Análise por tipo de serviço
+- [x] Top 5 clientes
+- [x] Comparativo com mês anterior
+- [x] Compartilhamento automático
+- [x] Logs detalhados para debug
+
 ## Atualização v1.2.0 — Relatório em PDF Detalhado
 
 ### Geração de PDF

@@ -14,6 +14,7 @@ import {
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
+import * as Print from "expo-print";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
 import { useMonth } from "@/context/MonthContext";
@@ -117,42 +118,74 @@ export default function ConfiguracoesScreen() {
     }
     setExportando(true);
     try {
-      const cabecalho = "Cliente,Endereço,Tipo,Data,Observações";
+      console.log("[CSV] Iniciando exportação");
+      
+      const cabecalho = "Cliente,Endereço,Tipo,Data,Observações,Valor";
       const linhas = instalacoes.map((inst) => {
+        let valor = 0;
+        if (inst.tipoServico === "Empresarial") {
+          valor = 100;
+        } else {
+          valor = instalacoes.length >= 104 ? 70 : 65;
+        }
+        
         const campos = [
           `"${inst.cliente.replace(/"/g, '""')}"`,
           `"${inst.endereco.replace(/"/g, '""')}"`,
           `"${inst.tipoServico}"`,
           `"${inst.data}"`,
           `"${inst.observacoes.replace(/"/g, '""')}"`,
+          `"R$ ${valor.toFixed(2)}"`
         ];
         return campos.join(",");
       });
       const csv = [cabecalho, ...linhas].join("\n");
+      console.log("[CSV] CSV gerado, tamanho:", csv.length);
 
       if (Platform.OS === "web") {
         Alert.alert(
           "Exportação",
           "Exportação CSV disponível apenas no dispositivo móvel."
         );
+        setExportando(false);
         return;
       }
 
-      const uri = `${FileSystem.documentDirectory}gbk_instalacoes.csv`;
+      const fileName = `gbk-tecnico-${new Date().toISOString().split("T")[0]}.csv`;
+      const uri = `${FileSystem.documentDirectory}${fileName}`;
+      console.log("[CSV] Caminho do arquivo:", uri);
+      
       await FileSystem.writeAsStringAsync(uri, csv, {
         encoding: FileSystem.EncodingType.UTF8,
       });
+      console.log("[CSV] Arquivo criado com sucesso");
+
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      console.log("[CSV] Info do arquivo:", fileInfo);
+      
+      if (!fileInfo.exists) {
+        throw new Error("Arquivo CSV não foi criado no sistema de arquivos");
+      }
 
       if (await Sharing.isAvailableAsync()) {
+        console.log("[CSV] Iniciando compartilhamento");
         await Sharing.shareAsync(uri, {
           mimeType: "text/csv",
           dialogTitle: "Exportar CSV",
         });
+        hapticSuccess();
+        Alert.alert("Sucesso", "CSV exportado e pronto para compartilhar!");
       } else {
-        Alert.alert("Exportado", `Arquivo salvo em: ${uri}`);
+        hapticSuccess();
+        Alert.alert("Sucesso", `CSV salvo em:\n${uri}`);
       }
-    } catch (e) {
-      Alert.alert("Erro", "Não foi possível exportar o CSV.");
+    } catch (error) {
+      console.error("[CSV] Erro ao exportar:", error);
+      hapticError();
+      Alert.alert(
+        "Erro ao Exportar CSV",
+        `Não foi possível exportar o CSV.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
+      );
     } finally {
       setExportando(false);
     }
@@ -165,9 +198,11 @@ export default function ConfiguracoesScreen() {
     }
     setExportando(true);
     try {
+      console.log("[JSON] Iniciando exportação de backup");
+      
       // Gerar JSON dos dados
       const json = exportarJSON();
-      console.log("[Backup] JSON gerado:", json.substring(0, 100));
+      console.log("[JSON] JSON gerado, tamanho:", json.length);
 
       if (Platform.OS === "web") {
         Alert.alert(
@@ -182,25 +217,25 @@ export default function ConfiguracoesScreen() {
       const timestamp = new Date().toISOString().split("T")[0];
       const fileName = `gbk-tecnico-backup-${timestamp}.json`;
       const uri = `${FileSystem.documentDirectory}${fileName}`;
-      console.log("[Backup] Caminho do arquivo:", uri);
+      console.log("[JSON] Caminho do arquivo:", uri);
 
       // Escrever arquivo no dispositivo
       await FileSystem.writeAsStringAsync(uri, json, {
         encoding: FileSystem.EncodingType.UTF8,
       });
-      console.log("[Backup] Arquivo criado com sucesso");
+      console.log("[JSON] Arquivo criado com sucesso");
 
       // Verificar se arquivo foi criado
       const fileInfo = await FileSystem.getInfoAsync(uri);
-      console.log("[Backup] Info do arquivo:", fileInfo);
+      console.log("[JSON] Info do arquivo:", fileInfo);
 
       if (!fileInfo.exists) {
-        throw new Error("Arquivo não foi criado no sistema de arquivos");
+        throw new Error("Arquivo JSON não foi criado no sistema de arquivos");
       }
 
       // Compartilhar arquivo
       if (await Sharing.isAvailableAsync()) {
-        console.log("[Backup] Iniciando compartilhamento");
+        console.log("[JSON] Iniciando compartilhamento");
         await Sharing.shareAsync(uri, {
           mimeType: "application/json",
           dialogTitle: "Exportar Backup GBK Técnico",
@@ -212,10 +247,10 @@ export default function ConfiguracoesScreen() {
         Alert.alert("Sucesso", `Backup salvo em:\n${uri}`);
       }
     } catch (error) {
-      console.error("[Backup] Erro ao exportar:", error);
+      console.error("[JSON] Erro ao exportar:", error);
       hapticError();
       Alert.alert(
-        "Erro ao Exportar",
+        "Erro ao Exportar Backup",
         `Não foi possível exportar o backup.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
       );
     } finally {
@@ -300,6 +335,8 @@ export default function ConfiguracoesScreen() {
     }
     setGerandoPDF(true);
     try {
+      console.log("[PDF] Iniciando geração de relatório");
+      
       if (Platform.OS === "web") {
         Alert.alert(
           "Relatório PDF",
@@ -314,33 +351,29 @@ export default function ConfiguracoesScreen() {
       const topClientes = calcularTopClientes(dados.instalacoes, paymentMode);
       const crescimento = calcularCrescimento(dados.stats.valorTotal, dados.mesAnterior?.valorTotal || 0);
 
-      // Criar conteúdo do PDF em HTML/texto
-      const conteudoPDF = gerarConteudoPDF(dados, topClientes, crescimento);
+      // Gerar HTML para o PDF
+      const htmlContent = gerarHTMLRelatorioPDF(dados, topClientes, crescimento);
+      console.log("[PDF] HTML gerado, tamanho:", htmlContent.length);
 
-      // Salvar arquivo
-      const timestamp = new Date().toISOString().split("T")[0];
-      const fileName = `relatorio-gbk-tecnico-${ano}-${String(mes).padStart(2, "0")}.json`;
-      const uri = `${FileSystem.documentDirectory}${fileName}`;
-      console.log("[PDF] Caminho do arquivo:", uri);
-
-      // Por enquanto, salvar como JSON estruturado (será convertido para PDF no backend)
-      await FileSystem.writeAsStringAsync(uri, JSON.stringify(conteudoPDF, null, 2), {
-        encoding: FileSystem.EncodingType.UTF8,
+      // Gerar PDF
+      const { uri } = await Print.printToFileAsync({
+        html: htmlContent,
+        base64: false,
       });
-      console.log("[PDF] Arquivo criado com sucesso");
+      console.log("[PDF] PDF gerado em:", uri);
 
-      // Compartilhar
+      // Compartilhar PDF
       if (await Sharing.isAvailableAsync()) {
         console.log("[PDF] Iniciando compartilhamento");
         await Sharing.shareAsync(uri, {
-          mimeType: "application/json",
+          mimeType: "application/pdf",
           dialogTitle: "Compartilhar Relatório",
         });
         hapticSuccess();
-        Alert.alert("Sucesso", "Relatório gerado e pronto para compartilhar!");
+        Alert.alert("Sucesso", "Relatório PDF gerado e pronto para compartilhar!");
       } else {
         hapticSuccess();
-        Alert.alert("Sucesso", `Relatório salvo em:\n${uri}`);
+        Alert.alert("Sucesso", `PDF salvo em:\n${uri}`);
       }
     } catch (error) {
       console.error("[PDF] Erro ao gerar relatório:", error);
@@ -403,6 +436,141 @@ export default function ConfiguracoesScreen() {
         observacoes: inst.observacoes,
       })),
     };
+  }
+
+  function gerarHTMLRelatorioPDF(dados: any, topClientes: any[], crescimento: number): string {
+    const tabelaInstalacoes = dados.instalacoes
+      .map(
+        (inst: any) => `
+        <tr>
+          <td>${inst.cliente}</td>
+          <td>${inst.tipoServico}</td>
+          <td>${inst.data}</td>
+          <td>${inst.tipoServico === "Empresarial" ? "R$ 100" : "R$ " + (dados.stats.total >= 104 ? "70" : "65")}</td>
+        </tr>
+      `
+      )
+      .join("");
+
+    const tabelaTopClientes = topClientes
+      .map(
+        (c: any) => `
+        <tr>
+          <td>${c.cliente}</td>
+          <td>${c.quantidade}</td>
+          <td>${c.valor}</td>
+        </tr>
+      `
+      )
+      .join("");
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { color: #0a7ea4; text-align: center; }
+            h2 { color: #0a7ea4; margin-top: 30px; border-bottom: 2px solid #0a7ea4; padding-bottom: 10px; }
+            .resumo { background-color: #f0f8ff; padding: 15px; border-radius: 5px; margin: 15px 0; }
+            .resumo-item { margin: 10px 0; }
+            .resumo-label { font-weight: bold; }
+            table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+            th { background-color: #0a7ea4; color: white; padding: 10px; text-align: left; }
+            td { padding: 8px; border-bottom: 1px solid #ddd; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .meta-status { font-weight: bold; color: ${dados.stats.total >= 104 ? "green" : "red"}; }
+            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <h1>Relatório de Faturamento GBK Técnico</h1>
+          <p style="text-align: center; color: #666;">${dados.mesAnoFormatado}</p>
+          
+          <h2>Resumo Executivo</h2>
+          <div class="resumo">
+            <div class="resumo-item">
+              <span class="resumo-label">Total de Instalações:</span> ${dados.stats.total}
+            </div>
+            <div class="resumo-item">
+              <span class="resumo-label">Valor Total:</span> ${formatarValor(dados.stats.valorTotal)}
+            </div>
+            <div class="resumo-item">
+              <span class="resumo-label">Meta (104 instalações):</span> 
+              <span class="meta-status">${dados.stats.total >= 104 ? "✓ ATINGIDA" : "✗ N\u00c3O ATINGIDA"} (${dados.stats.total}/104)</span>
+            </div>
+            <div class="resumo-item">
+              <span class="resumo-label">Modo de Pagamento:</span> ${dados.paymentMode === "meta" ? "Meta Progressiva" : dados.paymentMode === "fixo65" ? "Fixo R$ 65" : "Fixo R$ 70"}
+            </div>
+          </div>
+          
+          <h2>Análise por Tipo de Serviço</h2>
+          <table>
+            <tr>
+              <th>Tipo</th>
+              <th>Quantidade</th>
+              <th>Valor Total</th>
+            </tr>
+            <tr>
+              <td>Instalação</td>
+              <td>${dados.stats.porTipo.instalacao}</td>
+              <td>${formatarValor(dados.stats.porTipo.instalacao * (dados.stats.total >= 104 ? 70 : 65))}</td>
+            </tr>
+            <tr>
+              <td>Tipo 3</td>
+              <td>${dados.stats.porTipo.tipo3}</td>
+              <td>${formatarValor(dados.stats.porTipo.tipo3 * (dados.stats.total >= 104 ? 70 : 65))}</td>
+            </tr>
+            <tr>
+              <td>Mudança</td>
+              <td>${dados.stats.porTipo.mudanca}</td>
+              <td>${formatarValor(dados.stats.porTipo.mudanca * (dados.stats.total >= 104 ? 70 : 65))}</td>
+            </tr>
+            <tr>
+              <td>Empresarial</td>
+              <td>${dados.stats.porTipo.empresarial}</td>
+              <td>${formatarValor(dados.stats.porTipo.empresarial * 100)}</td>
+            </tr>
+          </table>
+          
+          <h2>Comparativo com Mês Anterior</h2>
+          <div class="resumo">
+            <div class="resumo-item">
+              <span class="resumo-label">Mês Anterior:</span> ${dados.mesAnterior?.total || 0} instalações
+            </div>
+            <div class="resumo-item">
+              <span class="resumo-label">Crescimento:</span> <span style="color: ${crescimento > 0 ? "green" : "red"};">${crescimento > 0 ? "+" : ""}${crescimento.toFixed(1)}%</span>
+            </div>
+          </div>
+          
+          <h2>Top 5 Clientes</h2>
+          <table>
+            <tr>
+              <th>Cliente</th>
+              <th>Quantidade</th>
+              <th>Valor Total</th>
+            </tr>
+            ${tabelaTopClientes}
+          </table>
+          
+          <h2>Detalhamento de Instalações</h2>
+          <table>
+            <tr>
+              <th>Cliente</th>
+              <th>Tipo</th>
+              <th>Data</th>
+              <th>Valor</th>
+            </tr>
+            ${tabelaInstalacoes}
+          </table>
+          
+          <div class="footer">
+            <p>Relatório gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}</p>
+          </div>
+        </body>
+      </html>
+    `;
   }
 
   function abrirConfirmacaoLimpeza() {
