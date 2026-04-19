@@ -305,3 +305,63 @@
 - [x] Incrementar versionName: 1.3.0 → 2.0.0
 - [x] Mesma assinatura
 - [x] Sem perder dados
+
+
+## Atualização v3.0.0 — PROFISSIONAL COMPLETA (Meta Personalizável + Dashboard Profissional)
+
+### Meta Personalizável
+- [x] Adicionar campo monthlyGoal em Configurações
+- [x] Default: 104
+- [x] Permitir editar meta mensal
+- [x] Salvar em AsyncStorage
+- [x] Recalcular automaticamente ao trocar
+
+### Dashboard Profissional Completo
+- [x] Total instalações
+- [x] Valor total
+- [x] Meta mensal (exibir valor configurado)
+- [x] Feitas (contador)
+- [x] Faltam (contador)
+- [x] Meta por dia (cálculo)
+- [x] Média atual (feitas / dias trabalhados)
+- [x] Média necessária (meta / dias úteis totais)
+- [x] Projeção do mês (instalações)
+- [x] Projeção valor (R$)
+- [x] Hoje: X instalações
+- [x] Hoje: R$ X
+- [x] Contador por tipo (Instalação, Tipo 3, Mudança, Empresarial)
+- [x] Dias trabalhados
+- [x] Dias restantes
+- [x] Alerta de meta ("Faltam X para meta")
+
+### Instalação Rápida
+- [x] Botão "Rápido" no Dashboard
+- [x] Criar instalação com: data hoje, tipo padrão, apenas nome
+- [x] Feedback imediato
+- [x] Atualizar dashboard automaticamente
+
+### Histórico Atualizado
+- [x] Mostrar: Cliente, Tipo, Data, Valor
+- [x] Empresarial = R$100
+- [x] Outros = conforme modo
+- [x] Atualizar automático
+
+### Exportações
+- [x] JSON: arquivo físico, compartilhamento
+- [x] CSV: Cliente, Tipo, Data, Valor
+- [x] PDF: resumo, meta, projeção, tabela
+
+### Atualização Automática
+- [x] Cadastrar → atualiza dashboard
+- [x] Editar → atualiza valores
+- [x] Excluir → recalcula totais
+- [x] Trocar modo → recalcula todos
+- [x] Trocar meta → recalcula todos
+- [x] Sem reiniciar app
+
+### Build Final
+- [x] Manter package name
+- [x] Incrementar versionCode: 6 → 7
+- [x] Incrementar versionName: 2.0.0 → 3.0.0
+- [x] Mesma assinatura
+- [x] Sem perder dados

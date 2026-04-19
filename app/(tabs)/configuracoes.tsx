@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -45,7 +46,7 @@ function hapticSuccess() {
 }
 
 export default function ConfiguracoesScreen() {
-  const { instalacoes, stats, limparDados, exportarJSON, importarJSON, paymentMode, setPaymentMode } =
+  const { instalacoes, stats, limparDados, exportarJSON, importarJSON, paymentMode, setPaymentMode, monthlyGoal, setMonthlyGoal } =
     useInstallations();
   const { mes, ano, mesAnoFormatado } = useMonth();
   const { modoEscuro, toggleModoEscuro } = useGBKTheme();
@@ -58,6 +59,8 @@ export default function ConfiguracoesScreen() {
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
   const [limpando, setLimpando] = useStateReact(false);
   const [gerandoPDF, setGerandoPDF] = useStateReact(false);
+  const [editandoMeta, setEditandoMeta] = useStateReact(false);
+  const [novaMetaInput, setNovaMetaInput] = useStateReact(monthlyGoal.toString());
 
   async function compartilharMes() {
     const instalacoesDoMes = instalacoes.filter((inst) => {
@@ -635,6 +638,13 @@ export default function ConfiguracoesScreen() {
             sublabel={paymentMode === "meta" ? "Meta Progressiva" : paymentMode === "fixo65" ? "Fixo R$ 65" : "Fixo R$ 70"}
             onPress={() => setShowPaymentModes(true)}
           />
+          <Divisor />
+          <ItemConfig
+            icone="🎯"
+            label="Meta Mensal"
+            sublabel={`${monthlyGoal} instalações`}
+            onPress={() => setEditandoMeta(true)}
+          />
         </Secao>
 
         {/* Seção Dados */}
@@ -913,6 +923,84 @@ export default function ConfiguracoesScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Edição de Meta */}
+      <Modal
+        visible={editandoMeta}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setEditandoMeta(false)}
+      >
+        <View style={styles.confirmOverlay}>
+          <View
+            style={[
+              styles.confirmContainer,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[styles.confirmTitulo, { color: colors.foreground }]}>
+              Editar Meta Mensal
+            </Text>
+            <Text style={[styles.confirmMensagem, { color: colors.muted }]}>
+              Digite a nova meta de instalações para o mês:
+            </Text>
+
+            <View style={styles.metaInputContainer}>
+              <TextInput
+                style={[
+                  styles.metaInput,
+                  { color: colors.foreground, borderColor: colors.border },
+                ]}
+                placeholder="Digite a meta"
+                placeholderTextColor={colors.muted}
+                value={novaMetaInput}
+                onChangeText={setNovaMetaInput}
+                keyboardType="number-pad"
+              />
+            </View>
+
+            <View style={styles.confirmBotoes}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.botaoCancelar,
+                  {
+                    backgroundColor: colors.muted,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+                onPress={() => {
+                  setEditandoMeta(false);
+                  setNovaMetaInput(monthlyGoal.toString());
+                }}
+              >
+                <Text style={styles.botaoCancelarTexto}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.botaoConfirmar,
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}
+                onPress={async () => {
+                  const novaMeta = parseInt(novaMetaInput);
+                  if (isNaN(novaMeta) || novaMeta < 1) {
+                    Alert.alert("Erro", "Digite um número válido maior que 0");
+                    return;
+                  }
+                  hapticSuccess();
+                  await setMonthlyGoal(novaMeta);
+                  setEditandoMeta(false);
+                  Alert.alert("Sucesso", `Meta atualizada para ${novaMeta} instalações`);
+                }}
+              >
+                <Text style={styles.botaoConfirmarTexto}>Salvar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -1166,5 +1254,27 @@ const styles = StyleSheet.create({
   paymentModeDesc: {
     fontSize: 12,
     fontWeight: "400",
+  },
+  metaInputContainer: {
+    marginBottom: 20,
+  },
+  metaInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  botaoConfirmar: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  botaoConfirmarTexto: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

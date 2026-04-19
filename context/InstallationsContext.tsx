@@ -17,6 +17,7 @@ import type { ServiceType } from "@/types/installation";
 
 const STORAGE_KEY = "@gbk_instalacoes";
 const PAYMENT_MODE_KEY = "@gbk_payment_mode";
+const MONTHLY_GOAL_KEY = "@gbk_monthly_goal";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ interface State {
   stats: InstallationStats;
   carregando: boolean;
   paymentMode: PaymentMode;
+  monthlyGoal: number;
 }
 
 const estadoInicial: State = {
@@ -32,6 +34,7 @@ const estadoInicial: State = {
   stats: calcularStats([], "meta"),
   carregando: true,
   paymentMode: "meta",
+  monthlyGoal: 104,
 };
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -42,7 +45,8 @@ type Action =
   | { type: "ATUALIZAR"; payload: Installation }
   | { type: "REMOVER"; payload: string }
   | { type: "LIMPAR" }
-  | { type: "SET_PAYMENT_MODE"; payload: PaymentMode };
+  | { type: "SET_PAYMENT_MODE"; payload: PaymentMode }
+  | { type: "SET_MONTHLY_GOAL"; payload: number };
 
 function reducer(state: State, action: Action): State {
   let novasInstalacoes: Installation[];
@@ -91,6 +95,7 @@ function reducer(state: State, action: Action): State {
         stats: calcularStats([], state.paymentMode),
         carregando: false,
         paymentMode: state.paymentMode,
+        monthlyGoal: state.monthlyGoal,
       };
 
     case "SET_PAYMENT_MODE":
@@ -98,6 +103,12 @@ function reducer(state: State, action: Action): State {
         ...state,
         paymentMode: action.payload,
         stats: calcularStats(state.instalacoes, action.payload),
+      };
+
+    case "SET_MONTHLY_GOAL":
+      return {
+        ...state,
+        monthlyGoal: action.payload,
       };
 
     default:
@@ -112,7 +123,9 @@ interface InstallationsContextValue {
   stats: InstallationStats;
   carregando: boolean;
   paymentMode: PaymentMode;
+  monthlyGoal: number;
   setPaymentMode: (mode: PaymentMode) => Promise<void>;
+  setMonthlyGoal: (goal: number) => Promise<void>;
   adicionarInstalacao: (dados: {
     cliente: string;
     endereco: string;
@@ -146,18 +159,23 @@ export function InstallationsProvider({
   useEffect(() => {
     async function carregarDados() {
       try {
-        const [dados, paymentModeData] = await Promise.all([
+        const [dados, paymentModeData, monthlyGoalData] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(PAYMENT_MODE_KEY),
+          AsyncStorage.getItem(MONTHLY_GOAL_KEY),
         ]);
 
         const instalacoes: Installation[] = dados ? JSON.parse(dados) : [];
         const paymentMode: PaymentMode = paymentModeData
           ? (JSON.parse(paymentModeData) as PaymentMode)
           : "meta";
+        const monthlyGoal: number = monthlyGoalData
+          ? JSON.parse(monthlyGoalData)
+          : 104;
 
         dispatch({ type: "CARREGAR", payload: instalacoes });
         dispatch({ type: "SET_PAYMENT_MODE", payload: paymentMode });
+        dispatch({ type: "SET_MONTHLY_GOAL", payload: monthlyGoal });
       } catch {
         dispatch({ type: "CARREGAR", payload: [] });
       }
@@ -260,6 +278,12 @@ export function InstallationsProvider({
 
   const setPaymentMode = useCallback(async (mode: PaymentMode) => {
     dispatch({ type: "SET_PAYMENT_MODE", payload: mode });
+    await AsyncStorage.setItem(PAYMENT_MODE_KEY, JSON.stringify(mode)).catch(() => {});
+  }, []);
+
+  const setMonthlyGoal = useCallback(async (goal: number) => {
+    dispatch({ type: "SET_MONTHLY_GOAL", payload: goal });
+    await AsyncStorage.setItem(MONTHLY_GOAL_KEY, JSON.stringify(goal)).catch(() => {});
   }, []);
 
   return (
@@ -269,7 +293,9 @@ export function InstallationsProvider({
         stats: state.stats,
         carregando: state.carregando,
         paymentMode: state.paymentMode,
+        monthlyGoal: state.monthlyGoal,
         setPaymentMode,
+        setMonthlyGoal,
         adicionarInstalacao,
         atualizarInstalacao,
         removerInstalacao,
