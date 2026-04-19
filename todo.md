@@ -129,3 +129,52 @@
 - [ ] Gerar QR code com dados da instala\u00e7\u00e3o
 - [ ] Enviar relat\u00f3rio autom\u00e1tico por email (agendado)
 - [ ] Integra\u00e7\u00e3o com WhatsApp Business API
+
+
+## Atualização v1.1.0 — Modo de Pagamento + Empresarial
+
+### Modo de Pagamento
+- [x] Adicionar campo paymentMode em Configurações
+- [x] Opções: Meta Progressiva, Fixo R$65, Fixo R$70
+- [x] Salvar em AsyncStorage (paymentMode)
+- [x] Padrão: meta
+
+### Tipo Empresarial
+- [x] Adicionar "Empresarial" na lista de tipos de serviço
+- [x] Empresarial sempre = R$100 (nunca muda)
+- [x] Atualizar tipos no novo cadastro
+
+### Regra de Cálculo Atualizada
+- [x] Meta progressiva: < 104 = R$65, ≥ 104 = R$70 (retroativo)
+- [x] Fixo R$65: todos = R$65 (Empresarial = R$100)
+- [x] Fixo R$70: todos = R$70 (Empresarial = R$100)
+- [x] Empresarial sempre = R$100
+- [x] Meta conta todos os tipos (Instalação, Tipo 3, Mudança, Empresarial)
+
+### Backup JSON Funcional
+- [x] Criar arquivo real (não string temporária)
+- [x] Usar Expo FileSystem
+- [x] Salvar em Downloads/Documentos
+- [x] Nome: gbk-tecnico-backup.json
+- [x] Incluir: installations, settings, paymentMode, theme
+- [x] Botão "Fazer Backup" funcional
+- [x] Permitir compartilhar arquivo
+- [x] Mostrar mensagem de sucesso
+
+### Restauração de Backup
+- [x] Aceitar JSON exportado
+- [x] Restaurar: instalações, configurações, modo técnico
+- [x] Validar integridade do arquivo
+- [x] Atualizar dashboard/histórico após restaurar
+
+### Atualização Automática
+- [x] Dashboard atualiza ao cadastrar/editar/excluir
+- [x] Histórico atualiza ao trocar modo
+- [x] Valores recalculam automaticamente
+- [x] Sem reiniciar app
+
+### Build
+- [ ] Manter package name: com.gbk.tecnico
+- [ ] Incrementar versionCode: 2 → 3
+- [ ] Incrementar versionName: 1.0.1 → 1.1.0
+- [ ] Sem perder dados do usuário

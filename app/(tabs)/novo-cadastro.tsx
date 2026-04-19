@@ -17,7 +17,7 @@ import type { ServiceType } from "@/types/installation";
 import * as Haptics from "expo-haptics";
 import { formatarData, validarData, validarCliente, validarEndereco } from "@/lib/input-masks";
 
-const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança"];
+const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança", "Empresarial"];
 
 function haptic() {
   if (Platform.OS !== "web") {

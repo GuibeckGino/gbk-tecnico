@@ -42,13 +42,14 @@ function hapticSuccess() {
 }
 
 export default function ConfiguracoesScreen() {
-  const { instalacoes, stats, limparDados, exportarJSON, importarJSON } =
+  const { instalacoes, stats, limparDados, exportarJSON, importarJSON, paymentMode, setPaymentMode } =
     useInstallations();
   const { mes, ano, mesAnoFormatado } = useMonth();
   const { modoEscuro, toggleModoEscuro } = useGBKTheme();
   const colors = useColors();
   const [exportando, setExportando] = useStateReact(false);
   const [importando, setImportando] = useStateReact(false);
+  const [showPaymentModes, setShowPaymentModes] = useStateReact(false);
 
   // Modal de confirmação para limpar dados
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
@@ -102,7 +103,6 @@ export default function ConfiguracoesScreen() {
       });
     }
   }
-
 
 
 
@@ -298,6 +298,16 @@ export default function ConfiguracoesScreen() {
           />
         </Secao>
 
+        {/* Seção Modo de Pagamento */}
+        <Secao titulo="Modo de Pagamento">
+          <ItemConfig
+            icone="💳"
+            label="Modo Atual"
+            sublabel={paymentMode === "meta" ? "Meta Progressiva" : paymentMode === "fixo65" ? "Fixo R$ 65" : "Fixo R$ 70"}
+            onPress={() => setShowPaymentModes(true)}
+          />
+        </Secao>
+
         {/* Seção Dados */}
         <Secao titulo="Dados">
           <ItemConfig
@@ -349,13 +359,155 @@ export default function ConfiguracoesScreen() {
         {/* Info */}
         <View style={styles.infoContainer}>
           <Text style={[styles.infoTexto, { color: colors.muted }]}>
-            GBK Técnico v1.0.0
+            GBK Técnico v1.1.0
           </Text>
           <Text style={[styles.infoTexto, { color: colors.muted }]}>
             100% offline · AsyncStorage
           </Text>
         </View>
       </ScrollView>
+
+      {/* Modal de Seleção de Modo de Pagamento */}
+      <Modal
+        visible={showPaymentModes}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowPaymentModes(false)}
+      >
+        <View style={styles.confirmOverlay}>
+          <View
+            style={[
+              styles.confirmContainer,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[styles.confirmTitulo, { color: colors.foreground }]}
+            >
+              Modo de Pagamento
+            </Text>
+            <Text
+              style={[styles.confirmMensagem, { color: colors.muted }]}
+            >
+              Selecione como o valor será calculado:
+            </Text>
+
+            <View style={styles.paymentModesContainer}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.paymentModeButton,
+                  {
+                    backgroundColor: paymentMode === "meta" ? colors.primary : colors.surface,
+                    borderColor: paymentMode === "meta" ? colors.primary : colors.border,
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}
+                onPress={async () => {
+                  haptic();
+                  await setPaymentMode("meta");
+                  setShowPaymentModes(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.paymentModeLabel,
+                    { color: paymentMode === "meta" ? "#fff" : colors.foreground },
+                  ]}
+                >
+                  Meta Progressiva
+                </Text>
+                <Text
+                  style={[
+                    styles.paymentModeDesc,
+                    { color: paymentMode === "meta" ? "rgba(255,255,255,0.8)" : colors.muted },
+                  ]}
+                >
+                  &lt; 104: R$ 65 | ≥ 104: R$ 70
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.paymentModeButton,
+                  {
+                    backgroundColor: paymentMode === "fixo65" ? colors.primary : colors.surface,
+                    borderColor: paymentMode === "fixo65" ? colors.primary : colors.border,
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}
+                onPress={async () => {
+                  haptic();
+                  await setPaymentMode("fixo65");
+                  setShowPaymentModes(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.paymentModeLabel,
+                    { color: paymentMode === "fixo65" ? "#fff" : colors.foreground },
+                  ]}
+                >
+                  Fixo R$ 65
+                </Text>
+                <Text
+                  style={[
+                    styles.paymentModeDesc,
+                    { color: paymentMode === "fixo65" ? "rgba(255,255,255,0.8)" : colors.muted },
+                  ]}
+                >
+                  Todas as instalações
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.paymentModeButton,
+                  {
+                    backgroundColor: paymentMode === "fixo70" ? colors.primary : colors.surface,
+                    borderColor: paymentMode === "fixo70" ? colors.primary : colors.border,
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}
+                onPress={async () => {
+                  haptic();
+                  await setPaymentMode("fixo70");
+                  setShowPaymentModes(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.paymentModeLabel,
+                    { color: paymentMode === "fixo70" ? "#fff" : colors.foreground },
+                  ]}
+                >
+                  Fixo R$ 70
+                </Text>
+                <Text
+                  style={[
+                    styles.paymentModeDesc,
+                    { color: paymentMode === "fixo70" ? "rgba(255,255,255,0.8)" : colors.muted },
+                  ]}
+                >
+                  Todas as instalações
+                </Text>
+              </Pressable>
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.botaoCancelar,
+                {
+                  backgroundColor: colors.muted,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+              onPress={() => setShowPaymentModes(false)}
+            >
+              <Text style={styles.botaoCancelarTexto}>Fechar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal de Confirmação de Limpeza */}
       <Modal
@@ -658,5 +810,24 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "700",
+  },
+  paymentModesContainer: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  paymentModeButton: {
+    borderRadius: 10,
+    borderWidth: 1.5,
+    padding: 14,
+    alignItems: "center",
+  },
+  paymentModeLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  paymentModeDesc: {
+    fontSize: 12,
+    fontWeight: "400",
   },
 });

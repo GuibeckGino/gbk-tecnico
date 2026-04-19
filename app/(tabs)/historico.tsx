@@ -859,6 +859,7 @@ function CardInstalacao({
     Instalação: "#1565C0",
     "Tipo 3": "#0D47A1",
     Mudança: "#1976D2",
+    Empresarial: "#F57C00",
   };
 
   return (

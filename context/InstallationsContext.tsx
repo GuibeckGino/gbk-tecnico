@@ -11,10 +11,12 @@ import {
   InstallationStats,
   calcularStats,
   gerarId,
+  type PaymentMode,
 } from "@/types/installation";
 import type { ServiceType } from "@/types/installation";
 
 const STORAGE_KEY = "@gbk_instalacoes";
+const PAYMENT_MODE_KEY = "@gbk_payment_mode";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -22,12 +24,14 @@ interface State {
   instalacoes: Installation[];
   stats: InstallationStats;
   carregando: boolean;
+  paymentMode: PaymentMode;
 }
 
 const estadoInicial: State = {
   instalacoes: [],
-  stats: calcularStats([]),
+  stats: calcularStats([], "meta"),
   carregando: true,
+  paymentMode: "meta",
 };
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -37,7 +41,8 @@ type Action =
   | { type: "ADICIONAR"; payload: Installation }
   | { type: "ATUALIZAR"; payload: Installation }
   | { type: "REMOVER"; payload: string }
-  | { type: "LIMPAR" };
+  | { type: "LIMPAR" }
+  | { type: "SET_PAYMENT_MODE"; payload: PaymentMode };
 
 function reducer(state: State, action: Action): State {
   let novasInstalacoes: Installation[];
@@ -46,8 +51,9 @@ function reducer(state: State, action: Action): State {
     case "CARREGAR":
       novasInstalacoes = action.payload;
       return {
+        ...state,
         instalacoes: novasInstalacoes,
-        stats: calcularStats(novasInstalacoes),
+        stats: calcularStats(novasInstalacoes, state.paymentMode),
         carregando: false,
       };
 
@@ -56,7 +62,7 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         instalacoes: novasInstalacoes,
-        stats: calcularStats(novasInstalacoes),
+        stats: calcularStats(novasInstalacoes, state.paymentMode),
       };
 
     case "ATUALIZAR":
@@ -66,7 +72,7 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         instalacoes: novasInstalacoes,
-        stats: calcularStats(novasInstalacoes),
+        stats: calcularStats(novasInstalacoes, state.paymentMode),
       };
 
     case "REMOVER":
@@ -76,14 +82,22 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         instalacoes: novasInstalacoes,
-        stats: calcularStats(novasInstalacoes),
+        stats: calcularStats(novasInstalacoes, state.paymentMode),
       };
 
     case "LIMPAR":
       return {
         instalacoes: [],
-        stats: calcularStats([]),
+        stats: calcularStats([], state.paymentMode),
         carregando: false,
+        paymentMode: state.paymentMode,
+      };
+
+    case "SET_PAYMENT_MODE":
+      return {
+        ...state,
+        paymentMode: action.payload,
+        stats: calcularStats(state.instalacoes, action.payload),
       };
 
     default:
@@ -97,6 +111,8 @@ interface InstallationsContextValue {
   instalacoes: Installation[];
   stats: InstallationStats;
   carregando: boolean;
+  paymentMode: PaymentMode;
+  setPaymentMode: (mode: PaymentMode) => Promise<void>;
   adicionarInstalacao: (dados: {
     cliente: string;
     endereco: string;
@@ -130,13 +146,18 @@ export function InstallationsProvider({
   useEffect(() => {
     async function carregarDados() {
       try {
-        const dados = await AsyncStorage.getItem(STORAGE_KEY);
-        if (dados) {
-          const instalacoes: Installation[] = JSON.parse(dados);
-          dispatch({ type: "CARREGAR", payload: instalacoes });
-        } else {
-          dispatch({ type: "CARREGAR", payload: [] });
-        }
+        const [dados, paymentModeData] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEY),
+          AsyncStorage.getItem(PAYMENT_MODE_KEY),
+        ]);
+
+        const instalacoes: Installation[] = dados ? JSON.parse(dados) : [];
+        const paymentMode: PaymentMode = paymentModeData
+          ? (JSON.parse(paymentModeData) as PaymentMode)
+          : "meta";
+
+        dispatch({ type: "CARREGAR", payload: instalacoes });
+        dispatch({ type: "SET_PAYMENT_MODE", payload: paymentMode });
       } catch {
         dispatch({ type: "CARREGAR", payload: [] });
       }
@@ -152,6 +173,13 @@ export function InstallationsProvider({
       );
     }
   }, [state.instalacoes, state.carregando]);
+
+  // Salvar paymentMode no AsyncStorage
+  useEffect(() => {
+    AsyncStorage.setItem(PAYMENT_MODE_KEY, JSON.stringify(state.paymentMode)).catch(
+      () => {}
+    );
+  }, [state.paymentMode]);
 
   const adicionarInstalacao = useCallback(
     async (dados: {
@@ -228,7 +256,11 @@ export function InstallationsProvider({
     if (!instalacao) return;
     const atualizada = { ...instalacao, isFavorito: !instalacao.isFavorito };
     await atualizarInstalacao(atualizada);
-  }, [state.instalacoes]);
+  }, [state.instalacoes, atualizarInstalacao]);
+
+  const setPaymentMode = useCallback(async (mode: PaymentMode) => {
+    dispatch({ type: "SET_PAYMENT_MODE", payload: mode });
+  }, []);
 
   return (
     <InstallationsContext.Provider
@@ -236,6 +268,8 @@ export function InstallationsProvider({
         instalacoes: state.instalacoes,
         stats: state.stats,
         carregando: state.carregando,
+        paymentMode: state.paymentMode,
+        setPaymentMode,
         adicionarInstalacao,
         atualizarInstalacao,
         removerInstalacao,

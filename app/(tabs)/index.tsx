@@ -23,7 +23,7 @@ function haptic() {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { instalacoes } = useInstallations();
+  const { instalacoes, paymentMode } = useInstallations();
   const { mes, ano, mesAnoFormatado, proximoMes, mesPrevio } = useMonth();
   const colors = useColors();
 
@@ -33,14 +33,49 @@ export default function HomeScreen() {
   // Calcular stats do mês
   function calcularStatsMes() {
     const total = instalacoesDoMes.length;
-    const valorIndividual = total < 104 ? 65 : 70;
-    const valorTotal = total * valorIndividual;
+    
+    // Calcular valor total considerando cada tipo
+    let valorTotal = 0;
+    let valorIndividual = 65; // padrão
+    
+    instalacoesDoMes.forEach((inst) => {
+      // Empresarial sempre é R$100
+      if (inst.tipoServico === "Empresarial") {
+        valorTotal += 100;
+      } else {
+        // Outros tipos seguem o modo de pagamento
+        if (paymentMode === "fixo65") {
+          valorTotal += 65;
+        } else if (paymentMode === "fixo70") {
+          valorTotal += 70;
+        } else {
+          // Meta progressiva
+          valorTotal += total >= 104 ? 70 : 65;
+        }
+      }
+    });
+    
+    // Valor individual é o valor do primeiro tipo (para referência)
+    if (total > 0) {
+      const primeiroTipo = instalacoesDoMes[0]?.tipoServico;
+      if (primeiroTipo === "Empresarial") {
+        valorIndividual = 100;
+      } else if (paymentMode === "fixo65") {
+        valorIndividual = 65;
+      } else if (paymentMode === "fixo70") {
+        valorIndividual = 70;
+      } else {
+        valorIndividual = total >= 104 ? 70 : 65;
+      }
+    }
 
     const porTipo = {
       instalacao: instalacoesDoMes.filter((i) => i.tipoServico === "Instalação")
         .length,
       tipo3: instalacoesDoMes.filter((i) => i.tipoServico === "Tipo 3").length,
       mudanca: instalacoesDoMes.filter((i) => i.tipoServico === "Mudança")
+        .length,
+      empresarial: instalacoesDoMes.filter((i) => i.tipoServico === "Empresarial")
         .length,
     };
 
@@ -149,6 +184,11 @@ export default function HomeScreen() {
               titulo="Mudança"
               valor={stats.porTipo.mudanca}
               cor="#1976D2"
+            />
+            <MiniCard
+              titulo="Empresarial"
+              valor={stats.porTipo.empresarial}
+              cor="#F57C00"
             />
           </View>
         </View>
