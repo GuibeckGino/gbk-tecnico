@@ -26,7 +26,7 @@ export default function CalendarioScreen() {
     const ultimoDia = new Date(ano, mes, 0).getDate();
 
     for (let dia = 1; dia <= ultimoDia; dia++) {
-      const dataFormatada = `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${ano}`;
+      const dataFormatada = `${String(dia).padStart(2, '0')}/${String(mes + 1).padStart(2, '0')}/${ano}`;
       const instalacoesDodia = instalacoes.filter((inst) => inst.data === dataFormatada);
 
       const tipos: { [key: string]: number } = {
@@ -106,6 +106,9 @@ export default function CalendarioScreen() {
     return diasCalendario.find((d) => d.dia === diaAtual) || null;
   }, [diaAtual, diasCalendario]);
 
+  // Corrigir índice do mês para exibição
+  const mesIndex = mes;
+
   // Cores por tipo
   const coresTipo = {
     'Instalação': '#0a7ea4',
@@ -127,7 +130,7 @@ export default function CalendarioScreen() {
         {/* Cabeçalho */}
         <View>
           <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.foreground }}>
-            {nomesMes[mes - 1]} de {ano}
+            {nomesMes[mesIndex]} de {ano}
           </Text>
           <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4 }}>
             Visualize suas instalações no calendário
@@ -207,7 +210,7 @@ export default function CalendarioScreen() {
         {diaSelecionado && diaSelecionado.dia > 0 && (
           <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, gap: 12 }}>
             <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
-              {String(diaSelecionado.dia).padStart(2, '0')} de {nomesMes[mes - 1]}
+              {String(diaSelecionado.dia).padStart(2, '0')} de {nomesMes[mesIndex]}
             </Text>
 
             {diaSelecionado.instalacoes > 0 ? (
