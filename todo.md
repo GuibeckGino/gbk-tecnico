@@ -365,3 +365,60 @@
 - [x] Incrementar versionName: 2.0.0 → 3.0.0
 - [x] Mesma assinatura
 - [x] Sem perder dados
+
+
+## Atualização v4.0.0 — PROFISSIONAL AVANÇADA (8 Funcionalidades Premium)
+
+### 1. Gráficos Visuais
+- [ ] Gráfico de barras: quantidade por tipo
+- [ ] Gráfico de pizza: distribuição de faturamento
+- [ ] Gráfico de linha: tendência últimos 6 meses
+- [ ] Atualização em tempo real
+- [ ] Usar react-native-chart-kit
+
+### 2. Filtros Avançados no Histórico
+- [ ] Chips para filtrar por tipo
+- [ ] Filtro por data range (de/até)
+- [ ] Filtro por valor mín/máx
+- [ ] Persistência de filtros
+- [ ] Busca combinada (cliente + tipo + data)
+
+### 3. Notificações Inteligentes
+- [ ] Alerta ao atingir 104 instalações
+- [ ] Resumo diário (total, meta/dia, projeção)
+- [ ] Notificação de bônus (R$5 a mais)
+- [ ] Lembretes de meta (seg-sab)
+- [ ] Usar expo-notifications
+
+### 4. Relatórios Avançados
+- [ ] Relatório semanal (seg-dom)
+- [ ] Comparativo mensal (este vs anterior)
+- [ ] Ranking top 10 clientes
+- [ ] Análise de lucratividade por tipo
+- [ ] Exportar relatórios
+
+### 5. Sincronização em Nuvem
+- [ ] Backup automático diário
+- [ ] Sincronizar entre dispositivos
+- [ ] Histórico de backups
+- [ ] Restauração por data específica
+- [ ] Usar backend server
+
+### 6. Modo Escuro Profissional
+- [ ] Tema escuro otimizado
+- [ ] Transição suave entre temas
+- [ ] Persistência de preferência
+- [ ] Cores profissionais
+
+### 7. Integração com Calendário
+- [ ] Visualizar instalações no calendário
+- [ ] Marcar datas importantes
+- [ ] Sincronizar com Google Calendar (opcional)
+- [ ] Cores por tipo de serviço
+
+### 8. Análise de Produtividade
+- [ ] Dias mais produtivos (gráfico)
+- [ ] Horário de pico
+- [ ] Tempo médio entre instalações
+- [ ] Estatísticas por dia da semana
+- [ ] Comparativo de produtividade
