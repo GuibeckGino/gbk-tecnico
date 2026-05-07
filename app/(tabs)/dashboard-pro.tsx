@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
   Alert,
+  Image,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
@@ -188,6 +189,14 @@ export default function DashboardProScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Logo Header */}
+        <View style={{ alignItems: 'center', marginBottom: 16 }}>
+          <Image
+            source={require('@/assets/images/icon.png')}
+            style={{ width: 60, height: 60, borderRadius: 12 }}
+          />
+        </View>
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.titulo, { color: colors.foreground }]}>Dashboard Profissional</Text>

@@ -16,8 +16,20 @@ import {
 import type { ServiceType } from "@/types/installation";
 
 const STORAGE_KEY = "@gbk_instalacoes";
-const PAYMENT_MODE_KEY = "@gbk_payment_mode";
-const MONTHLY_GOAL_KEY = "@gbk_monthly_goal";
+const PAYMENT_MODE_KEY_PREFIX = "@gbk_payment_mode";
+const MONTHLY_GOAL_KEY_PREFIX = "@gbk_monthly_goal";
+
+// ─── Helper Functions ─────────────────────────────────────────────────────────
+
+function getPaymentModeKey(mes: number, ano: number): string {
+  const mesFormatado = String(mes + 1).padStart(2, "0");
+  return `${PAYMENT_MODE_KEY_PREFIX}_${ano}_${mesFormatado}`;
+}
+
+function getMonthlyGoalKey(mes: number, ano: number): string {
+  const mesFormatado = String(mes + 1).padStart(2, "0");
+  return `${MONTHLY_GOAL_KEY_PREFIX}_${ano}_${mesFormatado}`;
+}
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -124,8 +136,8 @@ interface InstallationsContextValue {
   carregando: boolean;
   paymentMode: PaymentMode;
   monthlyGoal: number;
-  setPaymentMode: (mode: PaymentMode) => Promise<void>;
-  setMonthlyGoal: (goal: number) => Promise<void>;
+  setPaymentMode: (mode: PaymentMode, mes: number, ano: number) => Promise<void>;
+  setMonthlyGoal: (goal: number, mes: number, ano: number) => Promise<void>;
   adicionarInstalacao: (dados: {
     cliente: string;
     endereco: string;
@@ -140,6 +152,7 @@ interface InstallationsContextValue {
   importarJSON: (json: string) => Promise<boolean>;
   setInstallations: (instalacoes: Installation[]) => Promise<void>;
   toggleFavorito: (id: string) => Promise<void>;
+  carregarConfiguracoesDoMes: (mes: number, ano: number) => Promise<void>;
 }
 
 const InstallationsContext = createContext<InstallationsContextValue | null>(
@@ -159,23 +172,9 @@ export function InstallationsProvider({
   useEffect(() => {
     async function carregarDados() {
       try {
-        const [dados, paymentModeData, monthlyGoalData] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEY),
-          AsyncStorage.getItem(PAYMENT_MODE_KEY),
-          AsyncStorage.getItem(MONTHLY_GOAL_KEY),
-        ]);
-
+        const dados = await AsyncStorage.getItem(STORAGE_KEY);
         const instalacoes: Installation[] = dados ? JSON.parse(dados) : [];
-        const paymentMode: PaymentMode = paymentModeData
-          ? (JSON.parse(paymentModeData) as PaymentMode)
-          : "meta";
-        const monthlyGoal: number = monthlyGoalData
-          ? JSON.parse(monthlyGoalData)
-          : 104;
-
         dispatch({ type: "CARREGAR", payload: instalacoes });
-        dispatch({ type: "SET_PAYMENT_MODE", payload: paymentMode });
-        dispatch({ type: "SET_MONTHLY_GOAL", payload: monthlyGoal });
       } catch {
         dispatch({ type: "CARREGAR", payload: [] });
       }
@@ -191,13 +190,6 @@ export function InstallationsProvider({
       );
     }
   }, [state.instalacoes, state.carregando]);
-
-  // Salvar paymentMode no AsyncStorage
-  useEffect(() => {
-    AsyncStorage.setItem(PAYMENT_MODE_KEY, JSON.stringify(state.paymentMode)).catch(
-      () => {}
-    );
-  }, [state.paymentMode]);
 
   const adicionarInstalacao = useCallback(
     async (dados: {
@@ -276,14 +268,43 @@ export function InstallationsProvider({
     await atualizarInstalacao(atualizada);
   }, [state.instalacoes, atualizarInstalacao]);
 
-  const setPaymentMode = useCallback(async (mode: PaymentMode) => {
+  const setPaymentMode = useCallback(async (mode: PaymentMode, mes: number, ano: number) => {
     dispatch({ type: "SET_PAYMENT_MODE", payload: mode });
-    await AsyncStorage.setItem(PAYMENT_MODE_KEY, JSON.stringify(mode)).catch(() => {});
+    await AsyncStorage.setItem(
+      getPaymentModeKey(mes, ano),
+      JSON.stringify(mode)
+    ).catch(() => {});
   }, []);
 
-  const setMonthlyGoal = useCallback(async (goal: number) => {
+  const setMonthlyGoal = useCallback(async (goal: number, mes: number, ano: number) => {
     dispatch({ type: "SET_MONTHLY_GOAL", payload: goal });
-    await AsyncStorage.setItem(MONTHLY_GOAL_KEY, JSON.stringify(goal)).catch(() => {});
+    await AsyncStorage.setItem(
+      getMonthlyGoalKey(mes, ano),
+      JSON.stringify(goal)
+    ).catch(() => {});
+  }, []);
+
+  const carregarConfiguracoesDoMes = useCallback(async (mes: number, ano: number) => {
+    try {
+      const [paymentModeData, monthlyGoalData] = await Promise.all([
+        AsyncStorage.getItem(getPaymentModeKey(mes, ano)),
+        AsyncStorage.getItem(getMonthlyGoalKey(mes, ano)),
+      ]);
+
+      const paymentMode: PaymentMode = paymentModeData
+        ? (JSON.parse(paymentModeData) as PaymentMode)
+        : "meta";
+      const monthlyGoal: number = monthlyGoalData
+        ? JSON.parse(monthlyGoalData)
+        : 104;
+
+      dispatch({ type: "SET_PAYMENT_MODE", payload: paymentMode });
+      dispatch({ type: "SET_MONTHLY_GOAL", payload: monthlyGoal });
+    } catch {
+      // Usar valores padrão
+      dispatch({ type: "SET_PAYMENT_MODE", payload: "meta" });
+      dispatch({ type: "SET_MONTHLY_GOAL", payload: 104 });
+    }
   }, []);
 
   return (
@@ -304,6 +325,7 @@ export function InstallationsProvider({
         importarJSON,
         setInstallations,
         toggleFavorito,
+        carregarConfiguracoesDoMes,
       }}
     >
       {children}

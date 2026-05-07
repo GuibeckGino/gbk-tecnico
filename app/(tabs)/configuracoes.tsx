@@ -24,6 +24,7 @@ import { useColors } from "@/hooks/use-colors";
 
 import * as Haptics from "expo-haptics";
 import { useState as useStateReact, useEffect } from "react";
+import { useMonthlyConfig } from "@/hooks/use-monthly-config";
 import { prepararDadosRelatorio, calcularTopClientes, formatarValor, calcularCrescimento } from "@/lib/pdf-generator";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -51,6 +52,7 @@ export default function ConfiguracoesScreen() {
   const { mes, ano, mesAnoFormatado } = useMonth();
   const { modoEscuro, toggleModoEscuro } = useGBKTheme();
   const colors = useColors();
+  useMonthlyConfig(); // Carregar configurações do mês selecionado
   const [exportando, setExportando] = useStateReact(false);
   const [importando, setImportando] = useStateReact(false);
   const [showPaymentModes, setShowPaymentModes] = useStateReact(false);
@@ -358,15 +360,39 @@ export default function ConfiguracoesScreen() {
       const htmlContent = gerarHTMLRelatorioPDF(dados, topClientes, crescimento);
       console.log("[PDF] HTML gerado, tamanho:", htmlContent.length);
 
-      // Gerar PDF
-      const { uri } = await Print.printToFileAsync({
-        html: htmlContent,
-        base64: false,
-      });
-      console.log("[PDF] PDF gerado em:", uri);
+      // Tentar gerar PDF
+      let pdfGerado = false;
+      let uri: string | null = null;
 
-      // Compartilhar PDF
-      if (await Sharing.isAvailableAsync()) {
+      try {
+        // Tentar gerar arquivo PDF
+        const resultado = await Print.printToFileAsync({
+          html: htmlContent,
+          base64: false,
+        });
+        uri = resultado.uri;
+        pdfGerado = true;
+        console.log("[PDF] PDF gerado em:", uri);
+      } catch (pdfError) {
+        console.warn("[PDF] Erro ao gerar arquivo PDF, tentando impressão nativa:", pdfError);
+        // Fallback: usar impressão nativa do celular
+        try {
+          await Print.printAsync({
+            html: htmlContent,
+          });
+          pdfGerado = true;
+          console.log("[PDF] Impressão nativa iniciada");
+        } catch (printError) {
+          console.error("[PDF] Erro na impressão nativa:", printError);
+        }
+      }
+
+      if (!pdfGerado) {
+        throw new Error("Não foi possível gerar PDF ou iniciar impressão");
+      }
+
+      // Compartilhar PDF se arquivo foi gerado
+      if (uri && (await Sharing.isAvailableAsync())) {
         console.log("[PDF] Iniciando compartilhamento");
         await Sharing.shareAsync(uri, {
           mimeType: "application/pdf",
@@ -374,9 +400,12 @@ export default function ConfiguracoesScreen() {
         });
         hapticSuccess();
         Alert.alert("Sucesso", "Relatório PDF gerado e pronto para compartilhar!");
-      } else {
+      } else if (uri) {
         hapticSuccess();
         Alert.alert("Sucesso", `PDF salvo em:\n${uri}`);
+      } else {
+        hapticSuccess();
+        Alert.alert("Sucesso", "Relatório enviado para impressão!");
       }
     } catch (error) {
       console.error("[PDF] Erro ao gerar relatório:", error);
@@ -751,7 +780,7 @@ export default function ConfiguracoesScreen() {
                 ]}
                 onPress={async () => {
                   haptic();
-                  await setPaymentMode("meta");
+                  await setPaymentMode("meta", mes, ano);
                   setShowPaymentModes(false);
                 }}
               >
@@ -784,7 +813,7 @@ export default function ConfiguracoesScreen() {
                 ]}
                 onPress={async () => {
                   haptic();
-                  await setPaymentMode("fixo65");
+                  await setPaymentMode("fixo65", mes, ano);
                   setShowPaymentModes(false);
                 }}
               >
@@ -817,7 +846,7 @@ export default function ConfiguracoesScreen() {
                 ]}
                 onPress={async () => {
                   haptic();
-                  await setPaymentMode("fixo70");
+                  await setPaymentMode("fixo70", mes, ano);
                   setShowPaymentModes(false);
                 }}
               >
@@ -990,7 +1019,7 @@ export default function ConfiguracoesScreen() {
                     return;
                   }
                   hapticSuccess();
-                  await setMonthlyGoal(novaMeta);
+                  await setMonthlyGoal(novaMeta, mes, ano);
                   setEditandoMeta(false);
                   Alert.alert("Sucesso", `Meta atualizada para ${novaMeta} instalações`);
                 }}

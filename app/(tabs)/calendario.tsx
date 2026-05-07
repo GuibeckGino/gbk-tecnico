@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Image } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
 import { useColors } from '@/hooks/use-colors';
@@ -127,6 +127,14 @@ export default function CalendarioScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, gap: 16 }}>
+        {/* Logo Header */}
+        <View style={{ alignItems: 'center', marginBottom: 8 }}>
+          <Image
+            source={require('@/assets/images/icon.png')}
+            style={{ width: 60, height: 60, borderRadius: 12 }}
+          />
+        </View>
+
         {/* Cabeçalho */}
         <View>
           <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.foreground }}>

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Dimensions, Image } from 'react-native';
 import { BarChart, PieChart, LineChart } from 'react-native-chart-kit';
 import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
@@ -146,6 +146,14 @@ export default function GraficosScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, gap: 24 }}>
+        {/* Logo Header */}
+        <View style={{ alignItems: 'center', marginBottom: 8 }}>
+          <Image
+            source={require('@/assets/images/icon.png')}
+            style={{ width: 60, height: 60, borderRadius: 12 }}
+          />
+        </View>
+
         {/* Título */}
         <View>
           <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.foreground }}>
