@@ -269,9 +269,9 @@ export default function DashboardScreen() {
                     <Text style={{ fontSize: 16, fontWeight: '700', color: colors.primary }}>
                       {metrica.value}
                     </Text>
-                    {metrica.unit && (
+                    {metrica.unit ? (
                       <Text style={{ fontSize: 11, color: colors.muted }}>{metrica.unit}</Text>
-                    )}
+                    ) : null}
                   </View>
                 </View>
               ))}

@@ -72,7 +72,7 @@ export default function CalendarioScreen() {
   // Agrupar dias por semanas
   const semanas = useMemo(() => {
     const semanas: DiaCalendario[][] = [];
-    const primeirodia = new Date(ano, mes - 1, 1).getDay();
+    const primeirodia = new Date(ano, mes, 1).getDay();
     let semanaAtual: DiaCalendario[] = [];
 
     // Preencher dias vazios do mês anterior
