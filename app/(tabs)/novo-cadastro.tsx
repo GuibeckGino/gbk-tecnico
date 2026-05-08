@@ -16,6 +16,7 @@ import { useColors } from "@/hooks/use-colors";
 import type { ServiceType } from "@/types/installation";
 import * as Haptics from "expo-haptics";
 import { formatarData, validarData, validarCliente, validarEndereco } from "@/lib/input-masks";
+import { DatePickerModal } from "@/components/date-picker-modal";
 
 const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança", "Empresarial"];
 
@@ -43,6 +44,7 @@ export default function NovoCadastroScreen() {
   const [observacoes, setObservacoes] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [temAlteracoes, setTemAlteracoes] = useState(false);
+  const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
 
   async function salvar() {
     if (!validarCliente(cliente)) {
@@ -173,24 +175,46 @@ export default function NovoCadastroScreen() {
 
         {/* Campo Data */}
         <FormField label="Data *">
-          <TextInput
-            style={[
+          <Pressable
+            style={({ pressed }) => [
               styles.input,
               {
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
-                color: colors.foreground,
+                justifyContent: 'center',
               },
+              pressed && { opacity: 0.8 },
             ]}
-            placeholder="dd/mm/aaaa"
-            placeholderTextColor={colors.muted}
-            value={data}
-            onChangeText={(t) => setData(formatarData(t))}
-            keyboardType="numeric"
-            maxLength={10}
-            returnKeyType="next"
-          />
+            onPress={() => {
+              haptic();
+              setMostrarDatePicker(true);
+            }}
+          >
+            <Text
+              style={[
+                styles.dateDisplayText,
+                {
+                  color: data ? colors.foreground : colors.muted,
+                  fontSize: 16,
+                  paddingVertical: 12,
+                },
+              ]}
+            >
+              {data || "Clique para selecionar a data"}
+            </Text>
+          </Pressable>
         </FormField>
+
+        {/* Date Picker Modal */}
+        <DatePickerModal
+          visible={mostrarDatePicker}
+          onClose={() => setMostrarDatePicker(false)}
+          onDateSelected={(selectedDate) => {
+            setData(selectedDate);
+            setTemAlteracoes(true);
+          }}
+          initialDate={data}
+        />
 
         {/* Campo Observações */}
         <FormField label="Observações">
@@ -277,6 +301,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     lineHeight: 22,
+  },
+  dateDisplayText: {
+    fontSize: 16,
   },
   inputMultilinha: {
     minHeight: 100,
