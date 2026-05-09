@@ -49,7 +49,10 @@ export function DatePickerModal({
 
   // Get days in month
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-  const firstDayOfMonth = new Date(selectedYear, selectedMonth, 1).getDay();
+  let firstDayOfMonth = new Date(selectedYear, selectedMonth, 1).getDay();
+  // Ajustar para que segunda-feira seja o primeiro dia (0 = domingo, 1 = segunda, etc.)
+  // Em calendário brasileiro: seg=0, ter=1, qua=2, qui=3, sex=4, sab=5, dom=6
+  firstDayOfMonth = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
 
   // Generate calendar grid
   const calendarDays: (number | null)[] = [];
@@ -65,7 +68,7 @@ export function DatePickerModal({
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
   ];
 
-  const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+  const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'];
 
   function handleDateConfirm() {
     if (selectedDay) {
@@ -221,12 +224,17 @@ export function DatePickerModal({
             <View style={styles.calendarSection}>
               {/* Day names header */}
               <View style={styles.dayNamesRow}>
-                {dayNames.map((day) => (
+                {dayNames.map((day, idx) => (
                   <Text
                     key={day}
                     style={[
                       styles.dayNameText,
-                      { color: colors.muted, flex: 1, textAlign: 'center' },
+                      {
+                        color: idx === 5 || idx === 6 ? colors.error : colors.muted,
+                        flex: 1,
+                        textAlign: 'center',
+                        fontWeight: idx === 5 || idx === 6 ? '600' : '400',
+                      },
                     ]}
                   >
                     {day}

@@ -14,17 +14,25 @@ export interface MetaStats {
 }
 
 /**
- * Calcula dias úteis (segunda a sábado) entre duas datas
- * Ignora domingos (0)
+ * Calcula dias úteis entre duas datas
+ * @param dataInicio Data inicial
+ * @param dataFim Data final
+ * @param diasTrabalhoCodigos Array com dias da semana que trabalha (0=seg, 1=ter, ..., 6=dom)
  */
-export function calcularDiasUteis(dataInicio: Date, dataFim: Date): number {
+export function calcularDiasUteis(
+  dataInicio: Date,
+  dataFim: Date,
+  diasTrabalhoCodigos: number[] = [0, 1, 2, 3, 4] // Padrão: seg-sex
+): number {
   let dias = 0;
   const data = new Date(dataInicio);
 
   while (data <= dataFim) {
-    const diaSemana = data.getDay();
-    // 0 = domingo, 1-6 = segunda a sábado
-    if (diaSemana !== 0) {
+    // Converter getDay (0=dom, 1=seg, ..., 6=sab) para nosso formato (0=seg, 1=ter, ..., 6=dom)
+    let diaSemanaLocal = data.getDay();
+    diaSemanaLocal = diaSemanaLocal === 0 ? 6 : diaSemanaLocal - 1;
+
+    if (diasTrabalhoCodigos.includes(diaSemanaLocal)) {
       dias++;
     }
     data.setDate(data.getDate() + 1);
@@ -34,14 +42,26 @@ export function calcularDiasUteis(dataInicio: Date, dataFim: Date): number {
 }
 
 /**
- * Retorna o primeiro dia útil do mês (segunda a sábado)
+ * Retorna o primeiro dia útil do mês
+ * @param mes Mês (1-12)
+ * @param ano Ano
+ * @param diasTrabalhoCodigos Array com dias da semana que trabalha
  */
-export function getPrimeiroDiaUtilMes(mes: number, ano: number): Date {
+export function getPrimeiroDiaUtilMes(
+  mes: number,
+  ano: number,
+  diasTrabalhoCodigos: number[] = [0, 1, 2, 3, 4]
+): Date {
   let data = new Date(ano, mes - 1, 1);
-  const diaSemana = data.getDay();
 
-  // Se for domingo, avança para segunda
-  if (diaSemana === 0) {
+  // Encontrar o primeiro dia que é dia de trabalho
+  while (data.getMonth() === mes - 1) {
+    let diaSemanaLocal = data.getDay();
+    diaSemanaLocal = diaSemanaLocal === 0 ? 6 : diaSemanaLocal - 1;
+
+    if (diasTrabalhoCodigos.includes(diaSemanaLocal)) {
+      break;
+    }
     data.setDate(data.getDate() + 1);
   }
 
@@ -49,15 +69,27 @@ export function getPrimeiroDiaUtilMes(mes: number, ano: number): Date {
 }
 
 /**
- * Retorna o último dia útil do mês (segunda a sábado)
+ * Retorna o último dia útil do mês
+ * @param mes Mês (1-12)
+ * @param ano Ano
+ * @param diasTrabalhoCodigos Array com dias da semana que trabalha
  */
-export function getUltimoDiaUtilMes(mes: number, ano: number): Date {
+export function getUltimoDiaUtilMes(
+  mes: number,
+  ano: number,
+  diasTrabalhoCodigos: number[] = [0, 1, 2, 3, 4]
+): Date {
   // Último dia do mês
   let data = new Date(ano, mes, 0);
-  const diaSemana = data.getDay();
 
-  // Se for domingo, volta para sábado
-  if (diaSemana === 0) {
+  // Encontrar o último dia que é dia de trabalho
+  while (data.getMonth() === mes - 1) {
+    let diaSemanaLocal = data.getDay();
+    diaSemanaLocal = diaSemanaLocal === 0 ? 6 : diaSemanaLocal - 1;
+
+    if (diasTrabalhoCodigos.includes(diaSemanaLocal)) {
+      break;
+    }
     data.setDate(data.getDate() - 1);
   }
 
@@ -66,28 +98,41 @@ export function getUltimoDiaUtilMes(mes: number, ano: number): Date {
 
 /**
  * Calcula estatísticas de meta do mês
+ * @param feitas Número de instalações feitas
+ * @param mes Mês (0-11)
+ * @param ano Ano
+ * @param hojeFeZ Instalações feitas hoje
+ * @param diasTrabalhoCodigos Array com dias da semana que trabalha
  */
 export function calcularMetaStats(
   feitas: number,
   mes: number,
   ano: number,
-  hojeFeZ: number = 0
+  hojeFeZ: number = 0,
+  diasTrabalhoCodigos: number[] = [0, 1, 2, 3, 4]
 ): MetaStats {
   const hoje = new Date();
   const hoje_dia = hoje.getDate();
   const hoje_mes = hoje.getMonth() + 1;
   const hoje_ano = hoje.getFullYear();
 
+  // Converter mes de 0-based para 1-based para comparação
+  const mesBased = mes + 1;
+
   // Se estamos em um mês diferente, usar o último dia do mês solicitado
   const dataFim =
-    mes === hoje_mes && ano === hoje_ano
+    mesBased === hoje_mes && ano === hoje_ano
       ? new Date(hoje_ano, hoje_mes - 1, hoje_dia)
-      : getUltimoDiaUtilMes(mes, ano);
+      : getUltimoDiaUtilMes(mesBased, ano, diasTrabalhoCodigos);
 
-  const dataInicio = getPrimeiroDiaUtilMes(mes, ano);
+  const dataInicio = getPrimeiroDiaUtilMes(mesBased, ano, diasTrabalhoCodigos);
 
-  const diasUteisTotais = calcularDiasUteis(dataInicio, getUltimoDiaUtilMes(mes, ano));
-  const diasUteisPassados = calcularDiasUteis(dataInicio, dataFim);
+  const diasUteisTotais = calcularDiasUteis(
+    dataInicio,
+    getUltimoDiaUtilMes(mesBased, ano, diasTrabalhoCodigos),
+    diasTrabalhoCodigos
+  );
+  const diasUteisPassados = calcularDiasUteis(dataInicio, dataFim, diasTrabalhoCodigos);
   const diasUteisRestantes = Math.max(0, diasUteisTotais - diasUteisPassados);
 
   const faltam = Math.max(0, 104 - feitas);

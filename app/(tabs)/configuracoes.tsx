@@ -21,6 +21,7 @@ import { useInstallations } from "@/context/InstallationsContext";
 import { useMonth } from "@/context/MonthContext";
 import { useGBKTheme } from "@/context/ThemeContext";
 import { useColors } from "@/hooks/use-colors";
+import { useWorkSchedule, type DayOfWeek } from "@/context/WorkScheduleContext";
 
 import * as Haptics from "expo-haptics";
 import { useState as useStateReact, useEffect } from "react";
@@ -63,6 +64,10 @@ export default function ConfiguracoesScreen() {
   const [gerandoPDF, setGerandoPDF] = useStateReact(false);
   const [editandoMeta, setEditandoMeta] = useStateReact(false);
   const [novaMetaInput, setNovaMetaInput] = useStateReact(monthlyGoal.toString());
+  const [editandoAgenda, setEditandoAgenda] = useStateReact(false);
+  const workSchedule = useWorkSchedule();
+  const [diasSelecionados, setDiasSelecionados] = useStateReact<DayOfWeek[]>(workSchedule.workDays);
+  const dayNames = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
   async function compartilharMes() {
     const instalacoesDoMes = instalacoes.filter((inst) => {
@@ -676,6 +681,16 @@ export default function ConfiguracoesScreen() {
           />
         </Secao>
 
+        {/* Seção Agenda de Trabalho */}
+        <Secao titulo="Agenda de Trabalho">
+          <ItemConfig
+            icone="📅"
+            label="Dias de Trabalho"
+            sublabel={`${workSchedule.workDayNames.join(", ")}`}
+            onPress={() => setEditandoAgenda(true)}
+          />
+        </Secao>
+
         {/* Seção Dados */}
         <Secao titulo="Dados">
           <ItemConfig
@@ -1030,6 +1045,113 @@ export default function ConfiguracoesScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Agenda de Trabalho */}
+      <Modal
+        visible={editandoAgenda}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setEditandoAgenda(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={[styles.modal, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitulo, { color: colors.foreground }]}>
+              Dias de Trabalho
+            </Text>
+            <Text style={[styles.modalSubtitulo, { color: colors.muted }]}>
+              Selecione os dias em que você trabalha
+            </Text>
+
+            <View style={styles.diasGrid}>
+              {dayNames.map((dia, idx) => {
+                const dayOfWeek = idx as DayOfWeek;
+                const isSelected = diasSelecionados.includes(dayOfWeek);
+                const isWeekend = idx === 5 || idx === 6;
+
+                return (
+                  <Pressable
+                    key={idx}
+                    onPress={() => {
+                      haptic();
+                      if (isSelected) {
+                        setDiasSelecionados(
+                          diasSelecionados.filter((d) => d !== dayOfWeek)
+                        );
+                      } else {
+                        setDiasSelecionados([...diasSelecionados, dayOfWeek]);
+                      }
+                    }}
+                    style={({ pressed }) => [
+                      styles.diaButton,
+                      {
+                        backgroundColor: isSelected
+                          ? colors.primary
+                          : isWeekend
+                          ? colors.surface
+                          : colors.surface,
+                        borderColor: isWeekend ? colors.error : colors.border,
+                        borderWidth: isWeekend ? 2 : 1,
+                        opacity: pressed ? 0.7 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.diaButtonText,
+                        {
+                          color: isSelected ? "#fff" : colors.foreground,
+                          fontWeight: isSelected ? "600" : "500",
+                        },
+                      ]}
+                    >
+                      {dia.substring(0, 3)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.confirmBotoes}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.botaoCancelar,
+                  {
+                    backgroundColor: colors.muted,
+                    opacity: pressed ? 0.7 : 1,
+                  },
+                ]}
+                onPress={() => {
+                  setEditandoAgenda(false);
+                  setDiasSelecionados(workSchedule.workDays);
+                }}
+              >
+                <Text style={styles.botaoCancelarTexto}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.botaoConfirmar,
+                  {
+                    backgroundColor: colors.primary,
+                    opacity: pressed ? 0.8 : 1,
+                  },
+                ]}
+                onPress={async () => {
+                  if (diasSelecionados.length === 0) {
+                    Alert.alert("Erro", "Selecione pelo menos um dia de trabalho");
+                    return;
+                  }
+                  hapticSuccess();
+                  await workSchedule.setWorkDays(diasSelecionados);
+                  setEditandoAgenda(false);
+                  Alert.alert("Sucesso", "Agenda de trabalho atualizada!");
+                }}
+              >
+                <Text style={styles.botaoConfirmarTexto}>Salvar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
@@ -1305,5 +1427,53 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  modal: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    width: "100%",
+    maxWidth: 320,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitulo: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  modalSubtitulo: {
+    fontSize: 13,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  diasGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 20,
+    justifyContent: "center",
+  },
+  diaButton: {
+    width: "30%",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderWidth: 1,
+  },
+  diaButtonText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
 });
