@@ -50,8 +50,9 @@ export function DatePickerModal({
   // Get days in month
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
   let firstDayOfMonth = new Date(selectedYear, selectedMonth, 1).getDay();
-  // Ajustar para que segunda-feira seja o primeiro dia (0 = domingo, 1 = segunda, etc.)
-  // Em calendário brasileiro: seg=0, ter=1, qua=2, qui=3, sex=4, sab=5, dom=6
+  // getDay() retorna: 0=dom, 1=seg, 2=ter, 3=qua, 4=qui, 5=sex, 6=sab
+  // Calendário brasileiro começa em segunda: seg=0, ter=1, qua=2, qui=3, sex=4, sab=5, dom=6
+  // Se for domingo (0), coloca no final (6). Senão, subtrai 1
   firstDayOfMonth = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
 
   // Generate calendar grid
@@ -242,48 +243,53 @@ export function DatePickerModal({
                 ))}
               </View>
 
-              {/* Calendar days grid */}
-              <View style={styles.calendarGrid}>
-                {calendarDays.map((day, index) => (
-                  <Pressable
-                    key={index}
-                    onPress={() => {
-                      if (day) {
-                        haptic();
-                        setSelectedDay(day);
-                      }
-                    }}
-                    disabled={!day}
-                    style={({ pressed }) => [
-                      styles.dayButton,
-                      {
-                        backgroundColor:
-                          day === selectedDay
-                            ? colors.primary
-                            : day
-                            ? colors.surface
-                            : 'transparent',
-                        opacity: pressed && day ? 0.8 : 1,
-                      },
-                    ]}
-                  >
-                    {day && (
-                      <Text
-                        style={[
-                          styles.dayText,
+              {/* Calendar days grid - 7 columns */}
+              {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map((_, weekIdx) => {
+                const weekDays = calendarDays.slice(weekIdx * 7, (weekIdx + 1) * 7);
+                return (
+                  <View key={weekIdx} style={styles.calendarWeek}>
+                    {weekDays.map((day, dayIdx) => (
+                      <Pressable
+                        key={weekIdx * 7 + dayIdx}
+                        onPress={() => {
+                          if (day) {
+                            haptic();
+                            setSelectedDay(day);
+                          }
+                        }}
+                        disabled={!day}
+                        style={({ pressed }) => [
+                          styles.dayButton,
                           {
-                            color:
-                              day === selectedDay ? '#fff' : colors.foreground,
-                            fontWeight: day === selectedDay ? '600' : '400',
+                            backgroundColor:
+                              day === selectedDay
+                                ? colors.primary
+                                : day
+                                ? colors.surface
+                                : 'transparent',
+                            opacity: pressed && day ? 0.8 : 1,
                           },
                         ]}
                       >
-                        {day}
-                      </Text>
-                    )}
-                  </Pressable>
-                ))}
-              </View>
+                        {day && (
+                          <Text
+                            style={[
+                              styles.dayText,
+                              {
+                                color:
+                                  day === selectedDay ? '#fff' : colors.foreground,
+                                fontWeight: day === selectedDay ? '600' : '400',
+                              },
+                            ]}
+                          >
+                            {day}
+                          </Text>
+                        )}
+                      </Pressable>
+                    ))}
+                  </View>
+                );
+              })}
             </View>
 
             {/* Selected Date Display */}
@@ -441,18 +447,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  calendarGrid: {
+  calendarWeek: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 4,
+    marginBottom: 4,
   },
   dayButton: {
-    width: '14.28%',
+    flex: 1,
     aspectRatio: 1,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 4,
   },
   dayText: {
     fontSize: 14,
