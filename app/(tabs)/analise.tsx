@@ -19,6 +19,10 @@ import {
   analisarRentabilidade,
   analisarTendencias,
 } from "@/lib/analytics";
+import {
+  analisarProdutividadePorDia,
+  gerarResumoTextual,
+} from "@/lib/productivity-analytics";
 import { calcularMetaStats, formatarMetaDia } from "@/lib/dias-uteis";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "@react-navigation/native";
@@ -29,7 +33,8 @@ type AbaAnalise =
   | "cliente"
   | "mesames"
   | "rentabilidade"
-  | "tendencias";
+  | "tendencias"
+  | "produtividade";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -165,6 +170,7 @@ export default function AnaliseScreen() {
           {renderAbaButton("cliente", "Por Cliente")}
           {renderAbaButton("rentabilidade", "Rentabilidade")}
           {renderAbaButton("tendencias", "Tendências")}
+          {renderAbaButton("produtividade", "Produtividade")}
           {renderAbaButton("mesames", "Mês a Mês")}
         </ScrollView>
 
@@ -528,6 +534,120 @@ export default function AnaliseScreen() {
                   </View>
                 </View>
               ))
+            )}
+          </View>
+        )}
+
+        {/* Conteúdo Produtividade */}
+        {abaSelecionada === "produtividade" && (
+          <View style={styles.conteudo}>
+            {instalacoesDoMes.length === 0 ? (
+              <Text style={[styles.vazio, { color: colors.muted }]}>
+                Sem dados para exibir
+              </Text>
+            ) : (
+              <View>
+                <View
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.cardTitulo,
+                      { color: colors.foreground, marginBottom: 12 },
+                    ]}
+                  >
+                    Produtividade por Dia
+                  </Text>
+                  <Text
+                    style={[
+                      styles.cardSub,
+                      { color: colors.muted, lineHeight: 20 },
+                    ]}
+                  >
+                    {gerarResumoTextual(
+                      analisarProdutividadePorDia(instalacoesDoMes, mes, ano)
+                    )}
+                  </Text>
+                </View>
+                {analisarProdutividadePorDia(instalacoesDoMes, mes, ano).days.map(
+                  (dia, idx) => (
+                    <View
+                      key={idx}
+                      style={[
+                        styles.card,
+                        {
+                          backgroundColor: colors.surface,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <View style={styles.cardHeader}>
+                        <Text
+                          style={[
+                            styles.cardTitulo,
+                            { color: colors.foreground },
+                          ]}
+                        >
+                          {dia.day}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.cardValor,
+                            { color: colors.primary, fontSize: 18 },
+                          ]}
+                        >
+                          {dia.installations}
+                        </Text>
+                      </View>
+                      <View style={styles.statRow}>
+                        <Text style={[styles.statLabel, { color: colors.muted }]}>
+                          Valor Total
+                        </Text>
+                        <Text
+                          style={[
+                            styles.statValue,
+                            { color: colors.foreground },
+                          ]}
+                        >
+                          R$ {dia.totalValue.toLocaleString("pt-BR")}
+                        </Text>
+                      </View>
+                      <View style={styles.statRow}>
+                        <Text style={[styles.statLabel, { color: colors.muted }]}>
+                          Valor Médio
+                        </Text>
+                        <Text
+                          style={[
+                            styles.statValue,
+                            { color: colors.foreground },
+                          ]}
+                        >
+                          R$ {dia.averageValue.toFixed(0)}
+                        </Text>
+                      </View>
+                      <View style={styles.statRow}>
+                        <Text style={[styles.statLabel, { color: colors.muted }]}>
+                          Percentual
+                        </Text>
+                        <Text
+                          style={[
+                            styles.statValue,
+                            { color: colors.foreground },
+                          ]}
+                        >
+                          {dia.percentage.toFixed(1)}%
+                        </Text>
+                      </View>
+                    </View>
+                  )
+                )}
+              </View>
             )}
           </View>
         )}
