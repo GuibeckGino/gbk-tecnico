@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { ScrollView, Text, View, TouchableOpacity, Animated } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
@@ -7,6 +7,7 @@ import { useColors } from '@/hooks/use-colors';
 import { calcularDiasUteis } from '@/lib/dias-uteis';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { calcularStats } from '@/types/installation';
 
 export default function DashboardScreen() {
   const { instalacoes, paymentMode, monthlyGoal } = useInstallations();
@@ -31,33 +32,10 @@ export default function DashboardScreen() {
       return parseInt(m) === mes + 1 && parseInt(a) === ano;
     });
 
-    const contadores = {
-      instalacao: 0,
-      tipo3: 0,
-      mudanca: 0,
-      empresarial: 0,
-    };
-
-    let valorTotal = 0;
-
-    instalacoesDoMes.forEach((inst) => {
-      if (inst.tipoServico === 'Instalação') contadores.instalacao++;
-      else if (inst.tipoServico === 'Tipo 3') contadores.tipo3++;
-      else if (inst.tipoServico === 'Mudança') contadores.mudanca++;
-      else if (inst.tipoServico === 'Empresarial') contadores.empresarial++;
-
-      if (inst.tipoServico === 'Empresarial') {
-        valorTotal += 100;
-      } else if (paymentMode === 'fixo65') {
-        valorTotal += 65;
-      } else if (paymentMode === 'fixo70') {
-        valorTotal += 70;
-      } else {
-        // meta progressiva
-        const total = instalacoesDoMes.length;
-        valorTotal += total >= monthlyGoal ? 70 : 65;
-      }
-    });
+    // Usar calcularStats para cálculo correto
+    const stats = calcularStats(instalacoesDoMes, paymentMode);
+    const valorTotal = stats.valorTotal;
+    const contadores = stats.porTipo;
 
     const totalInstalacoes = instalacoesDoMes.length;
     const faltam = Math.max(0, monthlyGoal - totalInstalacoes);
@@ -94,7 +72,7 @@ export default function DashboardScreen() {
 
     return {
       totalInstalacoes,
-      valorTotal,
+      valorTotal: valorTotal,
       faltam,
       contadores,
       metaPorDia,

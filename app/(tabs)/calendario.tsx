@@ -4,6 +4,7 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
 import { useColors } from '@/hooks/use-colors';
 import { useMonth } from '@/context/MonthContext';
+import { calcularValorPorTipo } from '@/types/installation';
 
 interface DiaCalendario {
   dia: number;
@@ -39,21 +40,11 @@ export default function CalendarioScreen() {
       let valor = 0;
       instalacoesDodia.forEach((inst) => {
         tipos[inst.tipoServico] = (tipos[inst.tipoServico] || 0) + 1;
-
-        if (inst.tipoServico === 'Empresarial') {
-          valor += 100;
-        } else if (paymentMode === 'fixo65') {
-          valor += 65;
-        } else if (paymentMode === 'fixo70') {
-          valor += 70;
-        } else {
-          // meta progressiva
-          const total = instalacoes.filter((i) => {
-            const [d, m, a] = i.data.split('/');
-            return parseInt(m) === mes && parseInt(a) === ano;
-          }).length;
-          valor += total >= monthlyGoal ? 70 : 65;
-        }
+        const totalDoMes = instalacoes.filter((i) => {
+          const [d, m, a] = i.data.split('/');
+          return parseInt(m) === mes + 1 && parseInt(a) === ano;
+        }).length;
+        valor += calcularValorPorTipo(inst.tipoServico, totalDoMes, paymentMode);
       });
 
       diasDoMes.push({

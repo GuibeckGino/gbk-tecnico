@@ -4,6 +4,7 @@ import { BarChart, PieChart, LineChart } from 'react-native-chart-kit';
 import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
 import { useColors } from '@/hooks/use-colors';
+import { calcularValorPorTipo } from '@/types/installation';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -31,18 +32,7 @@ export default function GraficosScreen() {
       const tipo = inst.tipoServico as keyof typeof types;
       types[tipo] = (types[tipo] || 0) + 1;
       
-      let value = 0;
-      if (inst.tipoServico === 'Empresarial') {
-        value = 100;
-      } else if (paymentMode === 'fixo65') {
-        value = 65;
-      } else if (paymentMode === 'fixo70') {
-        value = 70;
-      } else {
-        // meta progressiva
-        const total = Object.values(types).reduce((a: number, b: number) => a + b, 0);
-        value = total >= 104 ? 70 : 65;
-      }
+      const value = calcularValorPorTipo(inst.tipoServico, instalacoes.length, paymentMode);
       valueByType[tipo] = (valueByType[tipo] || 0) + value;
     });
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from 'react';
 import {
   ScrollView,
   Text,
@@ -17,6 +17,7 @@ import { useMonth, filtrarPorMes } from "@/context/MonthContext";
 import { useColors } from "@/hooks/use-colors";
 import { calcularDiasUteis, getPrimeiroDiaUtilMes, getUltimoDiaUtilMes } from "@/lib/dias-uteis";
 import * as Haptics from "expo-haptics";
+import { calcularStats } from "@/types/installation";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -54,21 +55,9 @@ export default function DashboardProScreen() {
       return parseInt(d) === hoje_dia && parseInt(m) === hoje_mes && parseInt(a) === hoje_ano;
     }).length;
 
-    // Calcular valor total
-    let valorTotal = 0;
-    instalacoesDoMes.forEach((inst) => {
-      if (inst.tipoServico === "Empresarial") {
-        valorTotal += 100;
-      } else {
-        if (paymentMode === "fixo65") {
-          valorTotal += 65;
-        } else if (paymentMode === "fixo70") {
-          valorTotal += 70;
-        } else {
-          valorTotal += total >= monthlyGoal ? 70 : 65;
-        }
-      }
-    });
+    // Calcular valor total usando calcularStats
+    const stats = calcularStats(instalacoesDoMes, paymentMode);
+    const valorTotal = stats.valorTotal;
 
     // Contagem por tipo
     const porTipo = {
@@ -95,23 +84,12 @@ export default function DashboardProScreen() {
     const projecao = Math.round(mediaAtual * diasUteisTotais);
 
     // Valor de hoje
-    let valorHoje = 0;
-    instalacoesDoMes.forEach((inst) => {
+    const instalacoesHoje = instalacoesDoMes.filter((inst) => {
       const [d, m, a] = inst.data.split("/");
-      if (parseInt(d) === hoje_dia && parseInt(m) === hoje_mes && parseInt(a) === hoje_ano) {
-        if (inst.tipoServico === "Empresarial") {
-          valorHoje += 100;
-        } else {
-          if (paymentMode === "fixo65") {
-            valorHoje += 65;
-          } else if (paymentMode === "fixo70") {
-            valorHoje += 70;
-          } else {
-            valorHoje += total >= monthlyGoal ? 70 : 65;
-          }
-        }
-      }
+      return parseInt(d) === hoje_dia && parseInt(m) === hoje_mes && parseInt(a) === hoje_ano;
     });
+    const statsHoje = calcularStats(instalacoesHoje, paymentMode);
+    const valorHoje = statsHoje.valorTotal;
 
     const projecaoValor = Math.round((valorTotal / Math.max(1, diasUteisPassados)) * diasUteisTotais);
 
