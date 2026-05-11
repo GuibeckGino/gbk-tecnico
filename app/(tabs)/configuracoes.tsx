@@ -27,6 +27,7 @@ import * as Haptics from "expo-haptics";
 import { useState as useStateReact, useEffect } from "react";
 import { useMonthlyConfig } from "@/hooks/use-monthly-config";
 import { prepararDadosRelatorio, calcularTopClientes, formatarValor, calcularCrescimento } from "@/lib/pdf-generator";
+import { compartilharRelatorio, gerarResumoRelatorio } from "@/lib/share-report";
 import { useFocusEffect } from "@react-navigation/native";
 
 function haptic() {

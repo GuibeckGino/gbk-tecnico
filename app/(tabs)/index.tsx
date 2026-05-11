@@ -113,6 +113,8 @@ export default function DashboardScreen() {
   ];
 
   const metaAtingida = stats.totalInstalacoes >= monthlyGoal;
+  const percentualMeta = (stats.totalInstalacoes / monthlyGoal) * 100;
+  const mostrarNotificacao = percentualMeta >= 90 && percentualMeta < 100;
 
   return (
     <ScreenContainer>
@@ -130,9 +132,26 @@ export default function DashboardScreen() {
               >
                 <Text style={{ fontSize: 20, color: colors.primary }}>‹</Text>
               </TouchableOpacity>
-              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.foreground }}>
-                {nomesMes[mes]} {ano}
-              </Text>
+              <View style={{ position: 'relative', alignItems: 'center' }}>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: colors.foreground }}>
+                  {nomesMes[mes]} {ano}
+                </Text>
+                {mostrarNotificacao && (
+                  <View style={{
+                    position: 'absolute',
+                    top: -10,
+                    right: -20,
+                    backgroundColor: colors.error,
+                    borderRadius: 12,
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    zIndex: 10,
+                  }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>90%</Text>
+                  </View>
+                )}
+              </View>
               <TouchableOpacity
                 onPress={() => {
                   proximoMes();
