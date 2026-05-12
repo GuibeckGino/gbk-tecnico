@@ -17,7 +17,9 @@ import { useMonth, filtrarPorMes } from "@/context/MonthContext";
 import { useColors } from "@/hooks/use-colors";
 import { calcularDiasUteis, getPrimeiroDiaUtilMes, getUltimoDiaUtilMes } from "@/lib/dias-uteis";
 import * as Haptics from "expo-haptics";
-import { calcularStats } from "@/types/installation";
+import { calcularStats, calcularValorPorTipo } from "@/types/installation";
+import { useMonthlyConfig } from "@/hooks/use-monthly-config";
+import { useWorkSchedule } from "@/context/WorkScheduleContext";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -37,6 +39,10 @@ export default function DashboardProScreen() {
   const { mes, ano, mesAnoFormatado } = useMonth();
   const colors = useColors();
   const [criandoRapido, setCriandoRapido] = useState(false);
+  const { workDays } = useWorkSchedule();
+  
+  // Carregar configurações do mês (paymentMode e monthlyGoal)
+  useMonthlyConfig();
 
   // Filtrar instalações do mês selecionado
   const instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
@@ -67,18 +73,24 @@ export default function DashboardProScreen() {
       empresarial: instalacoesDoMes.filter((i) => i.tipoServico === "Empresarial").length,
     };
 
-    // Calcular dias úteis
-    const dataInicio = getPrimeiroDiaUtilMes(mes, ano);
-    const dataFim = mes === hoje_mes && ano === hoje_ano ? new Date(hoje_ano, hoje_mes - 1, hoje_dia) : getUltimoDiaUtilMes(mes, ano);
-    const dataFimTotal = getUltimoDiaUtilMes(mes, ano);
+    // Calcular dias úteis com dias de trabalho customizados (mes é 0-based, converter para 1-based)
+    const dataInicio = getPrimeiroDiaUtilMes(mes + 1, ano, workDays);
+    const dataFim = mes === hoje_mes - 1 && ano === hoje_ano ? new Date(hoje_ano, mes, hoje_dia) : getUltimoDiaUtilMes(mes + 1, ano, workDays);
+    const dataFimTotal = getUltimoDiaUtilMes(mes + 1, ano, workDays);
 
-    const diasUteisPassados = calcularDiasUteis(dataInicio, dataFim);
-    const diasUteisTotais = calcularDiasUteis(dataInicio, dataFimTotal);
+    const diasUteisPassados = calcularDiasUteis(dataInicio, dataFim, workDays);
+    const diasUteisTotais = calcularDiasUteis(dataInicio, dataFimTotal, workDays);
     const diasUteisRestantes = Math.max(0, diasUteisTotais - diasUteisPassados);
 
-    // Calcular metas e médias
-    const faltam = Math.max(0, monthlyGoal - total);
-    const metaDia = diasUteisRestantes > 0 ? Math.ceil(faltam / diasUteisRestantes) : 0;
+    // IMPORTANTE: monthlyGoal é em QUANTIDADE de instalações
+    // Converter para VALOR baseado no modo de pagamento
+    const metaValor = monthlyGoal * calcularValorPorTipo('Instalação', total, paymentMode);
+    const faltamValor = Math.max(0, metaValor - valorTotal);
+    const faltamQuantidade = Math.max(0, monthlyGoal - total);
+    
+    // Meta por dia em VALOR (não quantidade)
+    const metaDiaValor = diasUteisRestantes > 0 ? Math.ceil(faltamValor / diasUteisRestantes) : 0;
+    
     const mediaAtual = diasUteisPassados > 0 ? total / diasUteisPassados : 0;
     const mediaNecessaria = diasUteisTotais > 0 ? monthlyGoal / diasUteisTotais : 0;
     const projecao = Math.round(mediaAtual * diasUteisTotais);
@@ -96,8 +108,9 @@ export default function DashboardProScreen() {
     return {
       total,
       valorTotal,
-      faltam,
-      metaDia,
+      faltamQuantidade,
+      faltamValor,
+      metaDiaValor,
       mediaAtual,
       mediaNecessaria,
       projecao,
@@ -197,11 +210,11 @@ export default function DashboardProScreen() {
           <View style={styles.cardRow}>
             <View>
               <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.8)" }]}>Meta</Text>
-              <Text style={[styles.cardValor, { color: "#ffffff", fontSize: 24 }]}>{metricas.faltam}</Text>
+              <Text style={[styles.cardValor, { color: "#ffffff", fontSize: 24 }]}>R$ {(monthlyGoal * calcularValorPorTipo('Instalação', metricas.total, paymentMode)).toLocaleString('pt-BR')}</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
               <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.8)" }]}>Faltam</Text>
-              <Text style={[styles.cardValor, { color: "#ffffff", fontSize: 24 }]}>{metricas.faltam}</Text>
+              <Text style={[styles.cardValor, { color: "#ffffff", fontSize: 24 }]}>R$ {metricas.faltamValor.toLocaleString('pt-BR')}</Text>
             </View>
           </View>
         </View>
@@ -219,10 +232,10 @@ export default function DashboardProScreen() {
         </Pressable>
 
         {/* Alerta de Meta */}
-        {metricas.faltam > 0 && metricas.faltam <= 10 && (
+        {metricas.faltamQuantidade > 0 && metricas.faltamQuantidade <= 10 && (
           <View style={[styles.alerta, { backgroundColor: colors.warning }]}>
             <Text style={[styles.alertaTexto, { color: "#000" }]}>
-              ⚠️ Faltam {metricas.faltam} instalações para meta
+              ⚠️ Faltam R$ {metricas.faltamValor.toLocaleString('pt-BR')} para meta
             </Text>
           </View>
         )}
@@ -238,8 +251,8 @@ export default function DashboardProScreen() {
             </View>
             <View style={styles.metricaItem}>
               <Text style={[styles.metricaLabel, { color: colors.muted }]}>Meta/Dia</Text>
-              <Text style={[styles.metricaValor, { color: colors.foreground }]}>{metricas.metaDia}</Text>
-              <Text style={[styles.metricaSubtexto, { color: colors.muted }]}>instalações</Text>
+              <Text style={[styles.metricaValor, { color: colors.foreground }]}>R$ {metricas.metaDiaValor}</Text>
+              <Text style={[styles.metricaSubtexto, { color: colors.muted }]}></Text>
             </View>
             <View style={styles.metricaItem}>
               <Text style={[styles.metricaLabel, { color: colors.muted }]}>Média Atual</Text>

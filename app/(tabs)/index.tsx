@@ -4,16 +4,22 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
 import { useMonth } from '@/context/MonthContext';
 import { useColors } from '@/hooks/use-colors';
-import { calcularDiasUteis } from '@/lib/dias-uteis';
+import { calcularDiasUteis, getPrimeiroDiaUtilMes, getUltimoDiaUtilMes } from '@/lib/dias-uteis';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import { calcularStats } from '@/types/installation';
+import { calcularStats, calcularValorPorTipo } from '@/types/installation';
+import { useMonthlyConfig } from '@/hooks/use-monthly-config';
+import { useWorkSchedule } from '@/context/WorkScheduleContext';
 
 export default function DashboardScreen() {
   const { instalacoes, paymentMode, monthlyGoal } = useInstallations();
   const { mes, ano, proximoMes, mesPrevio } = useMonth();
   const colors = useColors();
   const [fadeAnim] = React.useState(new Animated.Value(1));
+  const { workDays } = useWorkSchedule();
+  
+  // Carregar configurações do mês (paymentMode e monthlyGoal)
+  useMonthlyConfig();
 
   // Atualizar quando mês mudar
   useFocusEffect(
@@ -32,40 +38,49 @@ export default function DashboardScreen() {
       return parseInt(m) === mes + 1 && parseInt(a) === ano;
     });
 
-    // Usar calcularStats para cálculo correto
+    // Usar calcularStats para cálculo correto de valor total
     const stats = calcularStats(instalacoesDoMes, paymentMode);
     const valorTotal = stats.valorTotal;
     const contadores = stats.porTipo;
 
     const totalInstalacoes = instalacoesDoMes.length;
-    const faltam = Math.max(0, monthlyGoal - totalInstalacoes);
+    
+    // IMPORTANTE: monthlyGoal é em QUANTIDADE de instalações
+    // Converter para VALOR baseado no modo de pagamento
+    const metaValor = monthlyGoal * calcularValorPorTipo('Instalação', totalInstalacoes, paymentMode);
+    const faltamValor = Math.max(0, metaValor - valorTotal);
+    
+    // Faltam em QUANTIDADE (para exibir "faltam X instalações")
+    const faltamQuantidade = Math.max(0, monthlyGoal - totalInstalacoes);
     
     const hoje = new Date();
     const hoje_dia = hoje.getDate();
     const hoje_mes = hoje.getMonth() + 1;
     const hoje_ano = hoje.getFullYear();
 
-    // Calcular primeiro e último dia útil do mês
-    let primeiroDia = new Date(ano, mes, 1);
-    if (primeiroDia.getDay() === 0) primeiroDia.setDate(primeiroDia.getDate() + 1);
+    // Usar funções corretas com dias de trabalho customizados (mes é 0-based, converter para 1-based)
+    const primeiroDia = getPrimeiroDiaUtilMes(mes + 1, ano, workDays);
+    const ultimoDia = getUltimoDiaUtilMes(mes + 1, ano, workDays);
 
-    let ultimoDia = new Date(ano, mes + 1, 0);
-    if (ultimoDia.getDay() === 0) ultimoDia.setDate(ultimoDia.getDate() - 1);
-
-    // Se estamos em um mês diferente, usar o último dia do mês solicitado
+    // Se estamos no mês atual, usar data de hoje; senão usar último dia do mês
     const dataFim =
       mes === hoje_mes - 1 && ano === hoje_ano
         ? new Date(hoje_ano, mes, hoje_dia)
         : ultimoDia;
 
-    const diasUteisTotais = calcularDiasUteis(primeiroDia, ultimoDia);
-    const diasUteisTrabalhados = calcularDiasUteis(primeiroDia, dataFim);
+    const diasUteisTotais = calcularDiasUteis(primeiroDia, ultimoDia, workDays);
+    const diasUteisTrabalhados = calcularDiasUteis(primeiroDia, dataFim, workDays);
     const diasUteisRestantes = Math.max(0, diasUteisTotais - diasUteisTrabalhados);
-    const metaPorDia = diasUteisRestantes > 0 ? Math.ceil(faltam / diasUteisRestantes) : 0;
+    
+    // Meta por dia em VALOR (não quantidade)
+    const metaPorDiaValor = diasUteisRestantes > 0 ? Math.ceil(faltamValor / diasUteisRestantes) : 0;
+    
     const hojeInstalacoes = instalacoes.filter((inst) => {
       const [d, m, a] = inst.data.split('/');
       return parseInt(d) === hoje_dia && parseInt(m) === hoje_mes && parseInt(a) === hoje_ano;
     }).length;
+    
+    // Média em QUANTIDADE por dia
     const mediaAtual = diasUteisTrabalhados > 0 ? (totalInstalacoes / diasUteisTrabalhados).toFixed(1) : '0';
     const mediaNecess = (monthlyGoal / diasUteisTotais).toFixed(1);
     const projecao = Math.round((parseFloat(mediaAtual) * diasUteisTotais));
@@ -73,9 +88,10 @@ export default function DashboardScreen() {
     return {
       totalInstalacoes,
       valorTotal: valorTotal,
-      faltam,
+      faltamQuantidade,
+      faltamValor,
       contadores,
-      metaPorDia,
+      metaPorDiaValor,
       mediaAtual,
       mediaNecess,
       projecao,
@@ -83,15 +99,17 @@ export default function DashboardScreen() {
       diasUteisRestantes,
       diasUteisTotais,
     };
-  }, [instalacoes, mes, ano, paymentMode, monthlyGoal]);
+  }, [instalacoes, mes, ano, paymentMode, monthlyGoal, workDays]);
 
   const nomesMes = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
   ];
 
-  const metaAtingida = stats.totalInstalacoes >= monthlyGoal;
-  const percentualMeta = (stats.totalInstalacoes / monthlyGoal) * 100;
+  // Meta é atingida quando valor total >= meta em valor
+  const metaValorEsperada = monthlyGoal * calcularValorPorTipo('Instalação', stats.totalInstalacoes, paymentMode);
+  const metaAtingida = stats.valorTotal >= metaValorEsperada;
+  const percentualMeta = (stats.valorTotal / metaValorEsperada) * 100;
   const mostrarNotificacao = percentualMeta >= 90 && percentualMeta < 100;
 
   return (
@@ -182,7 +200,7 @@ export default function DashboardScreen() {
                 <View>
                   <Text style={{ fontSize: 12, color: colors.background, opacity: 0.8 }}>Faltam</Text>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: colors.background }}>
-                    {stats.faltam}
+                    R$ {stats.faltamValor.toLocaleString('pt-BR')}
                   </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
@@ -251,9 +269,8 @@ export default function DashboardScreen() {
               <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
                 Análise do Mês
               </Text>
-
               {[
-                { label: 'Meta por Dia', value: stats.metaPorDia, unit: 'instalações' },
+                { label: 'Meta por Dia', value: `R$ ${stats.metaPorDiaValor}`, unit: '' },
                 { label: 'Média Atual', value: stats.mediaAtual, unit: 'por dia' },
                 { label: 'Média Necessária', value: stats.mediaNecess, unit: 'por dia' },
                 { label: 'Projeção', value: `${stats.projecao}`, unit: 'instalações' },
@@ -276,7 +293,7 @@ export default function DashboardScreen() {
           </View>
 
           {/* Alerta de Meta */}
-          {stats.faltam > 0 && stats.faltam <= 10 && (
+          {stats.faltamQuantidade > 0 && stats.faltamQuantidade <= 10 && (
             <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
               <View
                 style={{
@@ -288,7 +305,7 @@ export default function DashboardScreen() {
                 }}
               >
                 <Text style={{ fontSize: 13, fontWeight: '600', color: '#856404' }}>
-                  ⚠️ Faltam apenas {stats.faltam} instalações para a meta!
+                  ⚠️ Faltam R$ {stats.faltamValor.toLocaleString('pt-BR')} para a meta!
                 </Text>
               </View>
             </View>

@@ -23,9 +23,12 @@ import {
   analisarProdutividadePorDia,
   gerarResumoTextual,
 } from "@/lib/productivity-analytics";
-import { calcularMetaStats, formatarMetaDia } from "@/lib/dias-uteis";
+import { calcularDiasUteis, getPrimeiroDiaUtilMes, getUltimoDiaUtilMes } from "@/lib/dias-uteis";
 import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "@react-navigation/native";
+import { useMonthlyConfig } from "@/hooks/use-monthly-config";
+import { useWorkSchedule } from "@/context/WorkScheduleContext";
+import { calcularStats, calcularValorPorTipo } from "@/types/installation";
 
 type AbaAnalise =
   | "meta"
@@ -43,18 +46,26 @@ function haptic() {
 }
 
 export default function AnaliseScreen() {
-  const { instalacoes, paymentMode } = useInstallations();
+  const { instalacoes, paymentMode, monthlyGoal } = useInstallations();
   const { mes, ano } = useMonth();
   const colors = useColors();
   const [abaSelecionada, setAbaSelecionada] = useState<AbaAnalise>("meta");
+  const { workDays } = useWorkSchedule();
+  
+  // Carregar configurações do mês (paymentMode e monthlyGoal)
+  useMonthlyConfig();
+  
   const [metaStats, setMetaStats] = useState({
     diasUteisPassados: 0,
     diasUteisRestantes: 0,
     diasUteisTotais: 0,
-    metaDia: 0,
+    metaDiaValor: 0,
+    faltamValor: 0,
+    faltamQuantidade: 0,
     mediadiaria: 0,
     projecao: 0,
     hojeFeZ: 0,
+    valorTotal: 0,
   });
 
   useFocusEffect(
@@ -72,14 +83,47 @@ export default function AnaliseScreen() {
       const hojeFeZ = instalacoes.filter((inst) => inst.data === hojeFormatado)
         .length;
 
-      const stats = calcularMetaStats(
-        instalacoesDoMes.length,
-        mes,
-        ano,
-        hojeFeZ
-      );
-      setMetaStats(stats);
-    }, [instalacoes, mes, ano])
+      // Calcular stats com valor total
+      const stats = calcularStats(instalacoesDoMes, paymentMode);
+      const valorTotal = stats.valorTotal;
+      const total = instalacoesDoMes.length;
+
+      // Calcular dias úteis com dias de trabalho customizados (mes é 0-based, converter para 1-based)
+      const dataInicio = getPrimeiroDiaUtilMes(mes + 1, ano, workDays);
+      const dataFim = mes === hoje.getMonth() && ano === hoje.getFullYear()
+        ? new Date(hoje.getFullYear(), mes, hoje.getDate())
+        : getUltimoDiaUtilMes(mes + 1, ano, workDays);
+      const dataFimTotal = getUltimoDiaUtilMes(mes + 1, ano, workDays);
+
+      const diasUteisPassados = calcularDiasUteis(dataInicio, dataFim, workDays);
+      const diasUteisTotais = calcularDiasUteis(dataInicio, dataFimTotal, workDays);
+      const diasUteisRestantes = Math.max(0, diasUteisTotais - diasUteisPassados);
+
+      // IMPORTANTE: monthlyGoal é em QUANTIDADE de instalações
+      // Converter para VALOR baseado no modo de pagamento
+      const metaValor = monthlyGoal * calcularValorPorTipo('Instalação', total, paymentMode);
+      const faltamValor = Math.max(0, metaValor - valorTotal);
+      const faltamQuantidade = Math.max(0, monthlyGoal - total);
+      
+      // Meta por dia em VALOR (não quantidade)
+      const metaDiaValor = diasUteisRestantes > 0 ? Math.ceil(faltamValor / diasUteisRestantes) : 0;
+      
+      const mediadiaria = diasUteisPassados > 0 ? total / diasUteisPassados : 0;
+      const projecao = Math.round(mediadiaria * diasUteisTotais);
+
+      setMetaStats({
+        diasUteisPassados,
+        diasUteisRestantes,
+        diasUteisTotais,
+        metaDiaValor,
+        faltamValor,
+        faltamQuantidade,
+        mediadiaria,
+        projecao,
+        hojeFeZ,
+        valorTotal,
+      });
+    }, [instalacoes, mes, ano, paymentMode, monthlyGoal, workDays])
   );
 
   // Memoizar análises para evitar recálculos desnecessários
@@ -192,7 +236,7 @@ export default function AnaliseScreen() {
                   { color: "#ffffff", fontSize: 32, marginTop: 8 },
                 ]}
               >
-                {instalacoesDoMes.length}/104
+                R$ {metaStats.valorTotal.toLocaleString('pt-BR')} / R$ {(monthlyGoal * calcularValorPorTipo('Instalação', instalacoesDoMes.length, paymentMode)).toLocaleString('pt-BR')}
               </Text>
               <Text
                 style={[
@@ -200,7 +244,7 @@ export default function AnaliseScreen() {
                   { color: "rgba(255,255,255,0.8)", marginTop: 8 },
                 ]}
               >
-                {Math.max(0, 104 - instalacoesDoMes.length)} faltam
+                R$ {metaStats.faltamValor.toLocaleString('pt-BR')} faltam
               </Text>
             </View>
 
@@ -227,7 +271,7 @@ export default function AnaliseScreen() {
                     Meta por dia
                   </Text>
                   <Text style={[styles.statValue, { color: colors.foreground }]}>
-                    {metaStats.metaDia}
+                    R$ {metaStats.metaDiaValor}
                   </Text>
                 </View>
                 <View style={styles.statRow}>
@@ -264,7 +308,7 @@ export default function AnaliseScreen() {
               ]}
             >
               <Text style={[styles.cardTitulo, { color: colors.foreground }]}>
-                {formatarMetaDia(metaStats.metaDia)}
+                {metaStats.metaDiaValor === 0 ? '🎉 Meta atingida!' : `Faltam R$ ${metaStats.faltamValor.toLocaleString('pt-BR')} para a meta`}
               </Text>
             </View>
           </View>
