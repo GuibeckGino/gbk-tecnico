@@ -10,6 +10,8 @@ import * as Haptics from 'expo-haptics';
 import { calcularStats, calcularValorPorTipo } from '@/types/installation';
 import { useMonthlyConfig } from '@/hooks/use-monthly-config';
 import { useWorkSchedule } from '@/context/WorkScheduleContext';
+import { useMetaMilestones } from '@/hooks/use-meta-milestones';
+import { Toast } from '@/components/toast';
 
 export default function DashboardScreen() {
   const { instalacoes, paymentMode, monthlyGoal } = useInstallations();
@@ -17,9 +19,14 @@ export default function DashboardScreen() {
   const colors = useColors();
   const [fadeAnim] = React.useState(new Animated.Value(1));
   const { workDays } = useWorkSchedule();
+  const [showToast, setShowToast] = React.useState(false);
   
   // Carregar configurações do mês (paymentMode e monthlyGoal)
   useMonthlyConfig();
+  
+  // Chave única para o mês (para rastrear milestones)
+  const monthKey = `${ano}-${String(mes + 1).padStart(2, '0')}`;
+
 
   // Atualizar quando mês mudar
   useFocusEffect(
@@ -75,6 +82,9 @@ export default function DashboardScreen() {
     // Meta por dia em VALOR (não quantidade)
     const metaPorDiaValor = diasUteisRestantes > 0 ? Math.ceil(faltamValor / diasUteisRestantes) : 0;
     
+    // Calcular percentual para detectar milestones
+    const percentualMeta = monthlyGoal > 0 ? (totalInstalacoes / monthlyGoal) * 100 : 0;
+    
     const hojeInstalacoes = instalacoes.filter((inst) => {
       const [d, m, a] = inst.data.split('/');
       return parseInt(d) === hoje_dia && parseInt(m) === hoje_mes && parseInt(a) === hoje_ano;
@@ -98,6 +108,7 @@ export default function DashboardScreen() {
       diasUteisTrabalhados,
       diasUteisRestantes,
       diasUteisTotais,
+      percentualMeta,
     };
   }, [instalacoes, mes, ano, paymentMode, monthlyGoal, workDays]);
 
@@ -106,14 +117,39 @@ export default function DashboardScreen() {
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
   ];
 
+  // Hook para detectar milestones de meta
+  const { newMilestoneReached, dismissMilestone } = useMetaMilestones(
+    stats.totalInstalacoes,
+    monthlyGoal,
+    monthKey
+  );
+  
+  // Mostrar toast quando milestone for atingido
+  React.useEffect(() => {
+    if (newMilestoneReached) {
+      setShowToast(true);
+    }
+  }, [newMilestoneReached]);
+  
   // Meta é atingida quando valor total >= meta em valor
   const metaValorEsperada = monthlyGoal * calcularValorPorTipo('Instalação', stats.totalInstalacoes, paymentMode);
   const metaAtingida = stats.valorTotal >= metaValorEsperada;
-  const percentualMeta = (stats.valorTotal / metaValorEsperada) * 100;
-  const mostrarNotificacao = percentualMeta >= 90 && percentualMeta < 100;
+  const percentualMetaExibicao = (stats.valorTotal / metaValorEsperada) * 100;
+  const mostrarNotificacao = percentualMetaExibicao >= 90 && percentualMetaExibicao < 100;
 
   return (
     <ScreenContainer>
+      {showToast && newMilestoneReached && (
+        <Toast
+          message={newMilestoneReached.message}
+          type="success"
+          duration={4000}
+          onDismiss={() => {
+            setShowToast(false);
+            dismissMilestone();
+          }}
+        />
+      )}
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}>
         <Animated.View style={{ opacity: fadeAnim }}>
           {/* Cabeçalho com navegação de meses */}
@@ -168,8 +204,52 @@ export default function DashboardScreen() {
                 borderRadius: 16,
                 padding: 20,
                 gap: 12,
+                position: 'relative',
               }}
             >
+              {/* Badges de milestone */}
+              {stats.percentualMeta >= 50 && stats.percentualMeta < 75 && (
+                <View style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  backgroundColor: '#FFC107',
+                  borderRadius: 20,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  zIndex: 10,
+                }}>
+                  <Text style={{ color: '#000', fontSize: 12, fontWeight: '700' }}>50% \ud83c\udfaf</Text>
+                </View>
+              )}
+              {stats.percentualMeta >= 75 && stats.percentualMeta < 90 && (
+                <View style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  backgroundColor: '#FF9800',
+                  borderRadius: 20,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  zIndex: 10,
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>75% \ud83d\udd25</Text>
+                </View>
+              )}
+              {stats.percentualMeta >= 90 && stats.percentualMeta < 100 && (
+                <View style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  backgroundColor: '#FF5722',
+                  borderRadius: 20,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  zIndex: 10,
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>90% \u26a1</Text>
+                </View>
+              )}
               <View style={{ gap: 4 }}>
                 <Text style={{ fontSize: 14, fontWeight: '500', color: colors.background, opacity: 0.9 }}>
                   Meta do Mês

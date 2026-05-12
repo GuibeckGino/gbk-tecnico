@@ -20,6 +20,8 @@ import * as Haptics from "expo-haptics";
 import { calcularStats, calcularValorPorTipo } from "@/types/installation";
 import { useMonthlyConfig } from "@/hooks/use-monthly-config";
 import { useWorkSchedule } from "@/context/WorkScheduleContext";
+import { useMetaMilestones } from "@/hooks/use-meta-milestones";
+import { Toast } from "@/components/toast";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -39,10 +41,15 @@ export default function DashboardProScreen() {
   const { mes, ano, mesAnoFormatado } = useMonth();
   const colors = useColors();
   const [criandoRapido, setCriandoRapido] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const { workDays } = useWorkSchedule();
   
   // Carregar configurações do mês (paymentMode e monthlyGoal)
   useMonthlyConfig();
+  
+  // Chave única para o mês (para rastrear milestones)
+  const monthKey = `${ano}-${String(mes + 1).padStart(2, '0')}`;
+
 
   // Filtrar instalações do mês selecionado
   const instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
@@ -104,6 +111,9 @@ export default function DashboardProScreen() {
     const valorHoje = statsHoje.valorTotal;
 
     const projecaoValor = Math.round((valorTotal / Math.max(1, diasUteisPassados)) * diasUteisTotais);
+    
+    // Calcular percentual para detectar milestones
+    const percentualMeta = monthlyGoal > 0 ? (total / monthlyGoal) * 100 : 0;
 
     return {
       total,
@@ -121,10 +131,25 @@ export default function DashboardProScreen() {
       diasUteisPassados,
       diasUteisRestantes,
       diasUteisTotais,
+      percentualMeta,
     };
   }
 
   const metricas = calcularMetricas();
+  
+  // Hook para detectar milestones de meta
+  const { newMilestoneReached, dismissMilestone } = useMetaMilestones(
+    metricas.total,
+    monthlyGoal,
+    monthKey
+  );
+  
+  // Mostrar toast quando milestone for atingido
+  React.useEffect(() => {
+    if (newMilestoneReached) {
+      setShowToast(true);
+    }
+  }, [newMilestoneReached]);
 
   // Criar instalação rápida
   async function criarRapido() {
@@ -179,6 +204,17 @@ export default function DashboardProScreen() {
 
   return (
     <ScreenContainer>
+      {showToast && newMilestoneReached && (
+        <Toast
+          message={newMilestoneReached.message}
+          type="success"
+          duration={4000}
+          onDismiss={() => {
+            setShowToast(false);
+            dismissMilestone();
+          }}
+        />
+      )}
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Logo Header */}
         <View style={{ alignItems: 'center', marginBottom: 16 }}>

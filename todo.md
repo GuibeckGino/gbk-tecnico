@@ -422,3 +422,14 @@
 - [ ] Tempo médio entre instalações
 - [ ] Estatísticas por dia da semana
 - [ ] Comparativo de produtividade
+
+
+## Atualização v4.9.0 — Notificações de Alerta de Meta
+
+### Notificações Visuais
+- [x] Criar componente Toast reutilizável
+- [x] Implementar lógica de detecção de milestones (50%, 75%, 90%)
+- [x] Adicionar notificações ao Dashboard (index.tsx)
+- [x] Adicionar notificações ao Dashboard Profissional (dashboard-pro.tsx)
+- [x] Adicionar badges visuais aos cards de meta
+- [x] Testar e validar notificações em todos os cenários
