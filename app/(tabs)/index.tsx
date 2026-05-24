@@ -279,8 +279,11 @@ export default function DashboardScreen() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <View>
                   <Text style={{ fontSize: 12, color: colors.background, opacity: 0.8 }}>Faltam</Text>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.background }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.background }}>
                     R$ {stats.faltamValor.toLocaleString('pt-BR')}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.background, opacity: 0.8, marginTop: 4 }}>
+                    {stats.faltamQuantidade} instalação{stats.faltamQuantidade !== 1 ? 'ões' : ''}
                   </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>

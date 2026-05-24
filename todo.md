@@ -433,3 +433,16 @@
 - [x] Adicionar notificações ao Dashboard Profissional (dashboard-pro.tsx)
 - [x] Adicionar badges visuais aos cards de meta
 - [x] Testar e validar notificações em todos os cenários
+
+
+## Atualização v5.0.0 — Exibição de Faltam + Bairros
+
+### Exibição de Faltam (VALOR + QUANTIDADE)
+- [x] Atualizar Dashboard (index.tsx) para exibir "Faltam R$ XXX e X instalações"
+- [ ] Atualizar Dashboard Profissional (dashboard-pro.tsx)
+- [ ] Atualizar Análise (analise.tsx)
+
+### Picker de Bairros de Luís Eduardo Magalhães
+- [x] Criar lista de bairros (lib/bairros-lem.ts)
+- [x] Implementar picker na tela de adicionar instalação
+- [x] Testar integração com formulário

@@ -17,6 +17,7 @@ import type { ServiceType } from "@/types/installation";
 import * as Haptics from "expo-haptics";
 import { formatarData, validarData, validarCliente, validarEndereco } from "@/lib/input-masks";
 import { DatePickerModal } from "@/components/date-picker-modal";
+import { BAIRROS_LEM, buscarBairros } from "@/lib/bairros-lem";
 
 const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança", "Empresarial"];
 
@@ -39,12 +40,33 @@ export default function NovoCadastroScreen() {
 
   const [cliente, setCliente] = useState("");
   const [endereco, setEndereco] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [bairrosFiltrados, setBairrosFiltrados] = useState<string[]>(BAIRROS_LEM);
+  const [mostrarBairros, setMostrarBairros] = useState(false);
   const [tipoServico, setTipoServico] = useState<ServiceType>("Instalação");
   const [data, setData] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [temAlteracoes, setTemAlteracoes] = useState(false);
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
+  
+  // Função para filtrar bairros
+  const handleBairroSearch = (text: string) => {
+    setBairro(text);
+    if (text.trim()) {
+      setBairrosFiltrados(buscarBairros(text));
+    } else {
+      setBairrosFiltrados(BAIRROS_LEM);
+    }
+  };
+  
+  // Função para selecionar bairro
+  const handleSelectBairro = (selectedBairro: string) => {
+    setBairro(selectedBairro);
+    setMostrarBairros(false);
+    haptic();
+  };
+
 
   async function salvar() {
     if (!validarCliente(cliente)) {
@@ -134,6 +156,93 @@ export default function NovoCadastroScreen() {
             onChangeText={setEndereco}
             returnKeyType="next"
           />
+        </FormField>
+        
+        {/* Campo Bairro */}
+        <FormField label="Bairro *">
+          <View>
+            <Pressable
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  justifyContent: 'center',
+                },
+              ]}
+              onPress={() => {
+                haptic();
+                setMostrarBairros(!mostrarBairros);
+              }}
+            >
+              <Text
+                style={[
+                  {
+                    color: bairro ? colors.foreground : colors.muted,
+                    fontSize: 16,
+                    paddingVertical: 12,
+                  },
+                ]}
+              >
+                {bairro || 'Selecione um bairro'}
+              </Text>
+            </Pressable>
+            
+            {/* Lista de bairros */}
+            {mostrarBairros && (
+              <View
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  borderWidth: 1,
+                  borderTopWidth: 0,
+                  maxHeight: 200,
+                }}
+              >
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.foreground,
+                      borderBottomWidth: 1,
+                      borderRadius: 0,
+                    },
+                  ]}
+                  placeholder="Buscar bairro..."
+                  placeholderTextColor={colors.muted}
+                  value={bairro}
+                  onChangeText={handleBairroSearch}
+                />
+                <ScrollView style={{ maxHeight: 150 }}>
+                  {bairrosFiltrados.map((b) => (
+                    <Pressable
+                      key={b}
+                      style={({ pressed }) => [
+                        {
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                          backgroundColor: bairro === b ? colors.primary : 'transparent',
+                        },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                      onPress={() => handleSelectBairro(b)}
+                    >
+                      <Text
+                        style={{
+                          color: bairro === b ? '#fff' : colors.foreground,
+                          fontSize: 14,
+                        }}
+                      >
+                        {b}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
         </FormField>
 
         {/* Tipo de Serviço */}
