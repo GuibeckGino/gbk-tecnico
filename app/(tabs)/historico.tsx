@@ -47,13 +47,6 @@ export default function HistoricoScreen() {
   const colors = useColors();
 
   // Estados
-  const [editando, setEditando] = useState<Installation | null>(null);
-  const [editCliente, setEditCliente] = useState("");
-  const [editEndereco, setEditEndereco] = useState("");
-  const [editTipo, setEditTipo] = useState<ServiceType>("Instalação");
-  const [editData, setEditData] = useState("");
-  const [editObs, setEditObs] = useState("");
-  const [salvandoEdit, setSalvandoEdit] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] =
     useState<Installation | null>(null);
   const [excluindo, setExcluindo] = useState(false);
@@ -117,59 +110,13 @@ export default function HistoricoScreen() {
     }
   }
 
-  function abrirEdicao(inst: Installation) {
-    haptic();
-    setEditando(inst);
-    setEditCliente(inst.cliente);
-    setEditEndereco(inst.endereco);
-    setEditTipo(inst.tipoServico);
-    setEditData(inst.data);
-    setEditObs(inst.observacoes);
-  }
-
-  function fecharEdicao() {
-    setEditando(null);
-  }
-
-  async function salvarEdicao() {
-    if (!editCliente.trim()) {
-      Alert.alert("Campo obrigatório", "Informe o nome do cliente.");
-      return;
-    }
-    if (!editEndereco.trim()) {
-      Alert.alert("Campo obrigatório", "Informe o endereço.");
-      return;
-    }
-    if (!editData.trim() || editData.length < 10) {
-      Alert.alert("Campo obrigatório", "Informe a data no formato dd/mm/aaaa.");
-      return;
-    }
-    if (!editando) return;
-
-    setSalvandoEdit(true);
-    try {
-      await atualizarInstalacao({
-        ...editando,
-        cliente: editCliente.trim(),
-        endereco: editEndereco.trim(),
-        tipoServico: editTipo,
-        data: editData,
-        observacoes: editObs.trim(),
-      });
-      hapticSuccess();
-      fecharEdicao();
-    } finally {
-      setSalvandoEdit(false);
-    }
-  }
-
   function duplicarInstalacao(instalacao: Installation) {
     // Criar nova instalação com dados da atual mas com data de hoje
     const hoje = new Date();
     const dia = String(hoje.getDate()).padStart(2, "0");
-    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
-    const ano = hoje.getFullYear();
-    const dataHoje = `${dia}/${mes}/${ano}`;
+    const mesHoje = String(hoje.getMonth() + 1).padStart(2, "0");
+    const anoHoje = hoje.getFullYear();
+    const dataHoje = `${dia}/${mesHoje}/${anoHoje}`;
 
     const novaInstalacao: Installation = {
       ...instalacao,
@@ -344,7 +291,6 @@ export default function HistoricoScreen() {
             <CardInstalacao
               instalacao={item}
               valorIndividual={stats.valorIndividual}
-              onEditar={() => abrirEdicao(item)}
               onExcluir={() => abrirConfirmacaoExclusao(item)}
               onDuplicar={() => duplicarInstalacao(item)}
               onToggleFavorito={() => toggleFavorito(item.id)}
@@ -356,211 +302,6 @@ export default function HistoricoScreen() {
         />
       )}
 
-      {/* Modal de Edição */}
-      <Modal
-        visible={editando !== null}
-        animationType="slide"
-        transparent
-        onRequestClose={fecharEdicao}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalContainer,
-              { backgroundColor: colors.background },
-            ]}
-          >
-            <View
-              style={[
-                styles.modalHeader,
-                { borderBottomColor: colors.border },
-              ]}
-            >
-              <Text
-                style={[styles.modalTitulo, { color: colors.foreground }]}
-              >
-                Editar Instalação
-              </Text>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.modalFechar,
-                  pressed && { opacity: 0.6 },
-                ]}
-                onPress={fecharEdicao}
-              >
-                <Text
-                  style={[styles.modalFecharTexto, { color: colors.muted }]}
-                >
-                  ✕
-                </Text>
-              </Pressable>
-            </View>
-
-            <ScrollView
-              contentContainerStyle={styles.modalScroll}
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* Cliente */}
-              <Text style={[styles.campoLabel, { color: colors.foreground }]}>
-                Cliente *
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    color: colors.foreground,
-                  },
-                ]}
-                value={editCliente}
-                onChangeText={setEditCliente}
-                placeholder="Nome do cliente"
-                placeholderTextColor={colors.muted}
-              />
-
-              {/* Endereço */}
-              <Text
-                style={[
-                  styles.campoLabel,
-                  { color: colors.foreground, marginTop: 12 },
-                ]}
-              >
-                Endereço *
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    color: colors.foreground,
-                  },
-                ]}
-                value={editEndereco}
-                onChangeText={setEditEndereco}
-                placeholder="Endereço"
-                placeholderTextColor={colors.muted}
-              />
-
-              {/* Tipo */}
-              <Text
-                style={[
-                  styles.campoLabel,
-                  { color: colors.foreground, marginTop: 12 },
-                ]}
-              >
-                Tipo de Serviço *
-              </Text>
-              <View style={styles.tiposRow}>
-                {TIPOS.map((tipo) => (
-                  <Pressable
-                    key={tipo}
-                    style={({ pressed }) => [
-                      styles.tipoBotao,
-                      {
-                        backgroundColor:
-                          editTipo === tipo ? colors.primary : colors.surface,
-                        borderColor:
-                          editTipo === tipo ? colors.primary : colors.border,
-                      },
-                      pressed && { opacity: 0.8 },
-                    ]}
-                    onPress={() => {
-                      haptic();
-                      setEditTipo(tipo);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.tipoBotaoTexto,
-                        {
-                          color: editTipo === tipo ? "#fff" : colors.foreground,
-                        },
-                      ]}
-                    >
-                      {tipo}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              {/* Data */}
-              <Text
-                style={[
-                  styles.campoLabel,
-                  { color: colors.foreground, marginTop: 12 },
-                ]}
-              >
-                Data *
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    color: colors.foreground,
-                  },
-                ]}
-                value={editData}
-                onChangeText={(t) => setEditData(formatarData(t))}
-                placeholder="dd/mm/aaaa"
-                placeholderTextColor={colors.muted}
-                keyboardType="numeric"
-                maxLength={10}
-              />
-
-              {/* Observações */}
-              <Text
-                style={[
-                  styles.campoLabel,
-                  { color: colors.foreground, marginTop: 12 },
-                ]}
-              >
-                Observações
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.inputMultilinha,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    color: colors.foreground,
-                  },
-                ]}
-                value={editObs}
-                onChangeText={setEditObs}
-                placeholder="Observações (opcional)"
-                placeholderTextColor={colors.muted}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-
-              {/* Botão Salvar */}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.botaoSalvar,
-                  {
-                    backgroundColor: salvandoEdit
-                      ? colors.muted
-                      : colors.primary,
-                  },
-                  pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
-                ]}
-                onPress={salvarEdicao}
-                disabled={salvandoEdit}
-              >
-                <Text style={styles.botaoSalvarTexto}>
-                  {salvandoEdit ? "Salvando..." : "Salvar Alterações"}
-                </Text>
-              </Pressable>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
       {/* Modal de Confirmação de Exclusão */}
       <Modal
@@ -841,14 +582,12 @@ export default function HistoricoScreen() {
 function CardInstalacao({
   instalacao,
   valorIndividual,
-  onEditar,
   onExcluir,
   onDuplicar,
   onToggleFavorito,
 }: {
   instalacao: Installation;
   valorIndividual: number;
-  onEditar: () => void;
   onExcluir: () => void;
   onDuplicar: () => void;
   onToggleFavorito: () => void;
@@ -910,16 +649,6 @@ function CardInstalacao({
       </View>
 
       <View style={styles.cardAcoes}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.acaoBotao,
-            { backgroundColor: colors.primary },
-            pressed && { opacity: 0.7 },
-          ]}
-          onPress={onEditar}
-        >
-          <Text style={styles.acaoBotaoTexto}>✏️</Text>
-        </Pressable>
         <Pressable
           style={({ pressed }) => [
             styles.acaoBotao,

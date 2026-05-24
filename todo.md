@@ -449,6 +449,15 @@
 - [x] Testar integração com formulário
 
 
+## Atualização v5.2.0 — Remover Funcionalidade de Editar Instalação
+
+### Remoção de Editar Instalação
+- [x] Remover estados de edição do historico.tsx
+- [x] Remover Modal de edição
+- [x] Remover botão de editar do card
+- [x] Remover função abrirEdicao
+- [x] Manter funcionalidade de duplicar e excluir
+
 ## Atualização v5.1.0 — Dashboard Profissional, Filtro por Bairro e Relatório
 
 ### Exibição de Faltam nas Outras Abas
