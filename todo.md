@@ -490,3 +490,13 @@
 - [x] Criar modal de importação com preview
 - [x] Integrar importação na tela de Novo Cadastro
 - [x] Testar e validar importação com arquivos reais
+
+
+## Atualização v5.4.0 — Correção de Exportação
+
+### Correção de Exportação CSV/JSON
+- [x] Adicionar permissões de arquivo ao app.config.ts (READ/WRITE/MANAGE_EXTERNAL_STORAGE)
+- [x] Adicionar try-catch para compartilhamento com fallback
+- [x] Corrigir exportarCSV com tratamento de erro melhorado
+- [x] Corrigir exportarBackup com tratamento de erro melhorado
+- [x] Testar exportação em dispositivo Android

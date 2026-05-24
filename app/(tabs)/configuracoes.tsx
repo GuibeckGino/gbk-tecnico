@@ -180,12 +180,18 @@ export default function ConfiguracoesScreen() {
 
       if (await Sharing.isAvailableAsync()) {
         console.log("[CSV] Iniciando compartilhamento");
-        await Sharing.shareAsync(uri, {
-          mimeType: "text/csv",
-          dialogTitle: "Exportar CSV",
-        });
-        hapticSuccess();
-        Alert.alert("Sucesso", "CSV exportado e pronto para compartilhar!");
+        try {
+          await Sharing.shareAsync(uri, {
+            mimeType: "text/csv",
+            dialogTitle: "Exportar CSV",
+          });
+          hapticSuccess();
+          Alert.alert("Sucesso", "CSV exportado e pronto para compartilhar!");
+        } catch (shareError) {
+          console.error("[CSV] Erro ao compartilhar:", shareError);
+          hapticSuccess();
+          Alert.alert("Sucesso", `CSV salvo em:\n${uri}\n\nCompartilhamento não disponível neste momento.`);
+        }
       } else {
         hapticSuccess();
         Alert.alert("Sucesso", `CSV salvo em:\n${uri}`);
@@ -247,12 +253,18 @@ export default function ConfiguracoesScreen() {
       // Compartilhar arquivo
       if (await Sharing.isAvailableAsync()) {
         console.log("[JSON] Iniciando compartilhamento");
-        await Sharing.shareAsync(uri, {
-          mimeType: "application/json",
-          dialogTitle: "Exportar Backup GBK Técnico",
-        });
-        hapticSuccess();
-        Alert.alert("Sucesso", "Backup exportado e pronto para compartilhar!");
+        try {
+          await Sharing.shareAsync(uri, {
+            mimeType: "application/json",
+            dialogTitle: "Exportar Backup GBK Técnico",
+          });
+          hapticSuccess();
+          Alert.alert("Sucesso", "Backup exportado e pronto para compartilhar!");
+        } catch (shareError) {
+          console.error("[JSON] Erro ao compartilhar:", shareError);
+          hapticSuccess();
+          Alert.alert("Sucesso", `Backup salvo em:\n${uri}\n\nCompartilhamento não disponível neste momento.`);
+        }
       } else {
         hapticSuccess();
         Alert.alert("Sucesso", `Backup salvo em:\n${uri}`);
