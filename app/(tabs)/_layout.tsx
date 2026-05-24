@@ -79,6 +79,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="relatorio-bairro"
+        options={{
+          title: "Bairros",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="map.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="configuracoes"
         options={{
           title: "Config",

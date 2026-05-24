@@ -246,6 +246,14 @@ export default function AnaliseScreen() {
               >
                 R$ {metaStats.faltamValor.toLocaleString('pt-BR')} faltam
               </Text>
+              <Text
+                style={[
+                  styles.cardSub,
+                  { color: "rgba(255,255,255,0.8)", marginTop: 4 },
+                ]}
+              >
+                {metaStats.faltamQuantidade} instalação{metaStats.faltamQuantidade !== 1 ? 'ões' : ''}
+              </Text>
             </View>
 
             <View

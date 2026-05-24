@@ -22,6 +22,8 @@ import { useMonthlyConfig } from "@/hooks/use-monthly-config";
 import { useWorkSchedule } from "@/context/WorkScheduleContext";
 import { useMetaMilestones } from "@/hooks/use-meta-milestones";
 import { Toast } from "@/components/toast";
+import { useBairroFilter } from "@/context/BairroFilterContext";
+import { BairroFilter } from "@/components/bairro-filter";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -43,6 +45,7 @@ export default function DashboardProScreen() {
   const [criandoRapido, setCriandoRapido] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const { workDays } = useWorkSchedule();
+  const { bairroSelecionado, setBairroSelecionado } = useBairroFilter();
   
   // Carregar configurações do mês (paymentMode e monthlyGoal)
   useMonthlyConfig();
@@ -51,8 +54,12 @@ export default function DashboardProScreen() {
   const monthKey = `${ano}-${String(mes + 1).padStart(2, '0')}`;
 
 
-  // Filtrar instalações do mês selecionado
-  const instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
+  // Filtrar instalações do mês selecionado e por bairro
+  const instalacoesDoMes = useMemo(() => {
+    const doMes = filtrarPorMes(instalacoes, mes, ano);
+    if (!bairroSelecionado) return doMes;
+    return doMes.filter((inst) => inst.endereco === bairroSelecionado);
+  }, [instalacoes, mes, ano, bairroSelecionado]);
 
   // Calcular todas as métricas
   function calcularMetricas() {
@@ -229,6 +236,11 @@ export default function DashboardProScreen() {
           <Text style={[styles.titulo, { color: colors.foreground }]}>Dashboard Profissional</Text>
           <Text style={[styles.subtitulo, { color: colors.muted }]}>{mesAnoFormatado}</Text>
         </View>
+        
+        {/* Filtro de Bairro */}
+        <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+          <BairroFilter bairroSelecionado={bairroSelecionado} onSelectBairro={setBairroSelecionado} />
+        </View>
 
         {/* Card Principal */}
         <View style={[styles.cardPrincipal, { backgroundColor: colors.primary }]}>
@@ -250,7 +262,8 @@ export default function DashboardProScreen() {
             </View>
             <View style={{ alignItems: "flex-end" }}>
               <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.8)" }]}>Faltam</Text>
-              <Text style={[styles.cardValor, { color: "#ffffff", fontSize: 24 }]}>R$ {metricas.faltamValor.toLocaleString('pt-BR')}</Text>
+              <Text style={[styles.cardValor, { color: "#ffffff", fontSize: 18 }]}>R$ {metricas.faltamValor.toLocaleString('pt-BR')}</Text>
+              <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.8)", marginTop: 4 }]}>{metricas.faltamQuantidade} instalação{metricas.faltamQuantidade !== 1 ? 'ões' : ''}</Text>
             </View>
           </View>
         </View>

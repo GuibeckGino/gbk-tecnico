@@ -5,6 +5,8 @@ import { useInstallations } from '@/context/InstallationsContext';
 import { useColors } from '@/hooks/use-colors';
 import { useMonth } from '@/context/MonthContext';
 import { calcularValorPorTipo } from '@/types/installation';
+import { useBairroFilter } from '@/context/BairroFilterContext';
+import { BairroFilter } from '@/components/bairro-filter';
 
 interface DiaCalendario {
   dia: number;
@@ -20,6 +22,7 @@ export default function CalendarioScreen() {
   const { mes, ano } = useMonth();
   const colors = useColors();
   const [diaAtual, setDiaAtual] = useState<number | null>(null);
+  const { bairroSelecionado, setBairroSelecionado } = useBairroFilter();
 
   // Calcular dados do calendário
   const diasCalendario = useMemo(() => {
@@ -28,7 +31,11 @@ export default function CalendarioScreen() {
 
     for (let dia = 1; dia <= ultimoDia; dia++) {
       const dataFormatada = `${String(dia).padStart(2, '0')}/${String(mes + 1).padStart(2, '0')}/${ano}`;
-      const instalacoesDodia = instalacoes.filter((inst) => inst.data === dataFormatada);
+      const instalacoesDodia = instalacoes.filter((inst) => {
+        const dataMatch = inst.data === dataFormatada;
+        const bairroMatch = !bairroSelecionado || inst.endereco === bairroSelecionado;
+        return dataMatch && bairroMatch;
+      });
 
       const tipos: { [key: string]: number } = {
         'Instalação': 0,
@@ -135,6 +142,9 @@ export default function CalendarioScreen() {
             Visualize suas instalações no calendário
           </Text>
         </View>
+        
+        {/* Filtro de Bairro */}
+        <BairroFilter bairroSelecionado={bairroSelecionado} onSelectBairro={setBairroSelecionado} />
 
         {/* Calendário */}
         <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>

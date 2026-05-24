@@ -12,6 +12,8 @@ import { useMonthlyConfig } from '@/hooks/use-monthly-config';
 import { useWorkSchedule } from '@/context/WorkScheduleContext';
 import { useMetaMilestones } from '@/hooks/use-meta-milestones';
 import { Toast } from '@/components/toast';
+import { useBairroFilter } from '@/context/BairroFilterContext';
+import { BairroFilter } from '@/components/bairro-filter';
 
 export default function DashboardScreen() {
   const { instalacoes, paymentMode, monthlyGoal } = useInstallations();
@@ -20,6 +22,7 @@ export default function DashboardScreen() {
   const [fadeAnim] = React.useState(new Animated.Value(1));
   const { workDays } = useWorkSchedule();
   const [showToast, setShowToast] = React.useState(false);
+  const { bairroSelecionado, setBairroSelecionado } = useBairroFilter();
   
   // Carregar configurações do mês (paymentMode e monthlyGoal)
   useMonthlyConfig();
@@ -42,7 +45,9 @@ export default function DashboardScreen() {
   const stats = useMemo(() => {
     const instalacoesDoMes = instalacoes.filter((inst) => {
       const [d, m, a] = inst.data.split('/');
-      return parseInt(m) === mes + 1 && parseInt(a) === ano;
+      const mesMatch = parseInt(m) === mes + 1 && parseInt(a) === ano;
+      const bairroMatch = !bairroSelecionado || inst.endereco === bairroSelecionado;
+      return mesMatch && bairroMatch;
     });
 
     // Usar calcularStats para cálculo correto de valor total
@@ -194,6 +199,11 @@ export default function DashboardScreen() {
                 <Text style={{ fontSize: 20, color: colors.primary }}>›</Text>
               </TouchableOpacity>
             </View>
+          </View>
+          
+          {/* Filtro de Bairro */}
+          <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+            <BairroFilter bairroSelecionado={bairroSelecionado} onSelectBairro={setBairroSelecionado} />
           </View>
 
           {/* Card Principal - Meta */}

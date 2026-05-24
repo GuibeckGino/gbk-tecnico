@@ -12,6 +12,7 @@ import { InstallationsProvider } from "@/context/InstallationsContext";
 import { GBKThemeProvider } from "@/context/ThemeContext";
 import { MonthProvider } from "@/context/MonthContext";
 import { WorkScheduleProvider } from "@/context/WorkScheduleContext";
+import { BairroFilterProvider } from "@/context/BairroFilterContext";
 
 import {
   SafeAreaFrameContext,
@@ -90,6 +91,7 @@ export default function RootLayout() {
       <InstallationsProvider>
       <MonthProvider>
       <WorkScheduleProvider>
+      <BairroFilterProvider>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
@@ -102,6 +104,7 @@ export default function RootLayout() {
           <StatusBar style="auto" />
         </QueryClientProvider>
       </trpc.Provider>
+      </BairroFilterProvider>
       </WorkScheduleProvider>
       </MonthProvider>
       </InstallationsProvider>

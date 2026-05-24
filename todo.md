@@ -447,3 +447,26 @@
 - [x] Remover campo de endereço e substituir por bairro
 - [x] Implementar picker de bairro na tela de adicionar instalação
 - [x] Testar integração com formulário
+
+
+## Atualização v5.1.0 — Dashboard Profissional, Filtro por Bairro e Relatório
+
+### Exibição de Faltam nas Outras Abas
+- [x] Atualizar Dashboard Profissional (dashboard-pro.tsx) para exibir "Faltam R$ XXX e X instalações"
+- [x] Atualizar Análise (analise.tsx) para exibir "Faltam R$ XXX e X instalações"
+
+### Filtro por Bairro
+- [x] Criar contexto de filtro (BairroFilterContext.tsx)
+- [x] Criar componente BairroFilter reutilizável
+- [x] Adicionar picker de bairro ao Dashboard (index.tsx)
+- [x] Adicionar picker de bairro ao Dashboard Profissional (dashboard-pro.tsx)
+- [x] Adicionar picker de bairro ao Calendário (calendario.tsx)
+- [x] Filtrar dados exibidos baseado no bairro selecionado
+
+### Relatório por Bairro
+- [x] Criar nova tela de relatório por bairro (relatorio-bairro.tsx)
+- [x] Exibir faturamento total por bairro
+- [x] Exibir quantidade de instalações por bairro
+- [x] Exibir produtividade (valor/dia) por bairro
+- [x] Adicionar opção de ordenação por valor ou quantidade
+- [x] Adicionar breakdown por tipo de serviço por bairro
