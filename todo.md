@@ -444,5 +444,6 @@
 
 ### Picker de Bairros de Luís Eduardo Magalhães
 - [x] Criar lista de bairros (lib/bairros-lem.ts)
-- [x] Implementar picker na tela de adicionar instalação
+- [x] Remover campo de endereço e substituir por bairro
+- [x] Implementar picker de bairro na tela de adicionar instalação
 - [x] Testar integração com formulário

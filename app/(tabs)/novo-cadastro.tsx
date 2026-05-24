@@ -39,7 +39,6 @@ export default function NovoCadastroScreen() {
   const router = useRouter();
 
   const [cliente, setCliente] = useState("");
-  const [endereco, setEndereco] = useState("");
   const [bairro, setBairro] = useState("");
   const [bairrosFiltrados, setBairrosFiltrados] = useState<string[]>(BAIRROS_LEM);
   const [mostrarBairros, setMostrarBairros] = useState(false);
@@ -73,8 +72,8 @@ export default function NovoCadastroScreen() {
       Alert.alert("Cliente inválido", "Informe um nome de cliente válido (1-100 caracteres).");
       return;
     }
-    if (!validarEndereco(endereco)) {
-      Alert.alert("Endereço inválido", "Informe um endereço válido (1-200 caracteres).");
+    if (!bairro.trim()) {
+      Alert.alert("Bairro obrigatório", "Selecione um bairro.");
       return;
     }
     if (!validarData(data)) {
@@ -90,7 +89,7 @@ export default function NovoCadastroScreen() {
     try {
       await adicionarInstalacao({
         cliente: cliente.trim(),
-        endereco: endereco.trim(),
+        endereco: bairro.trim(),
         tipoServico,
         data,
         observacoes: observacoes.trim(),
@@ -98,7 +97,7 @@ export default function NovoCadastroScreen() {
       hapticSuccess();
       // Limpar formulário
       setCliente("");
-      setEndereco("");
+      setBairro("");
       setTipoServico("Instalação");
       setData("");
       setObservacoes("");
@@ -139,25 +138,6 @@ export default function NovoCadastroScreen() {
           />
         </FormField>
 
-        {/* Campo Endereço */}
-        <FormField label="Endereço *">
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                color: colors.foreground,
-              },
-            ]}
-            placeholder="Endereço completo"
-            placeholderTextColor={colors.muted}
-            value={endereco}
-            onChangeText={setEndereco}
-            returnKeyType="next"
-          />
-        </FormField>
-        
         {/* Campo Bairro */}
         <FormField label="Bairro *">
           <View>
