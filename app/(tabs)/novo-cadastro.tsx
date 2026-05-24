@@ -18,6 +18,8 @@ import * as Haptics from "expo-haptics";
 import { formatarData, validarData, validarCliente, validarEndereco } from "@/lib/input-masks";
 import { DatePickerModal } from "@/components/date-picker-modal";
 import { BAIRROS_LEM, buscarBairros } from "@/lib/bairros-lem";
+import { ImportModal } from "@/components/import-modal";
+import type { Installation } from "@/types/installation";
 
 const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança", "Empresarial"];
 
@@ -48,6 +50,7 @@ export default function NovoCadastroScreen() {
   const [salvando, setSalvando] = useState(false);
   const [temAlteracoes, setTemAlteracoes] = useState(false);
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
+  const [mostrarImportModal, setMostrarImportModal] = useState(false);
   
   // Função para filtrar bairros
   const handleBairroSearch = (text: string) => {
@@ -66,6 +69,24 @@ export default function NovoCadastroScreen() {
     haptic();
   };
 
+
+  async function handleImport(installations: Installation[]) {
+    try {
+      for (const inst of installations) {
+        await adicionarInstalacao({
+          cliente: inst.cliente,
+          endereco: inst.endereco,
+          tipoServico: inst.tipoServico,
+          data: inst.data,
+          observacoes: inst.observacoes,
+        });
+      }
+      hapticSuccess();
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
 
   async function salvar() {
     if (!validarCliente(cliente)) {
@@ -328,6 +349,23 @@ export default function NovoCadastroScreen() {
           />
         </FormField>
 
+        {/* Botão Importar */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.botaoImportar,
+            { backgroundColor: colors.surface, borderColor: colors.primary },
+            pressed && { opacity: 0.85 },
+          ]}
+          onPress={() => {
+            haptic();
+            setMostrarImportModal(true);
+          }}
+        >
+          <Text style={[styles.botaoImportarTexto, { color: colors.primary }]}>
+            📥 Importar CSV
+          </Text>
+        </Pressable>
+
         {/* Botão Salvar */}
         <Pressable
           style={({ pressed }) => [
@@ -343,6 +381,13 @@ export default function NovoCadastroScreen() {
           </Text>
         </Pressable>
       </ScrollView>
+
+      {/* Modal de Importação */}
+      <ImportModal
+        visible={mostrarImportModal}
+        onClose={() => setMostrarImportModal(false)}
+        onImport={handleImport}
+      />
     </ScreenContainer>
   );
 }
@@ -429,5 +474,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     letterSpacing: 0.3,
+  },
+  botaoImportar: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 8,
+    borderWidth: 2,
+  },
+  botaoImportarTexto: {
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

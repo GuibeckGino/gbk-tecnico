@@ -479,3 +479,14 @@
 - [x] Exibir produtividade (valor/dia) por bairro
 - [x] Adicionar opção de ordenação por valor ou quantidade
 - [x] Adicionar breakdown por tipo de serviço por bairro
+
+
+## Atualização v5.3.0 — Importar Dados em Lote (CSV/Excel)
+
+### Funcionalidade de Importação
+- [x] Criar componente de seletor de arquivo (DocumentPicker)
+- [x] Implementar parser de CSV/Excel
+- [x] Adicionar validação de dados importados
+- [x] Criar modal de importação com preview
+- [x] Integrar importação na tela de Novo Cadastro
+- [x] Testar e validar importação com arquivos reais
