@@ -133,8 +133,10 @@ export default function ConfiguracoesScreen() {
 
     setSelecionandoPasta(true);
     try {
+      console.log('[Pasta] Abrindo seletor de pasta para:', tipo);
       const resultado = await DocumentPicker.getDocumentAsync({
-        type: 'folder',
+        type: '*/*',
+        copyToCacheDirectory: false,
       });
 
       if (!resultado.canceled && resultado.assets?.[0]) {
