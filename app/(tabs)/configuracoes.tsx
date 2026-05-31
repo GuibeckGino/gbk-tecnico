@@ -58,6 +58,7 @@ export default function ConfiguracoesScreen() {
   const [exportando, setExportando] = useStateReact(false);
   const [importando, setImportando] = useStateReact(false);
   const [showPaymentModes, setShowPaymentModes] = useStateReact(false);
+  const [ultimoCSVUri, setUltimoCSVUri] = useStateReact<string | null>(null);
 
   // Modal de confirmação para limpar dados
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
@@ -177,24 +178,11 @@ export default function ConfiguracoesScreen() {
         throw new Error("Arquivo CSV não foi criado no sistema de arquivos");
       }
 
-      if (await Sharing.isAvailableAsync()) {
-        console.log("[CSV] Iniciando compartilhamento");
-        try {
-          await Sharing.shareAsync(uri, {
-            mimeType: "text/csv",
-            dialogTitle: "Exportar CSV",
-          });
-          hapticSuccess();
-          Alert.alert("Sucesso", "CSV exportado e pronto para compartilhar!");
-        } catch (shareError) {
-          console.error("[CSV] Erro ao compartilhar:", shareError);
-          hapticSuccess();
-          Alert.alert("Sucesso", `CSV salvo em:\n${uri}\n\nCompartilhamento não disponível neste momento.`);
-        }
-      } else {
-        hapticSuccess();
-        Alert.alert("Sucesso", `CSV salvo em:\n${uri}`);
-      }
+      // Armazenar URI para compartilhamento posterior
+      setUltimoCSVUri(uri);
+      hapticSuccess();
+      Alert.alert("Sucesso", "CSV exportado com sucesso!\n\nUse o botão 'Compartilhar CSV' para enviar via WhatsApp, Email, etc.");
+    
     } catch (error) {
       console.error("[CSV] Erro ao exportar:", error);
       hapticError();
@@ -204,6 +192,41 @@ export default function ConfiguracoesScreen() {
       );
     } finally {
       setExportando(false);
+    }
+  }
+
+  async function compartilharCSV() {
+    if (!ultimoCSVUri) {
+      Alert.alert("Nenhum arquivo", "Exporte um CSV primeiro antes de compartilhar.");
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Compartilhamento",
+        "Compartilhamento disponível apenas no dispositivo móvel."
+      );
+      return;
+    }
+
+    try {
+      console.log("[CSV] Compartilhando arquivo:", ultimoCSVUri);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(ultimoCSVUri, {
+          mimeType: "text/csv",
+          dialogTitle: "Compartilhar CSV",
+        });
+        haptic();
+      } else {
+        Alert.alert("Erro", "Compartilhamento não disponível neste dispositivo.");
+      }
+    } catch (error) {
+      console.error("[CSV] Erro ao compartilhar:", error);
+      hapticError();
+      Alert.alert(
+        "Erro ao Compartilhar",
+        `Não foi possível compartilhar o arquivo.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -740,6 +763,14 @@ export default function ConfiguracoesScreen() {
 
         {/* Seção Compartilhamento */}
         <Secao titulo="Compartilhamento">
+          <ItemConfig
+            icone="📤"
+            label="Compartilhar CSV"
+            sublabel="Enviar via WhatsApp, Email, etc"
+            onPress={() => compartilharCSV()}
+            desabilitado={!ultimoCSVUri}
+          />
+          <Divisor />
           <ItemConfig
             icone="📤"
             label="Compartilhar Relatório"
