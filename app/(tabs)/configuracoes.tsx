@@ -58,6 +58,9 @@ export default function ConfiguracoesScreen() {
   const [exportando, setExportando] = useStateReact(false);
   const [importando, setImportando] = useStateReact(false);
   const [showPaymentModes, setShowPaymentModes] = useStateReact(false);
+  const [pastaDestino, setPastaDestino] = useStateReact<string | null>(null);
+  const [tipoExportacao, setTipoExportacao] = useStateReact<'csv' | 'json' | null>(null);
+  const [selecionandoPasta, setSelecionandoPasta] = useStateReact(false);
 
   // Modal de confirmação para limpar dados
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
@@ -119,8 +122,129 @@ export default function ConfiguracoesScreen() {
     }
   }
 
+  async function selecionarPastaParaExportacao(tipo: 'csv' | 'json') {
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        'Seleção de Pasta',
+        'Seleção de pasta disponível apenas no dispositivo móvel.'
+      );
+      return;
+    }
 
+    setSelecionandoPasta(true);
+    try {
+      const resultado = await DocumentPicker.getDocumentAsync({
+        type: 'folder',
+      });
 
+      if (!resultado.canceled && resultado.assets?.[0]) {
+        const pastaUri = resultado.assets[0].uri;
+        setPastaDestino(pastaUri);
+        setTipoExportacao(tipo);
+        
+        if (tipo === 'csv') {
+          await exportarCSVParaPasta(pastaUri);
+        } else {
+          await exportarBackupParaPasta(pastaUri);
+        }
+      }
+    } catch (error) {
+      console.error('[Pasta] Erro ao selecionar pasta:', error);
+      Alert.alert('Erro', 'Não foi possível selecionar a pasta.');
+    } finally {
+      setSelecionandoPasta(false);
+    }
+  }
+
+  async function exportarCSVParaPasta(pastaUri: string) {
+    if (instalacoes.length === 0) {
+      Alert.alert('Sem dados', 'Não há instalações para exportar.');
+      return;
+    }
+    setExportando(true);
+    try {
+      console.log('[CSV] Iniciando exportação para pasta:', pastaUri);
+      
+      const cabecalho = 'Cliente,Endereço,Tipo,Data,Observações,Valor';
+      const linhas = instalacoes.map((inst) => {
+        let valor = 0;
+        if (inst.tipoServico === 'Empresarial') {
+          valor = 100;
+        } else {
+          valor = instalacoes.length >= 104 ? 70 : 65;
+        }
+        
+        const campos = [
+          `"${inst.cliente.replace(/"/g, '""')}"`,
+          `"${inst.endereco.replace(/"/g, '""')}"`,
+          `"${inst.tipoServico}"`,
+          `"${inst.data}"`,
+          `"${inst.observacoes.replace(/"/g, '""')}"`,
+          `"R$ ${valor.toFixed(2)}"`
+        ];
+        return campos.join(',');
+      });
+      const csv = [cabecalho, ...linhas].join('\n');
+      console.log('[CSV] CSV gerado, tamanho:', csv.length);
+
+      const fileName = `gbk-tecnico-${new Date().toISOString().split('T')[0]}.csv`;
+      const uri = `${pastaUri}/${fileName}`;
+      console.log('[CSV] Caminho do arquivo:', uri);
+      
+      await FileSystem.writeAsStringAsync(uri, csv, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      console.log('[CSV] Arquivo criado com sucesso');
+
+      hapticSuccess();
+      Alert.alert('Sucesso', `CSV salvo em:\n${uri}`);
+    } catch (error) {
+      console.error('[CSV] Erro ao exportar:', error);
+      hapticError();
+      Alert.alert(
+        'Erro ao Exportar CSV',
+        `Não foi possível exportar o CSV.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
+      );
+    } finally {
+      setExportando(false);
+    }
+  }
+
+  async function exportarBackupParaPasta(pastaUri: string) {
+    if (instalacoes.length === 0) {
+      Alert.alert('Sem dados', 'Não há instalações para exportar.');
+      return;
+    }
+    setExportando(true);
+    try {
+      console.log('[JSON] Iniciando exportação de backup para pasta:', pastaUri);
+      
+      const json = exportarJSON();
+      console.log('[JSON] JSON gerado, tamanho:', json.length);
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      const fileName = `gbk-tecnico-backup-${timestamp}.json`;
+      const uri = `${pastaUri}/${fileName}`;
+      console.log('[JSON] Caminho do arquivo:', uri);
+
+      await FileSystem.writeAsStringAsync(uri, json, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      console.log('[JSON] Arquivo criado com sucesso');
+
+      hapticSuccess();
+      Alert.alert('Sucesso', `Backup salvo em:\n${uri}`);
+    } catch (error) {
+      console.error('[JSON] Erro ao exportar:', error);
+      hapticError();
+      Alert.alert(
+        'Erro ao Exportar Backup',
+        `Não foi possível exportar o backup.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
+      );
+    } finally {
+      setExportando(false);
+    }
+  }
 
   async function exportarCSV() {
     if (instalacoes.length === 0) {
@@ -710,16 +834,16 @@ export default function ConfiguracoesScreen() {
             icone="📄"
             label="Exportar CSV"
             sublabel={`${instalacoes.length} instalações`}
-            onPress={exportarCSV}
-            desabilitado={exportando}
+            onPress={() => selecionarPastaParaExportacao('csv')}
+            desabilitado={exportando || selecionandoPasta}
           />
           <Divisor />
           <ItemConfig
             icone="💾"
             label="Exportar Backup (JSON)"
             sublabel="Salvar todos os dados"
-            onPress={exportarBackup}
-            desabilitado={exportando}
+            onPress={() => selecionarPastaParaExportacao('json')}
+            desabilitado={exportando || selecionandoPasta}
           />
           <Divisor />
           <ItemConfig

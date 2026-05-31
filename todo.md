@@ -492,6 +492,15 @@
 - [x] Testar e validar importação com arquivos reais
 
 
+## Atualização v5.5.0 — Seleção de Pasta para Exportação
+
+### Seleção de Pasta
+- [x] Criar função selecionarPastaParaExportacao()
+- [x] Criar função exportarCSVParaPasta()
+- [x] Criar função exportarBackupParaPasta()
+- [x] Atualizar botões para usar seleção de pasta
+- [x] Testar seleção e exportação
+
 ## Atualização v5.4.0 — Correção de Exportação
 
 ### Correção de Exportação CSV/JSON
