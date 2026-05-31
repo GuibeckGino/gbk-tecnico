@@ -137,7 +137,7 @@ export default function DashboardScreen() {
   }, [newMilestoneReached]);
   
   // Meta é atingida quando valor total >= meta em valor
-  const metaValorEsperada = monthlyGoal * calcularValorPorTipo('Instalação', stats.totalInstalacoes, paymentMode);
+  const metaValorEsperada = monthlyGoal * calcularValorPorTipo('Instalação', monthlyGoal, paymentMode);
   const metaAtingida = stats.valorTotal >= metaValorEsperada;
   const percentualMetaExibicao = (stats.valorTotal / metaValorEsperada) * 100;
   const mostrarNotificacao = percentualMetaExibicao >= 90 && percentualMetaExibicao < 100;

@@ -165,7 +165,8 @@ export default function HistoricoScreen() {
   } else if (ordenacao === "antigo") {
     // manter ordem original (mais antigo primeiro)
   } else if (ordenacao === "valor") {
-    listaOrdenada.sort((a, b) => stats.valorIndividual * (b.tipoServico === "Instalação" ? 1 : 1) - stats.valorIndividual * (a.tipoServico === "Instalação" ? 1 : 1));
+    // Ordenar por valor decrescente (maior para menor)
+    listaOrdenada.sort((a, b) => b.valor - a.valor);
   }
 
   return (

@@ -16,35 +16,35 @@ function criarInstalacoes(quantidade: number): Installation[] {
 
 describe("Regra financeira retroativa", () => {
   it("100 instalações = R$6500", () => {
-    const stats = calcularStats(criarInstalacoes(100));
+    const stats = calcularStats(criarInstalacoes(100), "meta");
     expect(stats.total).toBe(100);
     expect(stats.valorIndividual).toBe(65);
     expect(stats.valorTotal).toBe(6500);
   });
 
   it("103 instalações = R$6695", () => {
-    const stats = calcularStats(criarInstalacoes(103));
+    const stats = calcularStats(criarInstalacoes(103), "meta");
     expect(stats.total).toBe(103);
     expect(stats.valorIndividual).toBe(65);
     expect(stats.valorTotal).toBe(6695);
   });
 
   it("104 instalações = R$7280 (retroativo)", () => {
-    const stats = calcularStats(criarInstalacoes(104));
+    const stats = calcularStats(criarInstalacoes(104), "meta");
     expect(stats.total).toBe(104);
     expect(stats.valorIndividual).toBe(70);
     expect(stats.valorTotal).toBe(7280);
   });
 
   it("105 instalações = R$7350", () => {
-    const stats = calcularStats(criarInstalacoes(105));
+    const stats = calcularStats(criarInstalacoes(105), "meta");
     expect(stats.total).toBe(105);
     expect(stats.valorIndividual).toBe(70);
     expect(stats.valorTotal).toBe(7350);
   });
 
   it("110 instalações = R$7700", () => {
-    const stats = calcularStats(criarInstalacoes(110));
+    const stats = calcularStats(criarInstalacoes(110), "meta");
     expect(stats.total).toBe(110);
     expect(stats.valorIndividual).toBe(70);
     expect(stats.valorTotal).toBe(7700);
@@ -78,7 +78,7 @@ describe("Regra financeira retroativa", () => {
         createdAt: new Date().toISOString(),
       },
     ];
-    const stats = calcularStats(instalacoes);
+    const stats = calcularStats(instalacoes, "meta");
     expect(stats.porTipo.instalacao).toBe(3);
     expect(stats.porTipo.tipo3).toBe(2);
     expect(stats.porTipo.mudanca).toBe(1);

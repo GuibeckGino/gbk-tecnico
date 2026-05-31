@@ -58,6 +58,8 @@ export function calcularStats(
   const total = instalacoes.length;
 
   // Calcular valor total considerando cada tipo
+  // IMPORTANTE: Usar total (quantidade real) para cálculo de valor
+  // A retroatividade funciona porque quando total >= 104, todos os valores mudam para 70
   let valorTotal = 0;
   instalacoes.forEach((inst) => {
     valorTotal += calcularValorPorTipo(inst.tipoServico, total, paymentMode);

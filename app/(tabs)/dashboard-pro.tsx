@@ -98,7 +98,7 @@ export default function DashboardProScreen() {
 
     // IMPORTANTE: monthlyGoal é em QUANTIDADE de instalações
     // Converter para VALOR baseado no modo de pagamento
-    const metaValor = monthlyGoal * calcularValorPorTipo('Instalação', total, paymentMode);
+    const metaValor = monthlyGoal * calcularValorPorTipo('Instalação', monthlyGoal, paymentMode);
     const faltamValor = Math.max(0, metaValor - valorTotal);
     const faltamQuantidade = Math.max(0, monthlyGoal - total);
     
