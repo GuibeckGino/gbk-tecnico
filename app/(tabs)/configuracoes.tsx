@@ -17,6 +17,7 @@ import * as Sharing from "expo-sharing";
 import * as DocumentPicker from "expo-document-picker";
 import * as Print from "expo-print";
 import { ScreenContainer } from "@/components/screen-container";
+import { PastaSelectorModal } from "@/components/pasta-selector-modal";
 import { useInstallations } from "@/context/InstallationsContext";
 import { useMonth } from "@/context/MonthContext";
 import { useGBKTheme } from "@/context/ThemeContext";
@@ -61,6 +62,7 @@ export default function ConfiguracoesScreen() {
   const [pastaDestino, setPastaDestino] = useStateReact<string | null>(null);
   const [tipoExportacao, setTipoExportacao] = useStateReact<'csv' | 'json' | null>(null);
   const [selecionandoPasta, setSelecionandoPasta] = useStateReact(false);
+  const [mostrarSeletorPasta, setMostrarSeletorPasta] = useStateReact(false);
 
   // Modal de confirmação para limpar dados
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
@@ -122,7 +124,7 @@ export default function ConfiguracoesScreen() {
     }
   }
 
-  async function selecionarPastaParaExportacao(tipo: 'csv' | 'json') {
+  function selecionarPastaParaExportacao(tipo: 'csv' | 'json') {
     if (Platform.OS === 'web') {
       Alert.alert(
         'Seleção de Pasta',
@@ -131,30 +133,18 @@ export default function ConfiguracoesScreen() {
       return;
     }
 
-    setSelecionandoPasta(true);
-    try {
-      console.log('[Pasta] Abrindo seletor de pasta para:', tipo);
-      const resultado = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
-        copyToCacheDirectory: false,
-      });
+    setTipoExportacao(tipo);
+    setMostrarSeletorPasta(true);
+  }
 
-      if (!resultado.canceled && resultado.assets?.[0]) {
-        const pastaUri = resultado.assets[0].uri;
-        setPastaDestino(pastaUri);
-        setTipoExportacao(tipo);
-        
-        if (tipo === 'csv') {
-          await exportarCSVParaPasta(pastaUri);
-        } else {
-          await exportarBackupParaPasta(pastaUri);
-        }
-      }
-    } catch (error) {
-      console.error('[Pasta] Erro ao selecionar pasta:', error);
-      Alert.alert('Erro', 'Não foi possível selecionar a pasta.');
-    } finally {
-      setSelecionandoPasta(false);
+  async function handlePastaSelected(pastaUri: string) {
+    console.log('[Pasta] Pasta selecionada:', pastaUri);
+    setPastaDestino(pastaUri);
+    
+    if (tipoExportacao === 'csv') {
+      await exportarCSVParaPasta(pastaUri);
+    } else if (tipoExportacao === 'json') {
+      await exportarBackupParaPasta(pastaUri);
     }
   }
 
@@ -1291,6 +1281,14 @@ export default function ConfiguracoesScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Seleção de Pasta */}
+      <PastaSelectorModal
+        visible={mostrarSeletorPasta}
+        onClose={() => setMostrarSeletorPasta(false)}
+        onSelect={handlePastaSelected}
+        titulo="Escolha a Pasta para Exportar"
+      />
     </ScreenContainer>
   );
 }
@@ -1616,3 +1614,4 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 });
+
