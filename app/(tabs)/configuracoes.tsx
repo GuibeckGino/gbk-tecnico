@@ -59,6 +59,8 @@ export default function ConfiguracoesScreen() {
   const [importando, setImportando] = useStateReact(false);
   const [showPaymentModes, setShowPaymentModes] = useStateReact(false);
   const [ultimoCSVUri, setUltimoCSVUri] = useStateReact<string | null>(null);
+  const [ultimoBackupUri, setUltimoBackupUri] = useStateReact<string | null>(null);
+  const [ultimoBackupJSON, setUltimoBackupJSON] = useStateReact<string | null>(null);
 
   // Modal de confirmação para limpar dados
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
@@ -195,6 +197,42 @@ export default function ConfiguracoesScreen() {
     }
   }
 
+  async function compartilharBackup() {
+    if (!ultimoBackupUri) {
+      Alert.alert("Nenhum arquivo", "Exporte um Backup primeiro antes de compartilhar.");
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Compartilhamento",
+        "Compartilhamento disponível apenas no dispositivo móvel."
+      );
+      return;
+    }
+
+    try {
+      console.log("[JSON] Compartilhando arquivo:", ultimoBackupUri);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(ultimoBackupUri, {
+          mimeType: "application/json",
+          dialogTitle: "Compartilhar Backup",
+        });
+        haptic();
+      } else {
+        Alert.alert("Erro", "Compartilhamento não disponível neste dispositivo.");
+      }
+    } catch (error) {
+      console.error("[JSON] Erro ao compartilhar:", error);
+      hapticError();
+      Alert.alert(
+        "Erro ao Compartilhar",
+        `Não foi possível compartilhar o arquivo.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+
   async function compartilharCSV() {
     if (!ultimoCSVUri) {
       Alert.alert("Nenhum arquivo", "Exporte um CSV primeiro antes de compartilhar.");
@@ -229,6 +267,58 @@ export default function ConfiguracoesScreen() {
       );
     }
   }
+
+  async function salvarBackupNoGoogleDrive() {
+    if (!ultimoBackupJSON) {
+      Alert.alert("Nenhum arquivo", "Exporte um Backup primeiro antes de salvar no Google Drive.");
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Google Drive",
+        "Sincronização com Google Drive disponível apenas no dispositivo móvel."
+      );
+      return;
+    }
+
+    try {
+      setExportando(true);
+      console.log("[GDrive] Iniciando upload para Google Drive");
+
+      // Criar arquivo temporário
+      const timestamp = new Date().toISOString().split("T")[0];
+      const fileName = `gbk-tecnico-backup-${timestamp}.json`;
+      const tempUri = `${FileSystem.documentDirectory}${fileName}`;
+
+      // Escrever JSON no arquivo temporário
+      await FileSystem.writeAsStringAsync(tempUri, ultimoBackupJSON, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      // Compartilhar com Google Drive (usuário escolhe salvar)
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(tempUri, {
+          mimeType: "application/json",
+          dialogTitle: "Salvar Backup no Google Drive",
+        });
+        hapticSuccess();
+        Alert.alert("Sucesso", "Backup pronto para salvar no Google Drive!");
+      } else {
+        Alert.alert("Erro", "Compartilhamento não disponível neste dispositivo.");
+      }
+    } catch (error) {
+      console.error("[GDrive] Erro ao salvar:", error);
+      hapticError();
+      Alert.alert(
+        "Erro ao Salvar no Google Drive",
+        `Não foi possível salvar o backup.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
+      );
+    } finally {
+      setExportando(false);
+    }
+  }
+
 
   async function exportarBackup() {
     if (instalacoes.length === 0) {
@@ -272,25 +362,12 @@ export default function ConfiguracoesScreen() {
         throw new Error("Arquivo JSON não foi criado no sistema de arquivos");
       }
 
-      // Compartilhar arquivo
-      if (await Sharing.isAvailableAsync()) {
-        console.log("[JSON] Iniciando compartilhamento");
-        try {
-          await Sharing.shareAsync(uri, {
-            mimeType: "application/json",
-            dialogTitle: "Exportar Backup GBK Técnico",
-          });
-          hapticSuccess();
-          Alert.alert("Sucesso", "Backup exportado e pronto para compartilhar!");
-        } catch (shareError) {
-          console.error("[JSON] Erro ao compartilhar:", shareError);
-          hapticSuccess();
-          Alert.alert("Sucesso", `Backup salvo em:\n${uri}\n\nCompartilhamento não disponível neste momento.`);
-        }
-      } else {
-        hapticSuccess();
-        Alert.alert("Sucesso", `Backup salvo em:\n${uri}`);
-      }
+      // Armazenar URI e JSON para compartilhamento posterior
+      setUltimoBackupUri(uri);
+      setUltimoBackupJSON(json);
+      hapticSuccess();
+      Alert.alert("Sucesso", "Backup exportado com sucesso!\n\nUse os botões de compartilhamento para enviar.");
+    
     } catch (error) {
       console.error("[JSON] Erro ao exportar:", error);
       hapticError();
@@ -759,6 +836,14 @@ export default function ConfiguracoesScreen() {
             onPress={exportarRelatorioPDF}
             desabilitado={gerandoPDF}
           />
+          <Divisor />
+          <ItemConfig
+            icone="☁️"
+            label="Salvar no Google Drive"
+            sublabel="Backup automático na nuvem"
+            onPress={() => salvarBackupNoGoogleDrive()}
+            desabilitado={exportando || !ultimoBackupJSON}
+          />
         </Secao>
 
         {/* Seção Compartilhamento */}
@@ -769,6 +854,14 @@ export default function ConfiguracoesScreen() {
             sublabel="Enviar via WhatsApp, Email, etc"
             onPress={() => compartilharCSV()}
             desabilitado={!ultimoCSVUri}
+          />
+          <Divisor />
+          <ItemConfig
+            icone="📤"
+            label="Compartilhar Backup"
+            sublabel="Enviar JSON via WhatsApp, Email, etc"
+            onPress={() => compartilharBackup()}
+            desabilitado={!ultimoBackupUri}
           />
           <Divisor />
           <ItemConfig
