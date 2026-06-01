@@ -268,58 +268,6 @@ export default function ConfiguracoesScreen() {
     }
   }
 
-  async function salvarBackupNoGoogleDrive() {
-    if (!ultimoBackupJSON) {
-      Alert.alert("Nenhum arquivo", "Exporte um Backup primeiro antes de salvar no Google Drive.");
-      return;
-    }
-
-    if (Platform.OS === "web") {
-      Alert.alert(
-        "Google Drive",
-        "Sincronização com Google Drive disponível apenas no dispositivo móvel."
-      );
-      return;
-    }
-
-    try {
-      setExportando(true);
-      console.log("[GDrive] Iniciando upload para Google Drive");
-
-      // Criar arquivo temporário
-      const timestamp = new Date().toISOString().split("T")[0];
-      const fileName = `gbk-tecnico-backup-${timestamp}.json`;
-      const tempUri = `${FileSystem.documentDirectory}${fileName}`;
-
-      // Escrever JSON no arquivo temporário
-      await FileSystem.writeAsStringAsync(tempUri, ultimoBackupJSON, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-
-      // Compartilhar com Google Drive (usuário escolhe salvar)
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(tempUri, {
-          mimeType: "application/json",
-          dialogTitle: "Salvar Backup no Google Drive",
-        });
-        hapticSuccess();
-        Alert.alert("Sucesso", "Backup pronto para salvar no Google Drive!");
-      } else {
-        Alert.alert("Erro", "Compartilhamento não disponível neste dispositivo.");
-      }
-    } catch (error) {
-      console.error("[GDrive] Erro ao salvar:", error);
-      hapticError();
-      Alert.alert(
-        "Erro ao Salvar no Google Drive",
-        `Não foi possível salvar o backup.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
-      );
-    } finally {
-      setExportando(false);
-    }
-  }
-
-
   async function exportarBackup() {
     if (instalacoes.length === 0) {
       Alert.alert("Sem dados", "Não há instalações para exportar.");
@@ -836,14 +784,7 @@ export default function ConfiguracoesScreen() {
             onPress={exportarRelatorioPDF}
             desabilitado={gerandoPDF}
           />
-          <Divisor />
-          <ItemConfig
-            icone="☁️"
-            label="Salvar no Google Drive"
-            sublabel="Backup automático na nuvem"
-            onPress={() => salvarBackupNoGoogleDrive()}
-            desabilitado={exportando || !ultimoBackupJSON}
-          />
+
         </Secao>
 
         {/* Seção Compartilhamento */}
