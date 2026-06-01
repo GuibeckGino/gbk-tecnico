@@ -214,19 +214,27 @@ export default function ConfiguracoesScreen() {
     try {
       console.log("[JSON] Compartilhando arquivo:", ultimoBackupUri);
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(ultimoBackupUri, {
-          mimeType: "application/json",
-          dialogTitle: "Compartilhar Backup",
-        });
-        haptic();
+        try {
+          await Sharing.shareAsync(ultimoBackupUri, {
+            dialogTitle: "Compartilhar Backup",
+          });
+          hapticSuccess();
+        } catch (shareError) {
+          // Se falhar, mostrar caminho do arquivo para compartilhamento manual
+          hapticSuccess();
+          Alert.alert(
+            "Arquivo Salvo",
+            `Backup salvo em:\n${ultimoBackupUri}\n\nVocê pode compartilhá-lo manualmente de seu gerenciador de arquivos.`
+          );
+        }
       } else {
-        Alert.alert("Erro", "Compartilhamento não disponível neste dispositivo.");
+        Alert.alert("Arquivo Salvo", `Backup salvo em:\n${ultimoBackupUri}`);
       }
     } catch (error) {
       console.error("[JSON] Erro ao compartilhar:", error);
       hapticError();
       Alert.alert(
-        "Erro ao Compartilhar",
+        "Erro",
         `Não foi possível compartilhar o arquivo.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
       );
     }
@@ -250,19 +258,27 @@ export default function ConfiguracoesScreen() {
     try {
       console.log("[CSV] Compartilhando arquivo:", ultimoCSVUri);
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(ultimoCSVUri, {
-          mimeType: "text/csv",
-          dialogTitle: "Compartilhar CSV",
-        });
-        haptic();
+        try {
+          await Sharing.shareAsync(ultimoCSVUri, {
+            dialogTitle: "Compartilhar CSV",
+          });
+          hapticSuccess();
+        } catch (shareError) {
+          // Se falhar, mostrar caminho do arquivo para compartilhamento manual
+          hapticSuccess();
+          Alert.alert(
+            "Arquivo Salvo",
+            `CSV salvo em:\n${ultimoCSVUri}\n\nVocê pode compartilhá-lo manualmente de seu gerenciador de arquivos.`
+          );
+        }
       } else {
-        Alert.alert("Erro", "Compartilhamento não disponível neste dispositivo.");
+        Alert.alert("Arquivo Salvo", `CSV salvo em:\n${ultimoCSVUri}`);
       }
     } catch (error) {
       console.error("[CSV] Erro ao compartilhar:", error);
       hapticError();
       Alert.alert(
-        "Erro ao Compartilhar",
+        "Erro",
         `Não foi possível compartilhar o arquivo.\n\nDetalhes: ${error instanceof Error ? error.message : String(error)}`
       );
     }
