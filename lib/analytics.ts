@@ -367,3 +367,49 @@ export function analisarDiaADia(
 
   return resultado;
 }
+
+
+/**
+ * Calcula a previsão de quantas instalações terá até o fim do mês
+ * baseado na velocidade atual
+ */
+export function calcularPrevisaoFechamento(
+  instalacoes: Array<{ data: string }>,
+  metaMensal: number = 104
+): {
+  previsao: number;
+  velocidadeDiaria: number;
+  diasRestantes: number;
+  percentualMeta: number;
+} {
+  const hoje = new Date();
+  const diaAtual = hoje.getDate();
+  const mesAtual = hoje.getMonth() + 1;
+  const anoAtual = hoje.getFullYear();
+
+  // Contar instalações até hoje neste mês
+  const instalacoesAteHoje = instalacoes.filter((inst) => {
+    const [dia, mes, ano] = inst.data.split("/").map(Number);
+    return ano === anoAtual && mes === mesAtual && dia <= diaAtual;
+  }).length;
+
+  // Calcular velocidade diária
+  const velocidadeDiaria = instalacoesAteHoje / diaAtual;
+
+  // Calcular dias restantes no mês
+  const ultimoDiaMes = new Date(anoAtual, mesAtual, 0).getDate();
+  const diasRestantes = ultimoDiaMes - diaAtual;
+
+  // Calcular previsão
+  const previsao = Math.round(instalacoesAteHoje + velocidadeDiaria * diasRestantes);
+
+  // Calcular percentual da meta
+  const percentualMeta = Math.round((previsao / metaMensal) * 100);
+
+  return {
+    previsao,
+    velocidadeDiaria: Math.round(velocidadeDiaria * 100) / 100,
+    diasRestantes,
+    percentualMeta,
+  };
+}

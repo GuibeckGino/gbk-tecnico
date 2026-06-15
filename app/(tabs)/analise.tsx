@@ -19,6 +19,7 @@ import {
   analisarRentabilidade,
   analisarTendencias,
   analisarDiaADia,
+  calcularPrevisaoFechamento,
 } from "@/lib/analytics";
 import {
   analisarProdutividadePorDia,
@@ -31,6 +32,7 @@ import { useMonthlyConfig } from "@/hooks/use-monthly-config";
 import { useWorkSchedule } from "@/context/WorkScheduleContext";
 import { calcularStats, calcularValorPorTipo } from "@/types/installation";
 import { LineChart } from "react-native-chart-kit";
+import { CalendarView } from "@/components/calendar-view";
 
 type AbaAnalise =
   | "meta"
@@ -163,6 +165,10 @@ export default function AnaliseScreen() {
         return parseInt(m) === mes + 1 && parseInt(a) === ano;
       }),
     [instalacoes, mes, ano]
+  );
+  const previsaoFechamento = useMemo(
+    () => calcularPrevisaoFechamento(instalacoesDoMes, monthlyGoal),
+    [instalacoesDoMes, monthlyGoal]
   );
 
   const renderAbaButton = useCallback(
@@ -748,6 +754,40 @@ export default function AnaliseScreen() {
                     </Pressable>
                   ))}
                 </View>
+
+                {/* Previsão de Fechamento */}
+                <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 16 }]}>
+                  <Text style={[styles.cardTitulo, { color: colors.foreground, marginBottom: 12 }]}>
+                    Previsão de Fechamento
+                  </Text>
+                  <View style={{ gap: 8 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={[styles.cardSub, { color: colors.muted }]}>Previsão:</Text>
+                      <Text style={[styles.cardValor, { color: colors.primary, fontSize: 18 }]}>
+                        {previsaoFechamento.previsao} / {monthlyGoal}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={[styles.cardSub, { color: colors.muted }]}>Velocidade:</Text>
+                      <Text style={[styles.cardValor, { color: colors.success, fontSize: 14 }]}>
+                        {previsaoFechamento.velocidadeDiaria} por dia
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={[styles.cardSub, { color: colors.muted }]}>Dias restantes:</Text>
+                      <Text style={[styles.cardValor, { color: colors.warning, fontSize: 14 }]}>
+                        {previsaoFechamento.diasRestantes}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
+                      <Text style={[styles.cardSub, { color: colors.muted }]}>% da Meta:</Text>
+                      <Text style={[styles.cardValor, { color: previsaoFechamento.percentualMeta >= 100 ? colors.success : colors.error, fontSize: 16, fontWeight: "700" }]}>
+                        {previsaoFechamento.percentualMeta}%
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
                 <Text style={[styles.cardTitulo, { color: colors.foreground, marginBottom: 12 }]}>
                   Progressão Diária por Mês
                 </Text>
@@ -758,14 +798,22 @@ export default function AnaliseScreen() {
                     <LineChart
                       data={{
                         labels: analisesDiaADia.slice(0, 15).map((d) => `D${d.dia}`),
-                        datasets: analisesDiaADia[0]?.meses.map((_, idx) => {
-                          const colors_array = [colors.primary, colors.success, colors.warning, colors.error, "#FF6B6B", "#4ECDC4"];
-                          return {
-                            data: analisesDiaADia.slice(0, 15).map((d) => d.meses[idx]?.acumulado || 0),
-                            color: () => colors_array[idx % colors_array.length],
+                        datasets: [
+                          ...(analisesDiaADia[0]?.meses.map((_, idx) => {
+                            const colors_array = [colors.primary, colors.success, colors.warning, colors.error, "#FF6B6B", "#4ECDC4"];
+                            return {
+                              data: analisesDiaADia.slice(0, 15).map((d) => d.meses[idx]?.acumulado || 0),
+                              color: () => colors_array[idx % colors_array.length],
+                              strokeWidth: 2,
+                            };
+                          }) || []),
+                          {
+                            data: Array(15).fill(104),
+                            color: () => colors.error,
                             strokeWidth: 2,
-                          };
-                        }) || [],
+                            strokeDashArray: [5, 5],
+                          },
+                        ],
                       }}
                       width={Platform.OS === "web" ? 600 : 350}
                       height={220}
