@@ -30,6 +30,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useMonthlyConfig } from "@/hooks/use-monthly-config";
 import { useWorkSchedule } from "@/context/WorkScheduleContext";
 import { calcularStats, calcularValorPorTipo } from "@/types/installation";
+import { LineChart } from "react-native-chart-kit";
 
 type AbaAnalise =
   | "meta"
@@ -52,6 +53,7 @@ export default function AnaliseScreen() {
   const { mes, ano } = useMonth();
   const colors = useColors();
   const [abaSelecionada, setAbaSelecionada] = useState<AbaAnalise>("meta");
+  const [filtroMeses, setFiltroMeses] = useState<3 | 6 | 12>(6); // Filtro para Dia a Dia
   const { workDays } = useWorkSchedule();
   
   // Carregar configurações do mês (paymentMode e monthlyGoal)
@@ -150,8 +152,8 @@ export default function AnaliseScreen() {
     [instalacoes]
   );
   const analisesDiaADia = useMemo(
-    () => analisarDiaADia(instalacoes),
-    [instalacoes]
+    () => analisarDiaADia(instalacoes, filtroMeses),
+    [instalacoes, filtroMeses]
   );
 
   const instalacoesDoMes = useMemo(
@@ -720,9 +722,69 @@ export default function AnaliseScreen() {
               </Text>
             ) : (
               <View>
+                <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+                  {[3, 6, 12].map((num) => (
+                    <Pressable
+                      key={num}
+                      onPress={() => {
+                        haptic();
+                        setFiltroMeses(num as 3 | 6 | 12);
+                      }}
+                      style={[
+                        { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, borderWidth: 1 },
+                        filtroMeses === num
+                          ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                          : { backgroundColor: colors.surface, borderColor: colors.border },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.cardSub,
+                          { color: filtroMeses === num ? "#fff" : colors.muted, fontSize: 12 },
+                        ]}
+                      >
+                        Últimos {num}m
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
                 <Text style={[styles.cardTitulo, { color: colors.foreground, marginBottom: 12 }]}>
                   Progressão Diária por Mês
                 </Text>
+                
+                {/* Gráfico de Linha */}
+                {analisesDiaADia.length > 0 && (
+                  <View style={{ marginBottom: 20, borderRadius: 8, overflow: "hidden" }}>
+                    <LineChart
+                      data={{
+                        labels: analisesDiaADia.slice(0, 15).map((d) => `D${d.dia}`),
+                        datasets: analisesDiaADia[0]?.meses.map((_, idx) => {
+                          const colors_array = [colors.primary, colors.success, colors.warning, colors.error, "#FF6B6B", "#4ECDC4"];
+                          return {
+                            data: analisesDiaADia.slice(0, 15).map((d) => d.meses[idx]?.acumulado || 0),
+                            color: () => colors_array[idx % colors_array.length],
+                            strokeWidth: 2,
+                          };
+                        }) || [],
+                      }}
+                      width={Platform.OS === "web" ? 600 : 350}
+                      height={220}
+                      chartConfig={{
+                        backgroundColor: colors.surface,
+                        backgroundGradientFrom: colors.surface,
+                        backgroundGradientTo: colors.surface,
+                        decimalPlaces: 0,
+                        color: () => colors.muted,
+                        labelColor: () => colors.muted,
+                        style: { borderRadius: 8 },
+                        propsForDots: { r: "4", strokeWidth: "2", stroke: colors.primary },
+                      }}
+                      bezier
+                      style={{ borderRadius: 8 }}
+                    />
+                  </View>
+                )}
+                
                 <FlatList
                   data={analisesDiaADia}
                   keyExtractor={(item) => `dia-${item.dia}`}
@@ -749,11 +811,20 @@ export default function AnaliseScreen() {
                             "pt-BR",
                             { month: "short", year: "2-digit" }
                           );
+                          const badgeColor = mes.desempenho === 'acima' ? colors.success : mes.desempenho === 'abaixo' ? colors.error : colors.muted;
+                          const badgeLabel = mes.desempenho === 'acima' ? '↑' : mes.desempenho === 'abaixo' ? '↓' : '→';
                           return (
                             <View key={idx} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                              <Text style={[styles.cardSub, { color: colors.muted }]}>
-                                {mesNome}
-                              </Text>
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                <Text style={[styles.cardSub, { color: colors.muted }]}>
+                                  {mesNome}
+                                </Text>
+                                <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: badgeColor }}>
+                                  <Text style={{ fontSize: 10, color: "#fff", fontWeight: "600" }}>
+                                    {badgeLabel}
+                                  </Text>
+                                </View>
+                              </View>
                               <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
                                 <Text style={[styles.cardValor, { color: colors.primary, fontSize: 16 }]}>
                                   {mes.acumulado}
