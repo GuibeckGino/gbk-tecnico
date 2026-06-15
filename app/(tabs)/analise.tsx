@@ -18,6 +18,7 @@ import {
   analisarMesAMes,
   analisarRentabilidade,
   analisarTendencias,
+  analisarDiaADia,
 } from "@/lib/analytics";
 import {
   analisarProdutividadePorDia,
@@ -37,7 +38,8 @@ type AbaAnalise =
   | "mesames"
   | "rentabilidade"
   | "tendencias"
-  | "produtividade";
+  | "produtividade"
+  | "diaadia";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -147,6 +149,10 @@ export default function AnaliseScreen() {
     () => analisarTendencias(instalacoes),
     [instalacoes]
   );
+  const analisesDiaADia = useMemo(
+    () => analisarDiaADia(instalacoes),
+    [instalacoes]
+  );
 
   const instalacoesDoMes = useMemo(
     () =>
@@ -215,6 +221,7 @@ export default function AnaliseScreen() {
           {renderAbaButton("rentabilidade", "Rentabilidade")}
           {renderAbaButton("tendencias", "Tendências")}
           {renderAbaButton("produtividade", "Produtividade")}
+          {renderAbaButton("diaadia", "Dia a Dia")}
           {renderAbaButton("mesames", "Mês a Mês")}
         </ScrollView>
 
@@ -699,6 +706,69 @@ export default function AnaliseScreen() {
                     </View>
                   )
                 )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Conteúdo Dia a Dia */}
+        {abaSelecionada === "diaadia" && (
+          <View style={styles.conteudo}>
+            {analisesDiaADia.length === 0 ? (
+              <Text style={[styles.vazio, { color: colors.muted }]}>
+                Sem dados para exibir
+              </Text>
+            ) : (
+              <View>
+                <Text style={[styles.cardTitulo, { color: colors.foreground, marginBottom: 12 }]}>
+                  Progressão Diária por Mês
+                </Text>
+                <FlatList
+                  data={analisesDiaADia}
+                  keyExtractor={(item) => `dia-${item.dia}`}
+                  scrollEnabled={false}
+                  renderItem={({ item }) => (
+                    <View
+                      style={[
+                        styles.card,
+                        {
+                          backgroundColor: colors.surface,
+                          borderColor: colors.border,
+                          marginBottom: 12,
+                        },
+                      ]}
+                    >
+                      <View style={styles.cardHeader}>
+                        <Text style={[styles.cardTitulo, { color: colors.foreground }]}>
+                          Dia {String(item.dia).padStart(2, "0")}
+                        </Text>
+                      </View>
+                      <View style={{ gap: 8 }}>
+                        {item.meses.map((mes, idx) => {
+                          const mesNome = new Date(mes.ano, mes.mes - 1).toLocaleDateString(
+                            "pt-BR",
+                            { month: "short", year: "2-digit" }
+                          );
+                          return (
+                            <View key={idx} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                              <Text style={[styles.cardSub, { color: colors.muted }]}>
+                                {mesNome}
+                              </Text>
+                              <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+                                <Text style={[styles.cardValor, { color: colors.primary, fontSize: 16 }]}>
+                                  {mes.acumulado}
+                                </Text>
+                                <Text style={[styles.cardSub, { color: colors.muted, fontSize: 12 }]}>
+                                  (+{mes.diario})
+                                </Text>
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
+                />
               </View>
             )}
           </View>

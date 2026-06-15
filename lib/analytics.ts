@@ -281,3 +281,97 @@ export function analisarMesAMes(instalacoes: Installation[]): AnalyticsMesAMes[]
     return b.mes - a.mes;
   }).slice(0, 12); // Limitar aos últimos 12 meses
 }
+
+
+// Interface para análise dia a dia comparativa entre meses
+export interface AnalyticsDiaADia {
+  dia: number;
+  meses: Array<{
+    mes: number;
+    ano: number;
+    acumulado: number; // Total acumulado até esse dia
+    diario: number; // Apenas nesse dia
+  }>;
+}
+
+/**
+ * Calcula a progressão dia a dia comparando múltiplos meses
+ * Retorna para cada dia do mês, quantas instalações foram feitas em cada mês
+ */
+export function analisarDiaADia(
+  instalacoes: Array<{ data: string; tipoServico: string }>,
+  mesReferencia?: number,
+  anoReferencia?: number
+): AnalyticsDiaADia[] {
+  const hoje = new Date();
+  const mesRef = mesReferencia ?? hoje.getMonth() + 1;
+  const anoRef = anoReferencia ?? hoje.getFullYear();
+
+  // Agrupar instalações por dia e mês
+  const dadosPorDia: Record<
+    number,
+    Record<string, number> // dia -> "mes/ano" -> quantidade
+  > = {};
+
+  instalacoes.forEach((inst) => {
+    const [dia, mes, ano] = inst.data.split("/").map(Number);
+
+    if (!dadosPorDia[dia]) {
+      dadosPorDia[dia] = {};
+    }
+
+    const chave = `${mes}/${ano}`;
+    dadosPorDia[dia][chave] = (dadosPorDia[dia][chave] || 0) + 1;
+  });
+
+  // Obter todos os meses únicos presentes nos dados
+  const mesesUnicos = new Set<string>();
+  Object.values(dadosPorDia).forEach((dias) => {
+    Object.keys(dias).forEach((chave) => mesesUnicos.add(chave));
+  });
+
+  // Converter para array e ordenar
+  const mesesArray = Array.from(mesesUnicos)
+    .map((chave) => {
+      const [mes, ano] = chave.split("/").map(Number);
+      return { mes, ano, chave };
+    })
+    .sort((a, b) => {
+      if (a.ano !== b.ano) return a.ano - b.ano;
+      return a.mes - b.mes;
+    });
+
+  // Construir resultado para cada dia
+  const resultado: AnalyticsDiaADia[] = [];
+
+  for (let dia = 1; dia <= 31; dia++) {
+    const dadosDia = dadosPorDia[dia] || {};
+
+    const meses = mesesArray.map(({ mes, ano, chave }) => {
+      const diario = dadosDia[chave] || 0;
+
+      // Calcular acumulado até esse dia
+      let acumulado = 0;
+      for (let d = 1; d <= dia; d++) {
+        acumulado += dadosPorDia[d]?.[chave] || 0;
+      }
+
+      return {
+        mes,
+        ano,
+        acumulado,
+        diario,
+      };
+    });
+
+    // Apenas incluir dias que têm dados em algum mês
+    if (meses.some((m) => m.acumulado > 0)) {
+      resultado.push({
+        dia,
+        meses,
+      });
+    }
+  }
+
+  return resultado;
+}
