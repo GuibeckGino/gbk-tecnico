@@ -20,6 +20,8 @@ import {
   analisarTendencias,
   analisarDiaADia,
   calcularPrevisaoFechamento,
+  calcularAlertasDesempenho,
+  compararHistorico,
 } from "@/lib/analytics";
 import {
   analisarProdutividadePorDia,
@@ -169,6 +171,14 @@ export default function AnaliseScreen() {
   const previsaoFechamento = useMemo(
     () => calcularPrevisaoFechamento(instalacoesDoMes, monthlyGoal),
     [instalacoesDoMes, monthlyGoal]
+  );
+  const alertasDesempenho = useMemo(
+    () => calcularAlertasDesempenho(previsaoFechamento, monthlyGoal),
+    [previsaoFechamento, monthlyGoal]
+  );
+  const comparacaoHistorica = useMemo(
+    () => compararHistorico(instalacoes, mes + 1, ano),
+    [instalacoes, mes, ano]
   );
 
   const renderAbaButton = useCallback(
@@ -783,6 +793,45 @@ export default function AnaliseScreen() {
                       <Text style={[styles.cardSub, { color: colors.muted }]}>% da Meta:</Text>
                       <Text style={[styles.cardValor, { color: previsaoFechamento.percentualMeta >= 100 ? colors.success : colors.error, fontSize: 16, fontWeight: "700" }]}>
                         {previsaoFechamento.percentualMeta}%
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Alertas de Desempenho */}
+                <View style={[styles.card, { 
+                  backgroundColor: alertasDesempenho.tipo === "abaixo" ? colors.error + "15" : alertasDesempenho.tipo === "acima" ? colors.warning + "15" : colors.success + "15",
+                  borderColor: alertasDesempenho.tipo === "abaixo" ? colors.error : alertasDesempenho.tipo === "acima" ? colors.warning : colors.success,
+                  marginBottom: 16,
+                  borderWidth: 2
+                }]}>
+                  <Text style={[styles.cardTitulo, { 
+                    color: alertasDesempenho.tipo === "abaixo" ? colors.error : alertasDesempenho.tipo === "acima" ? colors.warning : colors.success,
+                    marginBottom: 12 
+                  }]}>
+                    {alertasDesempenho.mensagem}
+                  </Text>
+                  <View style={{ gap: 8 }}>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={[styles.cardSub, { color: colors.muted }]}>Esperado:</Text>
+                      <Text style={[styles.cardValor, { color: colors.muted, fontSize: 14 }]}>
+                        {alertasDesempenho.velocidadeEsperada.toFixed(2)} por dia
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={[styles.cardSub, { color: colors.muted }]}>Atual:</Text>
+                      <Text style={[styles.cardValor, { color: colors.foreground, fontSize: 14, fontWeight: "600" }]}>
+                        {alertasDesempenho.velocidadeAtual.toFixed(2)} por dia
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
+                      <Text style={[styles.cardSub, { color: colors.muted }]}>Desvio:</Text>
+                      <Text style={[styles.cardValor, { 
+                        color: alertasDesempenho.tipo === "abaixo" ? colors.error : alertasDesempenho.tipo === "acima" ? colors.warning : colors.success,
+                        fontSize: 14, 
+                        fontWeight: "600" 
+                      }]}>
+                        {alertasDesempenho.percentualDesvio.toFixed(0)}%
                       </Text>
                     </View>
                   </View>

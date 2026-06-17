@@ -413,3 +413,130 @@ export function calcularPrevisaoFechamento(
     percentualMeta,
   };
 }
+
+
+/**
+ * Interface para alertas de desempenho
+ */
+export interface AlertaDesempenho {
+  tipo: "abaixo" | "acima" | "normal";
+  mensagem: string;
+  velocidadeEsperada: number;
+  velocidadeAtual: number;
+  percentualDesvio: number;
+}
+
+/**
+ * Calcula alertas baseado na velocidade diária
+ */
+export function calcularAlertasDesempenho(
+  previsao: {
+    velocidadeDiaria: number;
+    diasRestantes: number;
+    previsao: number;
+  },
+  metaMensal: number = 104
+): AlertaDesempenho {
+  const velocidadeEsperada = metaMensal / 30; // ~3.47 por dia
+  const desvio = previsao.velocidadeDiaria - velocidadeEsperada;
+  const percentualDesvio = Math.abs((desvio / velocidadeEsperada) * 100);
+
+  if (previsao.velocidadeDiaria < velocidadeEsperada * 0.8) {
+    return {
+      tipo: "abaixo",
+      mensagem: `⚠️ Velocidade abaixo do esperado! ${percentualDesvio.toFixed(0)}% abaixo da meta.`,
+      velocidadeEsperada,
+      velocidadeAtual: previsao.velocidadeDiaria,
+      percentualDesvio,
+    };
+  }
+
+  if (previsao.velocidadeDiaria > velocidadeEsperada * 1.5) {
+    return {
+      tipo: "acima",
+      mensagem: `🔥 Ritmo acelerado! ${percentualDesvio.toFixed(0)}% acima da meta. Cuidado com o burnout!`,
+      velocidadeEsperada,
+      velocidadeAtual: previsao.velocidadeDiaria,
+      percentualDesvio,
+    };
+  }
+
+  return {
+    tipo: "normal",
+    mensagem: `✅ Ritmo dentro do esperado. Mantendo ${previsao.velocidadeDiaria.toFixed(2)} por dia.`,
+    velocidadeEsperada,
+    velocidadeAtual: previsao.velocidadeDiaria,
+    percentualDesvio,
+  };
+}
+
+/**
+ * Interface para comparação histórica
+ */
+export interface ComparacaoHistorica {
+  dia: number;
+  mesAtual: { mes: number; ano: number; acumulado: number };
+  mesPosterior?: { mes: number; ano: number; acumulado: number };
+  diferenca: number;
+  percentualMudanca: number;
+}
+
+/**
+ * Compara o mesmo dia entre meses consecutivos
+ */
+export function compararHistorico(
+  instalacoes: Array<{ data: string; tipoServico: string }>,
+  mesAtual: number,
+  anoAtual: number
+): ComparacaoHistorica[] {
+  const dadosPorDia: Record<number, Record<string, number>> = {};
+
+  // Agrupar por dia e mês
+  instalacoes.forEach((inst) => {
+    const [dia, mes, ano] = inst.data.split("/").map(Number);
+    if (!dadosPorDia[dia]) dadosPorDia[dia] = {};
+    const chave = `${mes}/${ano}`;
+    dadosPorDia[dia][chave] = (dadosPorDia[dia][chave] || 0) + 1;
+  });
+
+  const resultado: ComparacaoHistorica[] = [];
+
+  // Para cada dia, comparar com o mês anterior
+  for (let dia = 1; dia <= 31; dia++) {
+    const dadosDia = dadosPorDia[dia] || {};
+
+    // Mês atual
+    let acumuladoAtual = 0;
+    for (let d = 1; d <= dia; d++) {
+      acumuladoAtual += dadosPorDia[d]?.[`${mesAtual}/${anoAtual}`] || 0;
+    }
+
+    // Mês anterior
+    let mesPosterior = mesAtual - 1;
+    let anoAnterior = anoAtual;
+    if (mesPosterior === 0) {
+      mesPosterior = 12;
+      anoAnterior--;
+    }
+
+    let acumuladoAnterior = 0;
+    for (let d = 1; d <= dia; d++) {
+      acumuladoAnterior += dadosPorDia[d]?.[`${mesPosterior}/${anoAnterior}`] || 0;
+    }
+
+    if (acumuladoAtual > 0 || acumuladoAnterior > 0) {
+      const diferenca = acumuladoAtual - acumuladoAnterior;
+      const percentualMudanca = acumuladoAnterior > 0 ? (diferenca / acumuladoAnterior) * 100 : 0;
+
+      resultado.push({
+        dia,
+        mesAtual: { mes: mesAtual, ano: anoAtual, acumulado: acumuladoAtual },
+        mesPosterior: { mes: mesPosterior, ano: anoAnterior, acumulado: acumuladoAnterior },
+        diferenca,
+        percentualMudanca,
+      });
+    }
+  }
+
+  return resultado;
+}
