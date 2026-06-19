@@ -17,7 +17,7 @@ import type { ServiceType } from "@/types/installation";
 import * as Haptics from "expo-haptics";
 import { formatarData, validarData, validarCliente, validarEndereco } from "@/lib/input-masks";
 import { DatePickerModal } from "@/components/date-picker-modal";
-import { BAIRROS_LEM, buscarBairros } from "@/lib/bairros-lem";
+import { BAIRROS_LEM, buscarBairros, validarBairro } from "@/lib/bairros-lem";
 import { ImportModal } from "@/components/import-modal";
 import type { Installation } from "@/types/installation";
 
@@ -97,6 +97,10 @@ export default function NovoCadastroScreen() {
       Alert.alert("Bairro obrigatório", "Selecione um bairro.");
       return;
     }
+    if (!validarBairro(bairro)) {
+      Alert.alert("Bairro inválido", "Selecione um bairro da lista.");
+      return;
+    }
     if (!validarData(data)) {
       Alert.alert("Data inválida", "Informe uma data válida no formato dd/mm/aaaa.");
       return;
@@ -124,6 +128,12 @@ export default function NovoCadastroScreen() {
       setObservacoes("");
       // Voltar ao dashboard
       router.replace("/");
+    } catch (error) {
+      console.error('Erro ao salvar instalação:', error);
+      Alert.alert(
+        "Erro ao salvar",
+        "Não foi possível salvar a instalação. Tente novamente."
+      );
     } finally {
       setSalvando(false);
     }

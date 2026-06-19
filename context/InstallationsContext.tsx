@@ -147,6 +147,7 @@ interface InstallationsContextValue {
   }) => Promise<void>;
   atualizarInstalacao: (instalacao: Installation) => Promise<void>;
   removerInstalacao: (id: string) => Promise<void>;
+  deletarInstalacao: (id: string) => Promise<void>;
   limparDados: () => Promise<void>;
   exportarJSON: () => string;
   importarJSON: (json: string) => Promise<boolean>;
@@ -217,6 +218,10 @@ export function InstallationsProvider({
   );
 
   const removerInstalacao = useCallback(async (id: string) => {
+    dispatch({ type: "REMOVER", payload: id });
+  }, []);
+
+  const deletarInstalacao = useCallback(async (id: string) => {
     dispatch({ type: "REMOVER", payload: id });
   }, []);
 
@@ -320,6 +325,7 @@ export function InstallationsProvider({
         adicionarInstalacao,
         atualizarInstalacao,
         removerInstalacao,
+        deletarInstalacao,
         limparDados,
         exportarJSON,
         importarJSON,

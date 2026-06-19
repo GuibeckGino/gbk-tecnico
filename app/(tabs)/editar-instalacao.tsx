@@ -7,11 +7,12 @@ import { useColors } from '@/hooks/use-colors';
 import { DatePickerModal } from '@/components/date-picker-modal';
 import * as Haptics from 'expo-haptics';
 import { Installation, ServiceType } from '@/types/installation';
+import { useInstallations as useInstallationsContext } from '@/context/InstallationsContext';
 
 export default function EditarInstalacaoScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { instalacoes, atualizarInstalacao } = useInstallations();
+  const { instalacoes, atualizarInstalacao, deletarInstalacao } = useInstallations();
   const colors = useColors();
 
   const installationId = (route.params as any)?.id;
@@ -41,25 +42,30 @@ export default function EditarInstalacaoScreen() {
     }
 
     if (installation) {
-      atualizarInstalacao({
-        ...installation,
-        cliente,
-        endereco,
-        tipoServico,
-        data,
-        observacoes,
-      });
+      try {
+        atualizarInstalacao({
+          ...installation,
+          cliente,
+          endereco,
+          tipoServico,
+          data,
+          observacoes,
+        });
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Sucesso', 'Instalação atualizada com sucesso!');
-      navigation.goBack();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('Sucesso', 'Instalação atualizada com sucesso!');
+        navigation.goBack();
+      } catch (error) {
+        console.error('Erro ao atualizar instalação:', error);
+        Alert.alert('Erro', 'Não foi possível atualizar a instalação. Tente novamente.');
+      }
     }
   };
 
   const handleDeletar = () => {
     Alert.alert(
       'Deletar Instalação',
-      'Tem certeza que deseja deletar esta instalação?',
+      'Tem certeza que deseja deletar esta instalação? Esta ação não pode ser desfeita.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -67,9 +73,15 @@ export default function EditarInstalacaoScreen() {
           style: 'destructive',
           onPress: () => {
             if (installation) {
-              // Implementar delete no contexto
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              navigation.goBack();
+              try {
+                deletarInstalacao(installation.id);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Alert.alert('Sucesso', 'Instalação deletada com sucesso!');
+                navigation.goBack();
+              } catch (error) {
+                console.error('Erro ao deletar instalação:', error);
+                Alert.alert('Erro', 'Não foi possível deletar a instalação. Tente novamente.');
+              }
             }
           },
         },
