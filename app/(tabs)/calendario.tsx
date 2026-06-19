@@ -19,7 +19,7 @@ interface DiaCalendario {
 
 export default function CalendarioScreen() {
   const { instalacoes, paymentMode, monthlyGoal } = useInstallations();
-  const { mes, ano } = useMonth();
+  const { mes, ano, irParaMes } = useMonth();
   const colors = useColors();
   const [diaAtual, setDiaAtual] = useState<number | null>(null);
   const { bairroSelecionado, setBairroSelecionado } = useBairroFilter();
@@ -133,11 +133,24 @@ export default function CalendarioScreen() {
           />
         </View>
 
-        {/* Cabeçalho */}
+        {/* Cabeçalho com Seletor de Ano */}
         <View>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.foreground }}>
-            {nomesMes[mesIndex]} de {ano}
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <TouchableOpacity onPress={() => { const novoAno = ano - 1; irParaMes(mes, novoAno); }} style={{ padding: 8 }}>
+              <Text style={{ fontSize: 24, color: colors.primary, fontWeight: 'bold' }}>←</Text>
+            </TouchableOpacity>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.foreground }}>
+                {nomesMes[mesIndex]} de {ano}
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
+                {ano === new Date().getFullYear() ? 'Ano Atual' : ano > new Date().getFullYear() ? 'Próximo' : 'Anterior'}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => { const novoAno = ano + 1; irParaMes(mes, novoAno); }} style={{ padding: 8 }}>
+              <Text style={{ fontSize: 24, color: colors.primary, fontWeight: 'bold' }}>→</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4 }}>
             Visualize suas instalações no calendário
           </Text>
