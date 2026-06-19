@@ -110,29 +110,36 @@ export default function HistoricoScreen() {
     }
   }
 
-  function duplicarInstalacao(instalacao: Installation) {
-    // Criar nova instalação com dados da atual mas com data de hoje
-    const hoje = new Date();
-    const dia = String(hoje.getDate()).padStart(2, "0");
-    const mesHoje = String(hoje.getMonth() + 1).padStart(2, "0");
-    const anoHoje = hoje.getFullYear();
-    const dataHoje = `${dia}/${mesHoje}/${anoHoje}`;
+  async function duplicarInstalacao(instalacao: Installation) {
+    try {
+      // Criar nova instalação com dados da atual mas com data de hoje
+      const hoje = new Date();
+      const dia = String(hoje.getDate()).padStart(2, "0");
+      const mesHoje = String(hoje.getMonth() + 1).padStart(2, "0");
+      const anoHoje = hoje.getFullYear();
+      const dataHoje = `${dia}/${mesHoje}/${anoHoje}`;
 
-    const novaInstalacao: Installation = {
-      ...instalacao,
-      id: Math.random().toString(36).substring(2, 11),
-      data: dataHoje,
-    };
+      const novaInstalacao: Installation = {
+        ...instalacao,
+        id: Math.random().toString(36).substring(2, 11),
+        data: dataHoje,
+      };
 
-    // Adicionar à lista de instalações
-    const novaLista = [...instalacoes, novaInstalacao];
-    AsyncStorage.setItem("@gbk_instalacoes", JSON.stringify(novaLista)).catch(() => {});
-    setInstallations(novaLista);
-    hapticSuccess();
+      // Adicionar à lista de instalações
+      const novaLista = [...instalacoes, novaInstalacao];
+      await AsyncStorage.setItem("@gbk_instalacoes", JSON.stringify(novaLista));
+      await setInstallations(novaLista);
+      hapticSuccess();
+      Alert.alert("Sucesso", "Instalação duplicada com sucesso!");
+    } catch (error) {
+      console.error('Erro ao duplicar instalação:', error);
+      hapticError();
+      Alert.alert("Erro", "Não foi possível duplicar a instalação. Tente novamente.");
+    }
   }
 
   function abrirConfirmacaoExclusao(inst: Installation) {
-    hapticError();
+    haptic();
     setConfirmandoExclusao(inst);
   }
 

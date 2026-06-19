@@ -10,6 +10,7 @@ import {
 import { LineChart } from "react-native-chart-kit";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
+import { useMonth } from "@/context/MonthContext";
 import { useColors } from "@/hooks/use-colors";
 
 const nomesMeses = [

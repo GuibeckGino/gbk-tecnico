@@ -3,14 +3,20 @@ import { View, Text, ScrollView, Dimensions, Image } from 'react-native';
 import { BarChart, PieChart, LineChart } from 'react-native-chart-kit';
 import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
+import { useMonth } from '@/context/MonthContext';
 import { useColors } from '@/hooks/use-colors';
 import { calcularValorPorTipo } from '@/types/installation';
+import { filtrarPorMes } from '@/context/MonthContext';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function GraficosScreen() {
   const { instalacoes, paymentMode } = useInstallations();
+  const { mes, ano } = useMonth();
   const colors = useColors();
+
+  // Filtrar instalações do mês selecionado
+  const instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
 
   // Calcular dados por tipo
   const dataByType = useMemo(() => {
@@ -28,16 +34,16 @@ export default function GraficosScreen() {
       'Empresarial': 0,
     };
 
-    instalacoes.forEach((inst: any) => {
+    instalacoesDoMes.forEach((inst: any) => {
       const tipo = inst.tipoServico as keyof typeof types;
       types[tipo] = (types[tipo] || 0) + 1;
       
-      const value = calcularValorPorTipo(inst.tipoServico, instalacoes.length, paymentMode);
+      const value = calcularValorPorTipo(inst.tipoServico, instalacoesDoMes.length, paymentMode);
       valueByType[tipo] = (valueByType[tipo] || 0) + value;
     });
 
     return { types, valueByType };
-  }, [instalacoes, paymentMode]);
+  }, [instalacoesDoMes, paymentMode]);
 
   // Dados para gráfico de barras (quantidade)
   const barChartData = {
