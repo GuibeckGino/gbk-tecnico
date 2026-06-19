@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
@@ -109,27 +109,31 @@ export default function EditarInstalacaoScreen() {
         {/* Campo Cliente */}
         <View style={styles.campo}>
           <Text style={[styles.label, { color: colors.foreground }]}>Cliente</Text>
-          <View
+          <TextInput
             style={[
               styles.input,
-              { backgroundColor: colors.surface, borderColor: colors.border },
+              { backgroundColor: colors.surface, borderColor: colors.border, color: colors.foreground },
             ]}
-          >
-            <Text style={{ color: colors.foreground }}>{cliente}</Text>
-          </View>
+            placeholder="Nome do cliente"
+            placeholderTextColor={colors.muted}
+            value={cliente}
+            onChangeText={setCliente}
+          />
         </View>
 
         {/* Campo Endereço */}
         <View style={styles.campo}>
           <Text style={[styles.label, { color: colors.foreground }]}>Endereço</Text>
-          <View
+          <TextInput
             style={[
               styles.input,
-              { backgroundColor: colors.surface, borderColor: colors.border },
+              { backgroundColor: colors.surface, borderColor: colors.border, color: colors.foreground },
             ]}
-          >
-            <Text style={{ color: colors.foreground }}>{endereco}</Text>
-          </View>
+            placeholder="Endereço completo"
+            placeholderTextColor={colors.muted}
+            value={endereco}
+            onChangeText={setEndereco}
+          />
         </View>
 
         {/* Campo Tipo de Serviço */}
@@ -182,14 +186,18 @@ export default function EditarInstalacaoScreen() {
         {/* Campo Observações */}
         <View style={styles.campo}>
           <Text style={[styles.label, { color: colors.foreground }]}>Observações</Text>
-          <View
+          <TextInput
             style={[
               styles.input,
-              { backgroundColor: colors.surface, borderColor: colors.border, minHeight: 80 },
+              { backgroundColor: colors.surface, borderColor: colors.border, color: colors.foreground, minHeight: 80, textAlignVertical: 'top', paddingTop: 8 },
             ]}
-          >
-            <Text style={{ color: colors.foreground }}>{observacoes || 'Sem observações'}</Text>
-          </View>
+            placeholder="Adicione observações (opcional)"
+            placeholderTextColor={colors.muted}
+            value={observacoes}
+            onChangeText={setObservacoes}
+            multiline
+            numberOfLines={4}
+          />
         </View>
 
         {/* Botões */}
