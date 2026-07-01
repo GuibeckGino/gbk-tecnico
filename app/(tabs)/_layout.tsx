@@ -70,6 +70,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="financeiro"
+        options={{
+          title: "Financeiro",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="dollarsign.circle.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="tendencia"
         options={{
           title: "Tendência",

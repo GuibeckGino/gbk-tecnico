@@ -34,6 +34,8 @@ const MAPPING = {
   "plus.circle.fill": "add-circle",
   "list.bullet": "list",
   "gearshape.fill": "settings",
+  "dollarsign.circle.fill": "attach-money",
+  "map.fill": "map",
 } as IconMapping;
 
 /**

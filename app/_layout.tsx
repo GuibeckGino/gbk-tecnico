@@ -13,6 +13,7 @@ import { GBKThemeProvider } from "@/context/ThemeContext";
 import { MonthProvider } from "@/context/MonthContext";
 import { WorkScheduleProvider } from "@/context/WorkScheduleContext";
 import { BairroFilterProvider } from "@/context/BairroFilterContext";
+import { FinanceProvider } from "@/context/FinanceContext";
 
 import {
   SafeAreaFrameContext,
@@ -92,6 +93,7 @@ export default function RootLayout() {
       <MonthProvider>
       <WorkScheduleProvider>
       <BairroFilterProvider>
+      <FinanceProvider>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
@@ -104,6 +106,7 @@ export default function RootLayout() {
           <StatusBar style="auto" />
         </QueryClientProvider>
       </trpc.Provider>
+      </FinanceProvider>
       </BairroFilterProvider>
       </WorkScheduleProvider>
       </MonthProvider>
