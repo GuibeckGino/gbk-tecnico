@@ -23,7 +23,7 @@ type TabType = 'resumo' | 'receitas' | 'despesas' | 'combustivel' | 'lucro' | 'r
 
 export default function FinanceiroScreen() {
   const { instalacoes, paymentMode } = useInstallations();
-  const { mes, ano } = useMonth();
+  const { mes, ano, proximoMes, mesPrevio, mesAnoFormatado } = useMonth();
   const { state: financeState } = useFinance();
   const colors = useColors();
   const [abaSelecionada, setAbaSelecionada] = useState<TabType>('resumo');
@@ -90,15 +90,30 @@ export default function FinanceiroScreen() {
   return (
     <ScreenContainer className="flex-1">
       <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
-        {/* Cabeçalho */}
+        {/* Cabeçalho com Navegação de Meses */}
         <View className="bg-primary p-4 mb-4">
           <Text className="text-white text-2xl font-bold">Financeiro</Text>
-          <Text className="text-white/80 text-sm">
-            {new Date(ano, mes - 1).toLocaleDateString('pt-BR', {
-              month: 'long',
-              year: 'numeric',
-            })}
-          </Text>
+          
+          {/* Navegação de Meses */}
+          <View className="flex-row justify-between items-center mt-3">
+            <TouchableOpacity
+              onPress={mesPrevio}
+              className="p-2 active:opacity-70"
+            >
+              <Text className="text-white text-lg font-bold">‹</Text>
+            </TouchableOpacity>
+            
+            <Text className="text-white text-sm font-semibold">
+              {mesAnoFormatado}
+            </Text>
+            
+            <TouchableOpacity
+              onPress={proximoMes}
+              className="p-2 active:opacity-70"
+            >
+              <Text className="text-white text-lg font-bold">›</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Alertas Financeiros */}
