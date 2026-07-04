@@ -20,8 +20,9 @@ import { RelatoriosTab } from '@/components/tabs/RelatoriosTab';
 import { AlertasFinanceiros } from '@/components/AlertasFinanceiros';
 import { ComparacaoTab } from '@/components/tabs/ComparacaoTab';
 import { RelatorioAnualTab } from '@/components/tabs/RelatorioAnualTab';
+import { ConfigMetasTab } from '@/components/tabs/ConfigMetasTab';
 
-type TabType = 'resumo' | 'receitas' | 'despesas' | 'combustivel' | 'lucro' | 'relatorios' | 'comparacao' | 'anual';
+type TabType = 'resumo' | 'receitas' | 'despesas' | 'combustivel' | 'lucro' | 'relatorios' | 'comparacao' | 'anual' | 'metas';
 
 export default function FinanceiroScreen() {
   const { instalacoes, paymentMode } = useInstallations();
@@ -133,6 +134,7 @@ export default function FinanceiroScreen() {
           {renderTabButton('relatorios', 'Relatórios')}
           {renderTabButton('comparacao', 'Comparação')}
           {renderTabButton('anual', 'Anual')}
+          {renderTabButton('metas', 'Metas')}
         </View>
 
         {/* Conteúdo das Abas */}
@@ -242,6 +244,10 @@ export default function FinanceiroScreen() {
 
           {abaSelecionada === 'anual' && (
             <RelatorioAnualTab />
+          )}
+
+          {abaSelecionada === 'metas' && (
+            <ConfigMetasTab />
           )}
         </View>
       </ScrollView>

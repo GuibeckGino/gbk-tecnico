@@ -116,6 +116,13 @@ interface FinanceContextValue {
   setMetaDespesas: (valor: number) => void;
   setPrecoMedioCombustivel: (valor: number) => void;
   setConsumoMedioVeiculo: (valor: number) => void;
+  atualizarMetas: (metas: {
+    metaFaturamento: number;
+    metaLucro: number;
+    metaDespesasMax: number;
+    precoMedioCombustivel: number;
+    consumoMedioVeiculo: number;
+  }) => void;
   salvarEstado: () => Promise<void>;
   carregarEstado: () => Promise<void>;
 }
@@ -161,6 +168,13 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
       setMetaDespesas: (valor) => dispatch({ type: 'SET_META_DESPESAS', payload: valor }),
       setPrecoMedioCombustivel: (valor) => dispatch({ type: 'SET_PRECO_COMBUSTIVEL', payload: valor }),
       setConsumoMedioVeiculo: (valor) => dispatch({ type: 'SET_CONSUMO_VEICULO', payload: valor }),
+      atualizarMetas: (metas) => {
+        dispatch({ type: 'SET_META_FATURAMENTO', payload: metas.metaFaturamento });
+        dispatch({ type: 'SET_META_LUCRO', payload: metas.metaLucro });
+        dispatch({ type: 'SET_META_DESPESAS', payload: metas.metaDespesasMax });
+        dispatch({ type: 'SET_PRECO_COMBUSTIVEL', payload: metas.precoMedioCombustivel });
+        dispatch({ type: 'SET_CONSUMO_VEICULO', payload: metas.consumoMedioVeiculo });
+      },
       salvarEstado,
       carregarEstado,
     }),

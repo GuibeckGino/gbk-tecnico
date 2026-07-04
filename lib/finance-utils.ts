@@ -7,15 +7,15 @@ export function calcularReceitaBruta(
   ano: number,
   paymentMode: 'meta' | 'fixo65' | 'fixo70' = 'meta'
 ): number {
-  return instalacoes
-    .filter(i => {
-      const data = new Date(i.createdAt);
-      return data.getMonth() + 1 === mes && data.getFullYear() === ano;
-    })
-    .reduce((sum, i) => {
-      const valor = calcularValorPorTipo(i.tipoServico, instalacoes.length, paymentMode);
-      return sum + valor;
-    }, 0);
+  const instalacoesDoMes = instalacoes.filter(i => {
+    const data = new Date(i.createdAt);
+    return data.getMonth() + 1 === mes && data.getFullYear() === ano;
+  });
+  
+  return instalacoesDoMes.reduce((sum, i) => {
+    const valor = calcularValorPorTipo(i.tipoServico, instalacoesDoMes.length, paymentMode);
+    return sum + valor;
+  }, 0);
 }
 
 export function calcularTotalInstalacoes(
@@ -24,7 +24,7 @@ export function calcularTotalInstalacoes(
   ano: number
 ): number {
   return instalacoes.filter(i => {
-    const data = new Date(i.data);
+    const data = new Date(i.createdAt);
     return data.getMonth() + 1 === mes && data.getFullYear() === ano;
   }).length;
 }
@@ -78,16 +78,15 @@ export function calcularReceitaPorBairro(
   paymentMode: 'meta' | 'fixo65' | 'fixo70' = 'meta'
 ): { [bairro: string]: number } {
   const resultado: { [bairro: string]: number } = {};
+  const instalacoesDoMes = instalacoes.filter(i => {
+    const data = new Date(i.createdAt);
+    return data.getMonth() + 1 === mes && data.getFullYear() === ano;
+  });
   
-  instalacoes
-    .filter(i => {
-      const data = new Date(i.createdAt);
-      return data.getMonth() + 1 === mes && data.getFullYear() === ano;
-    })
-    .forEach(i => {
-      const valor = calcularValorPorTipo(i.tipoServico, instalacoes.length, paymentMode);
-      resultado[i.endereco] = (resultado[i.endereco] || 0) + valor;
-    });
+  instalacoesDoMes.forEach(i => {
+    const valor = calcularValorPorTipo(i.tipoServico, instalacoesDoMes.length, paymentMode);
+    resultado[i.endereco] = (resultado[i.endereco] || 0) + valor;
+  });
   
   return resultado;
 }
@@ -99,16 +98,15 @@ export function calcularReceitaPorTipo(
   paymentMode: 'meta' | 'fixo65' | 'fixo70' = 'meta'
 ): { [tipo: string]: number } {
   const resultado: { [tipo: string]: number } = {};
+  const instalacoesDoMes = instalacoes.filter(i => {
+    const data = new Date(i.createdAt);
+    return data.getMonth() + 1 === mes && data.getFullYear() === ano;
+  });
   
-  instalacoes
-    .filter(i => {
-      const data = new Date(i.createdAt);
-      return data.getMonth() + 1 === mes && data.getFullYear() === ano;
-    })
-    .forEach(i => {
-      const valor = calcularValorPorTipo(i.tipoServico, instalacoes.length, paymentMode);
-      resultado[i.tipoServico] = (resultado[i.tipoServico] || 0) + valor;
-    });
+  instalacoesDoMes.forEach(i => {
+    const valor = calcularValorPorTipo(i.tipoServico, instalacoesDoMes.length, paymentMode);
+    resultado[i.tipoServico] = (resultado[i.tipoServico] || 0) + valor;
+  });
   
   return resultado;
 }
