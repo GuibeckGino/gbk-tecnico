@@ -1,5 +1,5 @@
 import { Installation, calcularValorPorTipo } from '@/types/installation';
-import { Expense, FuelSupply, FinancialSummary, MonthlyFinancial, FinancialForecast } from '@/types/finance';
+import { Expense, FuelSupply, FinancialSummary, MonthlyFinancial, FinancialForecast, ReceiptStatus } from '@/types/finance';
 
 export function calcularReceitaBruta(
   instalacoes: Installation[],
@@ -16,6 +16,22 @@ export function calcularReceitaBruta(
     const valor = calcularValorPorTipo(i.tipoServico, instalacoesDoMes.length, paymentMode);
     return sum + valor;
   }, 0);
+}
+
+export function calcularReceitaRecebida(
+  receipts: ReceiptStatus[]
+): number {
+  return receipts
+    .filter(r => r.status === 'Recebido')
+    .reduce((sum, r) => sum + r.valorRecebido, 0);
+}
+
+export function calcularReceitaPendente(
+  receipts: ReceiptStatus[]
+): number {
+  return receipts
+    .filter(r => r.status === 'Pendente')
+    .reduce((sum, r) => sum + r.valorPrevisto, 0);
 }
 
 export function calcularTotalInstalacoes(
@@ -282,22 +298,24 @@ export function calcularSummary(
   mes: number,
   ano: number,
   diasTrabalhados: number,
-  paymentMode: 'meta' | 'fixo65' | 'fixo70' = 'meta'
+  paymentMode: 'meta' | 'fixo65' | 'fixo70' = 'meta',
+  receipts: ReceiptStatus[] = []
 ): FinancialSummary {
   const receitaBruta = calcularReceitaBruta(instalacoes, mes, ano, paymentMode);
+  const receitaRecebida = calcularReceitaRecebida(receipts);
   const totalInstalacoes = calcularTotalInstalacoes(instalacoes, mes, ano);
   const gastosCombustivel = calcularCombustivelTotal(fuelSupplies, mes, ano);
   const outrasDespesas = calcularDespesasTotal(expenses, mes, ano);
-  const lucroLiquido = calcularLucroLiquido(receitaBruta, outrasDespesas, gastosCombustivel);
+  const lucroLiquido = calcularLucroLiquido(receitaRecebida, outrasDespesas, gastosCombustivel);
   
   return {
-    receitaBruta,
+    receitaBruta: receitaRecebida,
     totalInstalacoes,
     gastosCombustivel,
     outrasDespesas,
     lucroLiquido,
-    ticketMedio: calcularTicketMedio(receitaBruta, totalInstalacoes),
-    receitaPorDia: calcularReceitaPorDia(receitaBruta, diasTrabalhados),
+    ticketMedio: calcularTicketMedio(receitaRecebida, totalInstalacoes),
+    receitaPorDia: calcularReceitaPorDia(receitaRecebida, diasTrabalhados),
     receitaPorBairro: calcularReceitaPorBairro(instalacoes, mes, ano, paymentMode),
     receitaPorTipo: calcularReceitaPorTipo(instalacoes, mes, ano, paymentMode),
   };

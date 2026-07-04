@@ -39,9 +39,10 @@ export default function FinanceiroScreen() {
       mes,
       ano,
       22, // dias trabalhados padrão
-      paymentMode
+      paymentMode,
+      financeState.receipts
     );
-  }, [instalacoes, financeState.expenses, financeState.fuelSupplies, mes, ano, paymentMode]);
+  }, [instalacoes, financeState.expenses, financeState.fuelSupplies, mes, ano, paymentMode, financeState.receipts]);
 
   const lucroPorBairro = useMemo(() => {
     return calcularLucroPorBairro(
