@@ -14,8 +14,6 @@ import { useMetaMilestones } from '@/hooks/use-meta-milestones';
 import { Toast } from '@/components/toast';
 import { useBairroFilter } from '@/context/BairroFilterContext';
 import { BairroFilter } from '@/components/bairro-filter';
-import { FinanceWidgets } from '@/components/FinanceWidgets';
-import { useRouter } from 'expo-router';
 
 export default function DashboardScreen() {
   const { instalacoes, paymentMode, monthlyGoal } = useInstallations();
@@ -405,10 +403,7 @@ export default function DashboardScreen() {
               </View>
             </View>
           )}
-          {/* Widgets Financeiros */}
-          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-            <FinanceWidgets />
-          </View>
+
         </Animated.View>
       </ScrollView>
     </ScreenContainer>

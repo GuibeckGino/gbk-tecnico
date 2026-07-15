@@ -61,47 +61,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="graficos"
+        options={{
+          title: "Gráficos",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="chart.pie.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="analise"
         options={{
           title: "Análise",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="chart.bar.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="financeiro"
-        options={{
-          title: "Financeiro",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="dollarsign.circle.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="tendencia"
-        options={{
-          title: "Tendência",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="chart.line.uptrend.xyaxis" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="relatorio-bairro"
-        options={{
-          title: "Bairros",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="map.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="configuracoes"
-        options={{
-          title: "Config",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="gearshape.fill" color={color} />
+            <IconSymbol size={26} name="magnifyingglass" color={color} />
           ),
         }}
       />
