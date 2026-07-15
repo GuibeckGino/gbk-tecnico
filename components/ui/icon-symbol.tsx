@@ -36,6 +36,10 @@ const MAPPING = {
   "gearshape.fill": "settings",
   "dollarsign.circle.fill": "attach-money",
   "map.fill": "map",
+  "chart.pie.fill": "pie-chart",
+  "magnifyingglass": "search",
+  "calendar": "calendar-today",
+  "eye.fill": "visibility",
 } as IconMapping;
 
 /**
