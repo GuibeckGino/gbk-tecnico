@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
 import { useMonth, filtrarPorMes } from "@/context/MonthContext";
@@ -42,7 +41,6 @@ function hapticSuccess() {
 }
 
 export default function HistoricoScreen() {
-  const router = useRouter();
   const { instalacoes, stats, removerInstalacao, atualizarInstalacao, setInstallations, toggleFavorito } =
     useInstallations();
   const { mes, ano, mesAnoFormatado } = useMonth();
@@ -298,20 +296,13 @@ export default function HistoricoScreen() {
           contentContainerStyle={styles.lista}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <Pressable
-              onPress={() => {
-                haptic();
-                router.push(`/detalhes-os?id=${item.id}`);
-              }}
-            >
-              <CardInstalacao
-                instalacao={item}
-                valorIndividual={stats.valorIndividual}
-                onExcluir={() => abrirConfirmacaoExclusao(item)}
-                onDuplicar={() => duplicarInstalacao(item)}
-                onToggleFavorito={() => toggleFavorito(item.id)}
-              />
-            </Pressable>
+            <CardInstalacao
+              instalacao={item}
+              valorIndividual={stats.valorIndividual}
+              onExcluir={() => abrirConfirmacaoExclusao(item)}
+              onDuplicar={() => duplicarInstalacao(item)}
+              onToggleFavorito={() => toggleFavorito(item.id)}
+            />
           )}
           ItemSeparatorComponent={() => (
             <View style={{ height: 10 }} />
@@ -610,7 +601,6 @@ function CardInstalacao({
   onToggleFavorito: () => void;
 }) {
   const colors = useColors();
-  const router = useRouter();
 
   const corTipo: Record<ServiceType, string> = {
     Instalação: "#1565C0",
@@ -667,19 +657,6 @@ function CardInstalacao({
       </View>
 
       <View style={styles.cardAcoes}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.acaoBotao,
-            { backgroundColor: colors.primary },
-            pressed && { opacity: 0.7 },
-          ]}
-          onPress={() => {
-            haptic();
-            router.push(`/detalhes-os?id=${instalacao.id}`);
-          }}
-        >
-          <Text style={styles.acaoBotaoTexto}>👁️</Text>
-        </Pressable>
         <Pressable
           style={({ pressed }) => [
             styles.acaoBotao,
