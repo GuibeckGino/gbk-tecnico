@@ -189,6 +189,8 @@ export function InstallationsProvider({
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state.instalacoes)).catch(
         () => {}
       );
+      // Sincronizar com nuvem (quando backend estiver pronto)
+      // useSync().saveInstallationToCloud() para cada instalação
     }
   }, [state.instalacoes, state.carregando]);
 

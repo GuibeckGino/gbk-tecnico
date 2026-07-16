@@ -25,4 +25,34 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+// Tabelas para sincronização de dados do app GBK Técnico
+export const installations = mysqlTable("installations", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: int("userId").notNull(),
+  cliente: text("cliente").notNull(),
+  endereco: text("endereco").notNull(),
+  bairro: varchar("bairro", { length: 255 }),
+  tipoServico: mysqlEnum("tipoServico", ["Instalação", "Tipo 3", "Mudança", "Empresarial"]).notNull(),
+  valor: int("valor").notNull(),
+  data: varchar("data", { length: 10 }).notNull(),
+  observacoes: text("observacoes"),
+  isFavorito: int("isFavorito").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Installation = typeof installations.$inferSelect;
+export type InsertInstallation = typeof installations.$inferInsert;
+
+export const syncLog = mysqlTable("syncLog", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  action: mysqlEnum("action", ["create", "update", "delete"]).notNull(),
+  table: varchar("table", { length: 64 }).notNull(),
+  recordId: varchar("recordId", { length: 64 }).notNull(),
+  data: text("data"),
+  syncedAt: timestamp("syncedAt").defaultNow().notNull(),
+});
+
+export type SyncLog = typeof syncLog.$inferSelect;
+export type InsertSyncLog = typeof syncLog.$inferInsert;

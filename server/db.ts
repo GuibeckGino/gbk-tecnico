@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, installations, InsertInstallation, Installation, syncLog, InsertSyncLog } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,93 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Funções de sincronização para GBK Técnico
+export async function saveInstallation(userId: number, installation: InsertInstallation): Promise<Installation | null> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot save installation: database not available");
+    return null;
+  }
+
+  try {
+    const data = { ...installation, userId };
+    await db.insert(installations).values(data).onDuplicateKeyUpdate({
+      set: data,
+    });
+    
+    // Log da sincronização
+    await db.insert(syncLog).values({
+      userId,
+      action: "create",
+      table: "installations",
+      recordId: installation.id,
+      data: JSON.stringify(data),
+    });
+    
+    return data as Installation;
+  } catch (error) {
+    console.error("[Database] Failed to save installation:", error);
+    return null;
+  }
+}
+
+export async function getInstallationsByUser(userId: number): Promise<Installation[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get installations: database not available");
+    return [];
+  }
+
+  try {
+    return await db.select().from(installations).where(eq(installations.userId, userId));
+  } catch (error) {
+    console.error("[Database] Failed to get installations:", error);
+    return [];
+  }
+}
+
+export async function deleteInstallation(userId: number, installationId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot delete installation: database not available");
+    return false;
+  }
+
+  try {
+    await db.delete(installations).where(eq(installations.id, installationId));
+    
+    // Log da sincronização
+    await db.insert(syncLog).values({
+      userId,
+      action: "delete",
+      table: "installations",
+      recordId: installationId,
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to delete installation:", error);
+    return false;
+  }
+}
+
+export async function getSyncLog(userId: number, since?: Date) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get sync log: database not available");
+    return [];
+  }
+
+  try {
+    let query: any = db.select().from(syncLog).where(eq(syncLog.userId, userId));
+    
+    if (since) {
+      query = query.where(gte(syncLog.syncedAt, since));
+    }
+    
+    return await query.orderBy(desc(syncLog.syncedAt));
+  } catch (error) {
+    console.error("[Database] Failed to get sync log:", error);
+    return [];
+  }
+}
