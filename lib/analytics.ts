@@ -323,71 +323,55 @@ export function analisarDiaADia(
   quantidadeMeses: 3 | 6 | 12 = 6
 ): AnalyticsDiaADia[] {
   const dadosPorDia: Record<number, Record<string, number>> = {};
-
   instalacoes.forEach((inst) => {
-    const [dia, mes, ano] = inst.data.split("/");
-    const chave = `${ano}-${mes}`;
-    const diaNum = parseInt(dia);
-
-    if (!dadosPorDia[diaNum]) {
-      dadosPorDia[diaNum] = {};
-    }
-
-    if (!dadosPorDia[diaNum][chave]) {
-      dadosPorDia[diaNum][chave] = 0;
-    }
-
-    dadosPorDia[diaNum][chave]++;
+    const [dia, mes, ano] = inst.data.split("/").map(Number);
+    if (!dadosPorDia[dia]) dadosPorDia[dia] = {};
+    const chave = `${mes}/${ano}`;
+    dadosPorDia[dia][chave] = (dadosPorDia[dia][chave] || 0) + 1;
   });
-
+  const mesesUnicos = new Set<string>();
+  Object.values(dadosPorDia).forEach((dias) => {
+    Object.keys(dias).forEach((chave) => mesesUnicos.add(chave));
+  });
+  let mesesArray = Array.from(mesesUnicos)
+    .map((chave) => {
+      const [mes, ano] = chave.split("/").map(Number);
+      return { mes, ano, chave };
+    })
+    .sort((a, b) => {
+      if (a.ano !== b.ano) return a.ano - b.ano;
+      return a.mes - b.mes;
+    });
+  if (mesesArray.length > quantidadeMeses) {
+    mesesArray = mesesArray.slice(-quantidadeMeses);
+  }
   const resultado: AnalyticsDiaADia[] = [];
-
-  Object.keys(dadosPorDia)
-    .map(Number)
-    .sort((a, b) => a - b)
-    .forEach((dia) => {
-      const dados = dadosPorDia[dia];
-      const periodos = Object.keys(dados).sort().reverse().slice(0, quantidadeMeses);
-
-      let acumuladoTotal = 0;
-      let maiorAcumulado = 0;
-
-      const mediaAcumulada = acumuladoTotal / periodos.length;
-
-      const meses = periodos.map((chave) => {
-        const [ano, mes] = chave.split("-");
-        const diario = dados[chave] || 0;
-        const acumulado = acumuladoTotal + diario;
-        acumuladoTotal = acumulado;
-
-        if (acumulado > maiorAcumulado) {
-          maiorAcumulado = acumulado;
-        }
-
+  for (let dia = 1; dia <= 31; dia++) {
+    const dadosDia = dadosPorDia[dia] || {};
+    const meses = mesesArray.map(({ mes, ano, chave }) => {
+      const diario = dadosDia[chave] || 0;
+      let acumulado = 0;
+      for (let d = 1; d <= dia; d++) {
+        acumulado += dadosPorDia[d]?.[chave] || 0;
+      }
+      return { mes, ano, acumulado, diario, desempenho: 'igual' as const };
+    });
+    if (meses.some((m) => m.acumulado > 0)) {
+      const mediaAcumulada = meses.reduce((sum, m) => sum + m.acumulado, 0) / meses.length;
+      const mesComDesempenho = meses.map((m) => {
         let desempenho: 'acima' | 'abaixo' | 'igual' = 'igual';
-        if (acumulado > mediaAcumulada * 1.1) {
-          desempenho = 'acima';
-        } else if (acumulado < mediaAcumulada * 0.9) {
-          desempenho = 'abaixo';
-        }
-
-        return {
-          mes: parseInt(mes),
-          ano: parseInt(ano),
-          acumulado,
-          diario,
-          desempenho,
-        };
+        if (m.acumulado > mediaAcumulada * 1.05) desempenho = 'acima';
+        else if (m.acumulado < mediaAcumulada * 0.95) desempenho = 'abaixo';
+        return { ...m, desempenho };
       });
-
       resultado.push({
         dia,
         mediaAcumulada,
-        desempenho: acumuladoTotal > mediaAcumulada * 1.1 ? 'acima' : acumuladoTotal < mediaAcumulada * 0.9 ? 'abaixo' : 'igual',
-        meses,
+        desempenho: mesComDesempenho[0]?.desempenho ?? 'igual',
+        meses: mesComDesempenho,
       });
-    });
-
+    }
+  }
   return resultado;
 }
 
