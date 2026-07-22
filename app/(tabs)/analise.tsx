@@ -774,13 +774,13 @@ export default function AnaliseScreen() {
                     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                       <Text style={[styles.cardSub, { color: colors.muted }]}>Previsão:</Text>
                       <Text style={[styles.cardValor, { color: colors.primary, fontSize: 18 }]}>
-                        {previsaoFechamento.previsao} / {monthlyGoal}
+                        {previsaoFechamento.projecao.toFixed(0)} / {monthlyGoal}
                       </Text>
                     </View>
                     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                       <Text style={[styles.cardSub, { color: colors.muted }]}>Velocidade:</Text>
                       <Text style={[styles.cardValor, { color: colors.success, fontSize: 14 }]}>
-                        {previsaoFechamento.velocidadeDiaria} por dia
+                        {previsaoFechamento.mediadiaria.toFixed(2)} por dia
                       </Text>
                     </View>
                     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -799,43 +799,24 @@ export default function AnaliseScreen() {
                 </View>
 
                 {/* Alertas de Desempenho */}
-                <View style={[styles.card, { 
-                  backgroundColor: alertasDesempenho.tipo === "abaixo" ? colors.error + "15" : alertasDesempenho.tipo === "acima" ? colors.warning + "15" : colors.success + "15",
-                  borderColor: alertasDesempenho.tipo === "abaixo" ? colors.error : alertasDesempenho.tipo === "acima" ? colors.warning : colors.success,
-                  marginBottom: 16,
-                  borderWidth: 2
-                }]}>
-                  <Text style={[styles.cardTitulo, { 
-                    color: alertasDesempenho.tipo === "abaixo" ? colors.error : alertasDesempenho.tipo === "acima" ? colors.warning : colors.success,
-                    marginBottom: 12 
+                {alertasDesempenho.length > 0 && alertasDesempenho.map((alerta, idx) => (
+                  <View key={idx} style={[styles.card, { 
+                    backgroundColor: alerta.tipo === "crítico" ? colors.error + "15" : alerta.tipo === "aviso" ? colors.warning + "15" : colors.success + "15",
+                    borderColor: alerta.tipo === "crítico" ? colors.error : alerta.tipo === "aviso" ? colors.warning : colors.success,
+                    marginBottom: 16,
+                    borderWidth: 2
                   }]}>
-                    {alertasDesempenho.mensagem}
-                  </Text>
-                  <View style={{ gap: 8 }}>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                      <Text style={[styles.cardSub, { color: colors.muted }]}>Esperado:</Text>
-                      <Text style={[styles.cardValor, { color: colors.muted, fontSize: 14 }]}>
-                        {alertasDesempenho.velocidadeEsperada.toFixed(2)} por dia
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                      <Text style={[styles.cardSub, { color: colors.muted }]}>Atual:</Text>
-                      <Text style={[styles.cardValor, { color: colors.foreground, fontSize: 14, fontWeight: "600" }]}>
-                        {alertasDesempenho.velocidadeAtual.toFixed(2)} por dia
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
-                      <Text style={[styles.cardSub, { color: colors.muted }]}>Desvio:</Text>
-                      <Text style={[styles.cardValor, { 
-                        color: alertasDesempenho.tipo === "abaixo" ? colors.error : alertasDesempenho.tipo === "acima" ? colors.warning : colors.success,
-                        fontSize: 14, 
-                        fontWeight: "600" 
-                      }]}>
-                        {alertasDesempenho.percentualDesvio.toFixed(0)}%
-                      </Text>
-                    </View>
+                    <Text style={[styles.cardTitulo, { 
+                      color: alerta.tipo === "crítico" ? colors.error : alerta.tipo === "aviso" ? colors.warning : colors.success,
+                      marginBottom: 12 
+                    }]}>
+                      {alerta.mensagem}
+                    </Text>
+                    <Text style={[styles.cardSub, { color: colors.muted }]}>
+                      Percentual: {alerta.percentual.toFixed(0)}%
+                    </Text>
                   </View>
-                </View>
+                ))}
 
                 <Text style={[styles.cardTitulo, { color: colors.foreground, marginBottom: 12 }]}>
                   Progressão Diária por Mês

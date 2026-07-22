@@ -1,4 +1,5 @@
 import type { Installation } from "@/types/installation";
+import { calcularValorPorTipo } from "@/types/installation";
 
 export interface AnalyticsSemanal {
   semana: number;
@@ -71,8 +72,11 @@ export function analisarSemanal(instalacoes: Installation[]): AnalyticsSemanal[]
   mapa.forEach((insts, chave) => {
     const [ano, semana] = chave.split("-");
     const totalInstalacoes = insts.length;
-    const valorIndividual = totalInstalacoes >= 104 ? 70 : 65;
-    const valorTotal = totalInstalacoes * valorIndividual;
+    // Calcular valor correto considerando tipo de serviço
+    let valorTotal = 0;
+    insts.forEach((inst) => {
+      valorTotal += calcularValorPorTipo(inst.tipoServico, totalInstalacoes, "meta");
+    });
 
     resultado.push({
       semana: parseInt(semana),
@@ -104,8 +108,12 @@ export function analisarPorCliente(instalacoes: Installation[]): AnalyticsClient
 
   mapa.forEach((insts, cliente) => {
     const totalInstalacoes = insts.length;
-    const valorIndividual = totalInstalacoes >= 104 ? 70 : 65;
-    const valorTotal = totalInstalacoes * valorIndividual;
+    // Calcular valor correto considerando tipo de serviço
+    let valorTotal = 0;
+    insts.forEach((inst) => {
+      valorTotal += calcularValorPorTipo(inst.tipoServico, totalInstalacoes, "meta");
+    });
+    const valorMedio = valorTotal / totalInstalacoes;
 
     const tiposServico: Record<string, number> = {};
     insts.forEach((inst) => {
@@ -129,7 +137,7 @@ export function analisarPorCliente(instalacoes: Installation[]): AnalyticsClient
     });
   });
 
-  return resultado.sort((a, b) => b.totalInstalacoes - a.totalInstalacoes);
+  return resultado.sort((a, b) => b.valorTotal - a.valorTotal);
 }
 
 export function analisarRentabilidade(instalacoes: Installation[]): AnalyticsRentabilidade[] {
@@ -146,8 +154,11 @@ export function analisarRentabilidade(instalacoes: Installation[]): AnalyticsRen
 
   mapa.forEach((insts, cliente) => {
     const totalInstalacoes = insts.length;
-    const valorIndividual = totalInstalacoes >= 104 ? 70 : 65;
-    const valorTotal = totalInstalacoes * valorIndividual;
+    // Calcular valor correto considerando tipo de serviço
+    let valorTotal = 0;
+    insts.forEach((inst) => {
+      valorTotal += calcularValorPorTipo(inst.tipoServico, totalInstalacoes, "meta");
+    });
     const valorMedio = valorTotal / totalInstalacoes;
 
     // Calcular frequência (instalações por mês)
@@ -198,8 +209,11 @@ export function analisarTendencias(instalacoes: Installation[]): AnalyticsTenden
   mapa.forEach((insts, chave) => {
     const [ano, mes] = chave.split('-');
     const totalInstalacoes = insts.length;
-    const valorIndividual = totalInstalacoes >= 104 ? 70 : 65;
-    const valorTotal = totalInstalacoes * valorIndividual;
+    // Calcular valor correto considerando tipo de serviço
+    let valorTotal = 0;
+    insts.forEach((inst) => {
+      valorTotal += calcularValorPorTipo(inst.tipoServico, totalInstalacoes, "meta");
+    });
     valores.push(valorTotal);
 
     resultado.push({
@@ -256,8 +270,11 @@ export function analisarMesAMes(instalacoes: Installation[]): AnalyticsMesAMes[]
   mapa.forEach((insts, chave) => {
     const [ano, mes] = chave.split("-");
     const totalInstalacoes = insts.length;
-    const valorIndividual = totalInstalacoes >= 104 ? 70 : 65;
-    const valorTotal = totalInstalacoes * valorIndividual;
+    // Calcular valor correto considerando tipo de serviço
+    let valorTotal = 0;
+    insts.forEach((inst) => {
+      valorTotal += calcularValorPorTipo(inst.tipoServico, totalInstalacoes, "meta");
+    });
 
     let crescimento = 0;
     if (mesAnterior && mesAnterior.valorTotal > 0) {
@@ -308,235 +325,140 @@ export function analisarDiaADia(
   const dadosPorDia: Record<number, Record<string, number>> = {};
 
   instalacoes.forEach((inst) => {
-    const [dia, mes, ano] = inst.data.split("/").map(Number);
-    if (!dadosPorDia[dia]) dadosPorDia[dia] = {};
-    const chave = `${mes}/${ano}`;
-    dadosPorDia[dia][chave] = (dadosPorDia[dia][chave] || 0) + 1;
+    const [dia, mes, ano] = inst.data.split("/");
+    const chave = `${ano}-${mes}`;
+    const diaNum = parseInt(dia);
+
+    if (!dadosPorDia[diaNum]) {
+      dadosPorDia[diaNum] = {};
+    }
+
+    if (!dadosPorDia[diaNum][chave]) {
+      dadosPorDia[diaNum][chave] = 0;
+    }
+
+    dadosPorDia[diaNum][chave]++;
   });
-
-  const mesesUnicos = new Set<string>();
-  Object.values(dadosPorDia).forEach((dias) => {
-    Object.keys(dias).forEach((chave) => mesesUnicos.add(chave));
-  });
-
-  let mesesArray = Array.from(mesesUnicos)
-    .map((chave) => {
-      const [mes, ano] = chave.split("/").map(Number);
-      return { mes, ano, chave };
-    })
-    .sort((a, b) => {
-      if (a.ano !== b.ano) return a.ano - b.ano;
-      return a.mes - b.mes;
-    });
-
-  if (mesesArray.length > quantidadeMeses) {
-    mesesArray = mesesArray.slice(-quantidadeMeses);
-  }
 
   const resultado: AnalyticsDiaADia[] = [];
 
-  for (let dia = 1; dia <= 31; dia++) {
-    const dadosDia = dadosPorDia[dia] || {};
+  Object.keys(dadosPorDia)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .forEach((dia) => {
+      const dados = dadosPorDia[dia];
+      const periodos = Object.keys(dados).sort().reverse().slice(0, quantidadeMeses);
 
-    const meses = mesesArray.map(({ mes, ano, chave }) => {
-      const diario = dadosDia[chave] || 0;
-      let acumulado = 0;
-      for (let d = 1; d <= dia; d++) {
-        acumulado += dadosPorDia[d]?.[chave] || 0;
-      }
-      return { mes, ano, acumulado, diario, desempenho: 'igual' as const };
-    });
+      let acumuladoTotal = 0;
+      let maiorAcumulado = 0;
 
-    if (meses.some((m) => m.acumulado > 0)) {
-      const mediaAcumulada = meses.reduce((sum, m) => sum + m.acumulado, 0) / meses.length;
-      const mesComDesempenho = meses.map((m) => {
+      const mediaAcumulada = acumuladoTotal / periodos.length;
+
+      const meses = periodos.map((chave) => {
+        const [ano, mes] = chave.split("-");
+        const diario = dados[chave] || 0;
+        const acumulado = acumuladoTotal + diario;
+        acumuladoTotal = acumulado;
+
+        if (acumulado > maiorAcumulado) {
+          maiorAcumulado = acumulado;
+        }
+
         let desempenho: 'acima' | 'abaixo' | 'igual' = 'igual';
-        if (m.acumulado > mediaAcumulada * 1.05) desempenho = 'acima';
-        else if (m.acumulado < mediaAcumulada * 0.95) desempenho = 'abaixo';
-        return { ...m, desempenho };
+        if (acumulado > mediaAcumulada * 1.1) {
+          desempenho = 'acima';
+        } else if (acumulado < mediaAcumulada * 0.9) {
+          desempenho = 'abaixo';
+        }
+
+        return {
+          mes: parseInt(mes),
+          ano: parseInt(ano),
+          acumulado,
+          diario,
+          desempenho,
+        };
       });
 
       resultado.push({
         dia,
         mediaAcumulada,
-        desempenho: mesComDesempenho[0]?.desempenho ?? 'igual',
-        meses: mesComDesempenho,
+        desempenho: acumuladoTotal > mediaAcumulada * 1.1 ? 'acima' : acumuladoTotal < mediaAcumulada * 0.9 ? 'abaixo' : 'igual',
+        meses,
       });
-    }
-  }
+    });
 
   return resultado;
 }
 
-
-/**
- * Calcula a previsão de quantas instalações terá até o fim do mês
- * baseado na velocidade atual
- */
-export function calcularPrevisaoFechamento(
-  instalacoes: Array<{ data: string }>,
-  metaMensal: number = 104
-): {
-  previsao: number;
-  velocidadeDiaria: number;
-  diasRestantes: number;
-  percentualMeta: number;
-} {
-  const hoje = new Date();
-  const diaAtual = hoje.getDate();
-  const mesAtual = hoje.getMonth() + 1;
-  const anoAtual = hoje.getFullYear();
-
-  // Contar instalações até hoje neste mês
-  const instalacoesAteHoje = instalacoes.filter((inst) => {
-    const [dia, mes, ano] = inst.data.split("/").map(Number);
-    return ano === anoAtual && mes === mesAtual && dia <= diaAtual;
-  }).length;
-
-  // Calcular velocidade diária
-  const velocidadeDiaria = instalacoesAteHoje / diaAtual;
-
-  // Calcular dias restantes no mês
-  const ultimoDiaMes = new Date(anoAtual, mesAtual, 0).getDate();
-  const diasRestantes = ultimoDiaMes - diaAtual;
-
-  // Calcular previsão
-  const previsao = Math.round(instalacoesAteHoje + velocidadeDiaria * diasRestantes);
-
-  // Calcular percentual da meta
-  const percentualMeta = Math.round((previsao / metaMensal) * 100);
+// Funções auxiliares para previsão e alertas
+export function calcularPrevisaoFechamento(instalacoes: Installation[], meta: number) {
+  const total = instalacoes.length;
+  const percentualMeta = (total / meta) * 100;
+  const diasRestantes = 30 - new Date().getDate();
+  const mediadiaria = total / new Date().getDate();
+  const projecao = total + mediadiaria * diasRestantes;
 
   return {
-    previsao,
-    velocidadeDiaria: Math.round(velocidadeDiaria * 100) / 100,
-    diasRestantes,
+    total,
+    meta,
     percentualMeta,
+    diasRestantes,
+    mediadiaria,
+    projecao,
+    atingiraMeta: projecao >= meta,
   };
 }
 
+export function calcularAlertasDesempenho(previsao: ReturnType<typeof calcularPrevisaoFechamento>, meta: number) {
+  const alertas = [];
 
-/**
- * Interface para alertas de desempenho
- */
-export interface AlertaDesempenho {
-  tipo: "abaixo" | "acima" | "normal";
-  mensagem: string;
-  velocidadeEsperada: number;
-  velocidadeAtual: number;
-  percentualDesvio: number;
-}
-
-/**
- * Calcula alertas baseado na velocidade diária
- */
-export function calcularAlertasDesempenho(
-  previsao: {
-    velocidadeDiaria: number;
-    diasRestantes: number;
-    previsao: number;
-  },
-  metaMensal: number = 104
-): AlertaDesempenho {
-  const velocidadeEsperada = metaMensal / 30; // ~3.47 por dia
-  const desvio = previsao.velocidadeDiaria - velocidadeEsperada;
-  const percentualDesvio = Math.abs((desvio / velocidadeEsperada) * 100);
-
-  if (previsao.velocidadeDiaria < velocidadeEsperada * 0.8) {
-    return {
-      tipo: "abaixo",
-      mensagem: `⚠️ Velocidade abaixo do esperado! ${percentualDesvio.toFixed(0)}% abaixo da meta.`,
-      velocidadeEsperada,
-      velocidadeAtual: previsao.velocidadeDiaria,
-      percentualDesvio,
-    };
+  if (previsao.percentualMeta < 50) {
+    alertas.push({
+      tipo: 'crítico',
+      mensagem: 'Faturamento muito abaixo da meta',
+      percentual: previsao.percentualMeta,
+    });
+  } else if (previsao.percentualMeta < 75) {
+    alertas.push({
+      tipo: 'aviso',
+      mensagem: 'Faturamento abaixo do esperado',
+      percentual: previsao.percentualMeta,
+    });
   }
 
-  if (previsao.velocidadeDiaria > velocidadeEsperada * 1.5) {
-    return {
-      tipo: "acima",
-      mensagem: `🔥 Ritmo acelerado! ${percentualDesvio.toFixed(0)}% acima da meta. Cuidado com o burnout!`,
-      velocidadeEsperada,
-      velocidadeAtual: previsao.velocidadeDiaria,
-      percentualDesvio,
-    };
+  if (!previsao.atingiraMeta) {
+    alertas.push({
+      tipo: 'previsão',
+      mensagem: `Projeção: ${previsao.projecao.toFixed(0)} instalações (faltam ${(meta - previsao.projecao).toFixed(0)})`,
+      percentual: (previsao.projecao / meta) * 100,
+    });
   }
 
-  return {
-    tipo: "normal",
-    mensagem: `✅ Ritmo dentro do esperado. Mantendo ${previsao.velocidadeDiaria.toFixed(2)} por dia.`,
-    velocidadeEsperada,
-    velocidadeAtual: previsao.velocidadeDiaria,
-    percentualDesvio,
-  };
+  return alertas;
 }
 
-/**
- * Interface para comparação histórica
- */
-export interface ComparacaoHistorica {
-  dia: number;
-  mesAtual: { mes: number; ano: number; acumulado: number };
-  mesPosterior?: { mes: number; ano: number; acumulado: number };
-  diferenca: number;
-  percentualMudanca: number;
-}
-
-/**
- * Compara o mesmo dia entre meses consecutivos
- */
-export function compararHistorico(
-  instalacoes: Array<{ data: string; tipoServico: string }>,
-  mesAtual: number,
-  anoAtual: number
-): ComparacaoHistorica[] {
-  const dadosPorDia: Record<number, Record<string, number>> = {};
-
-  // Agrupar por dia e mês
-  instalacoes.forEach((inst) => {
-    const [dia, mes, ano] = inst.data.split("/").map(Number);
-    if (!dadosPorDia[dia]) dadosPorDia[dia] = {};
-    const chave = `${mes}/${ano}`;
-    dadosPorDia[dia][chave] = (dadosPorDia[dia][chave] || 0) + 1;
+export function compararHistorico(instalacoes: Installation[], mes: number, ano: number) {
+  const mesAtual = instalacoes.filter((inst) => {
+    const [, m, a] = inst.data.split("/");
+    return parseInt(m) === mes && parseInt(a) === ano;
   });
 
-  const resultado: ComparacaoHistorica[] = [];
+  const mesAnterior = instalacoes.filter((inst) => {
+    const [, m, a] = inst.data.split("/");
+    const mesAnteriorNum = mes === 1 ? 12 : mes - 1;
+    const anoAnterior = mes === 1 ? ano - 1 : ano;
+    return parseInt(m) === mesAnteriorNum && parseInt(a) === anoAnterior;
+  });
 
-  // Para cada dia, comparar com o mês anterior
-  for (let dia = 1; dia <= 31; dia++) {
-    const dadosDia = dadosPorDia[dia] || {};
+  const totalAtual = mesAtual.length;
+  const totalAnterior = mesAnterior.length;
+  const variacao = totalAnterior > 0 ? ((totalAtual - totalAnterior) / totalAnterior) * 100 : 0;
 
-    // Mês atual
-    let acumuladoAtual = 0;
-    for (let d = 1; d <= dia; d++) {
-      acumuladoAtual += dadosPorDia[d]?.[`${mesAtual}/${anoAtual}`] || 0;
-    }
-
-    // Mês anterior
-    let mesPosterior = mesAtual - 1;
-    let anoAnterior = anoAtual;
-    if (mesPosterior === 0) {
-      mesPosterior = 12;
-      anoAnterior--;
-    }
-
-    let acumuladoAnterior = 0;
-    for (let d = 1; d <= dia; d++) {
-      acumuladoAnterior += dadosPorDia[d]?.[`${mesPosterior}/${anoAnterior}`] || 0;
-    }
-
-    if (acumuladoAtual > 0 || acumuladoAnterior > 0) {
-      const diferenca = acumuladoAtual - acumuladoAnterior;
-      const percentualMudanca = acumuladoAnterior > 0 ? (diferenca / acumuladoAnterior) * 100 : 0;
-
-      resultado.push({
-        dia,
-        mesAtual: { mes: mesAtual, ano: anoAtual, acumulado: acumuladoAtual },
-        mesPosterior: { mes: mesPosterior, ano: anoAnterior, acumulado: acumuladoAnterior },
-        diferenca,
-        percentualMudanca,
-      });
-    }
-  }
-
-  return resultado;
+  return {
+    mesAtual: totalAtual,
+    mesAnterior: totalAnterior,
+    variacao,
+    crescimento: variacao > 0,
+  };
 }
