@@ -18,7 +18,7 @@ export default function GraficosScreen() {
   // Filtrar instalações do mês selecionado
   const instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
 
-  // Calcular dados por tipo
+  // Calcular dados por tipo (apenas do mês para gráficos)
   const dataByType = useMemo(() => {
     const types = {
       'Instalação': 0,
@@ -44,6 +44,24 @@ export default function GraficosScreen() {
 
     return { types, valueByType };
   }, [instalacoesDoMes, paymentMode]);
+
+  // Calcular faturamento total do histórico completo
+  const faturamentoTotal = useMemo(() => {
+    const valueByType = {
+      'Instalação': 0,
+      'Tipo 3': 0,
+      'Mudança': 0,
+      'Empresarial': 0,
+    };
+
+    instalacoes.forEach((inst: any) => {
+      const tipo = inst.tipoServico as keyof typeof valueByType;
+      const value = calcularValorPorTipo(inst.tipoServico, instalacoes.length, paymentMode);
+      valueByType[tipo] = (valueByType[tipo] || 0) + value;
+    });
+
+    return Object.values(valueByType).reduce((a: number, b: number) => a + b, 0);
+  }, [instalacoes, paymentMode]);
 
   // Dados para gráfico de barras (quantidade)
   const barChartData = {
@@ -230,7 +248,7 @@ export default function GraficosScreen() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ color: colors.muted }}>Faturamento Total:</Text>
               <Text style={{ fontWeight: '600', color: colors.primary }}>
-                R$ {Object.values(dataByType.valueByType).reduce((a: number, b: number) => a + b, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </Text>
             </View>
           </View>
