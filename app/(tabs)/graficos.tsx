@@ -1,6 +1,9 @@
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, Dimensions, Image } from 'react-native';
 import { BarChart, PieChart, LineChart } from 'react-native-chart-kit';
+import { InteractiveBarChart } from '@/components/interactive-bar-chart';
+import { InteractivePieChart } from '@/components/interactive-pie-chart';
+import { InteractiveLineChart } from '@/components/interactive-line-chart';
 import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
 import { useMonth } from '@/context/MonthContext';
@@ -178,37 +181,41 @@ export default function GraficosScreen() {
             </Text>
         </View>
 
-        {/* Gráfico de Barras */}
+        {/* Gráfico de Barras Interativo */}
         <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>
           <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
             Quantidade por Tipo
           </Text>
-          <BarChart
+          <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 8 }}>
+            Toque nas barras para ver detalhes
+          </Text>
+          <InteractiveBarChart
             data={barChartData}
-            width={screenWidth - 40}
-            height={220}
             chartConfig={chartConfig}
-            verticalLabelRotation={0}
-            yAxisLabel=""
-            yAxisSuffix=""
+            quantities={[
+              dataByType.types['Instalação'] || 0,
+              dataByType.types['Tipo 3'] || 0,
+              dataByType.types['Mudança'] || 0,
+              dataByType.types['Empresarial'] || 0,
+            ]}
+            colors={colors}
           />
         </View>
 
-        {/* Gráfico de Pizza */}
+        {/* Gráfico de Pizza Interativo */}
         <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>
           <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
             Distribuição de Faturamento
           </Text>
+          <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 8 }}>
+            Toque nas fatias para ver detalhes
+          </Text>
           {pieChartData.some((d) => d.value > 0) ? (
-            <PieChart
+            <InteractivePieChart
               data={pieChartData}
-              width={screenWidth - 40}
-              height={220}
               chartConfig={chartConfig}
-              accessor="value"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              center={[screenWidth / 4, 0]}
+              quantities={dataByType.types}
+              colors={colors}
             />
           ) : (
             <Text style={{ color: colors.muted, textAlign: 'center', paddingVertical: 40 }}>
@@ -217,19 +224,18 @@ export default function GraficosScreen() {
           )}
         </View>
 
-        {/* Gráfico de Linha */}
+        {/* Gráfico de Linha Interativo */}
         <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>
           <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
             Tendência - Últimos 6 Meses
           </Text>
-          <LineChart
+          <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 8 }}>
+            Toque nos pontos para ver detalhes
+          </Text>
+          <InteractiveLineChart
             data={lineChartData}
-            width={screenWidth - 40}
-            height={220}
             chartConfig={chartConfig}
-            bezier
-            yAxisLabel=""
-            yAxisSuffix=""
+            colors={colors}
           />
         </View>
 
