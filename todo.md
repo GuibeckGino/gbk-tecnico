@@ -522,3 +522,10 @@
 - [x] Reorganizar cartão de análise mensal com separadores e indicadores
 - [x] Atualizar barra de navegação inferior para o estilo da referência
 - [x] Validar responsividade e salvar checkpoint
+
+## Atualização visual — Todas as abas no estilo da referência
+- [x] Mapear as telas e componentes compartilhados que precisam do novo visual
+- [x] Criar tokens e componentes visuais reutilizáveis para o padrão premium
+- [x] Reestilizar as abas Novo, Histórico, Gráficos, Análise, Calendário e Configurações
+- [x] Harmonizar navegação, estados vazios, filtros, modais e formulários
+- [x] Validar todas as telas, executar testes e salvar checkpoint

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/use-colors';
+import { PREMIUM } from '@/components/premium-ui';
 
 interface DatePickerModalProps {
   visible: boolean;
@@ -120,8 +121,8 @@ export function DatePickerModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
-        <View style={[styles.modal, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: 'rgba(0,0,0,0.78)' }]}>
+        <View style={[styles.modal, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1 }]}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.foreground }]}>
@@ -137,7 +138,7 @@ export function DatePickerModal({
                 pressed && { opacity: 0.7 },
               ]}
             >
-              <Text style={[styles.closeButtonText, { color: colors.primary }]}>
+              <Text style={[styles.closeButtonText, { color: PREMIUM.gold }]}>
                 ✕
               </Text>
             </Pressable>
@@ -155,7 +156,7 @@ export function DatePickerModal({
                   onPress={previousYear}
                   style={({ pressed }) => [
                     styles.arrowButton,
-                    { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
+                    { backgroundColor: PREMIUM.surfaceRaised, borderColor: PREMIUM.divider, borderWidth: 1, opacity: pressed ? 0.7 : 1 },
                   ]}
                 >
                   <Text style={[styles.arrowText, { color: colors.foreground }]}>
@@ -165,7 +166,7 @@ export function DatePickerModal({
                 <Text
                   style={[
                     styles.yearText,
-                    { color: colors.foreground, backgroundColor: colors.surface },
+                    { color: PREMIUM.foreground, backgroundColor: PREMIUM.surfaceRaised, borderColor: PREMIUM.divider, borderWidth: 1 },
                   ]}
                 >
                   {selectedYear}
@@ -174,7 +175,7 @@ export function DatePickerModal({
                   onPress={nextYear}
                   style={({ pressed }) => [
                     styles.arrowButton,
-                    { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
+                    { backgroundColor: PREMIUM.surfaceRaised, borderColor: PREMIUM.divider, borderWidth: 1, opacity: pressed ? 0.7 : 1 },
                   ]}
                 >
                   <Text style={[styles.arrowText, { color: colors.foreground }]}>
@@ -192,7 +193,7 @@ export function DatePickerModal({
                   onPress={previousMonth}
                   style={({ pressed }) => [
                     styles.arrowButton,
-                    { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
+                    { backgroundColor: PREMIUM.surfaceRaised, borderColor: PREMIUM.divider, borderWidth: 1, opacity: pressed ? 0.7 : 1 },
                   ]}
                 >
                   <Text style={[styles.arrowText, { color: colors.foreground }]}>
@@ -202,7 +203,7 @@ export function DatePickerModal({
                 <Text
                   style={[
                     styles.monthText,
-                    { color: colors.foreground, backgroundColor: colors.surface },
+                    { color: PREMIUM.foreground, backgroundColor: PREMIUM.surfaceRaised, borderColor: PREMIUM.divider, borderWidth: 1 },
                   ]}
                 >
                   {monthNames[selectedMonth]}
@@ -211,7 +212,7 @@ export function DatePickerModal({
                   onPress={nextMonth}
                   style={({ pressed }) => [
                     styles.arrowButton,
-                    { backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
+                    { backgroundColor: PREMIUM.surfaceRaised, borderColor: PREMIUM.divider, borderWidth: 1, opacity: pressed ? 0.7 : 1 },
                   ]}
                 >
                   <Text style={[styles.arrowText, { color: colors.foreground }]}>

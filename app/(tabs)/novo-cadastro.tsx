@@ -20,6 +20,7 @@ import { DatePickerModal } from "@/components/date-picker-modal";
 import { BAIRROS_LEM, buscarBairros, validarBairro } from "@/lib/bairros-lem";
 import { ImportModal } from "@/components/import-modal";
 import type { Installation } from "@/types/installation";
+import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
 
 const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança", "Empresarial"];
 
@@ -146,9 +147,12 @@ export default function NovoCadastroScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.titulo, { color: colors.foreground }]}>
-          Nova Instalação
-        </Text>
+        <PremiumHeader
+          title="Nova Instalação"
+          subtitle="Registre uma nova ordem de serviço"
+          icon="plus.circle.fill"
+          style={styles.titulo}
+        />
 
         {/* Campo Cliente */}
         <FormField label="Cliente *">
@@ -156,9 +160,9 @@ export default function NovoCadastroScreen() {
             style={[
               styles.input,
               {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                color: colors.foreground,
+                backgroundColor: PREMIUM.surface,
+                borderColor: PREMIUM.goldBorder,
+                color: PREMIUM.foreground,
               },
             ]}
             placeholder="Nome do cliente"
@@ -176,8 +180,8 @@ export default function NovoCadastroScreen() {
               style={[
                 styles.input,
                 {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
+                  backgroundColor: PREMIUM.surface,
+                  borderColor: PREMIUM.goldBorder,
                   justifyContent: 'center',
                 },
               ]}
@@ -203,8 +207,8 @@ export default function NovoCadastroScreen() {
             {mostrarBairros && (
               <View
                 style={{
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
+                  backgroundColor: PREMIUM.surface,
+                      borderColor: PREMIUM.goldBorder,
                   borderWidth: 1,
                   borderTopWidth: 0,
                   maxHeight: 200,
@@ -266,9 +270,9 @@ export default function NovoCadastroScreen() {
                   styles.tipoBotao,
                   {
                     backgroundColor:
-                      tipoServico === tipo ? colors.primary : colors.surface,
+                      tipoServico === tipo ? PREMIUM.blueDeep : PREMIUM.surface,
                     borderColor:
-                      tipoServico === tipo ? colors.primary : colors.border,
+                      tipoServico === tipo ? PREMIUM.blue : PREMIUM.goldBorder,
                   },
                   pressed && { opacity: 0.8 },
                 ]}
@@ -343,9 +347,9 @@ export default function NovoCadastroScreen() {
               styles.input,
               styles.inputMultilinha,
               {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                color: colors.foreground,
+                backgroundColor: PREMIUM.surface,
+                borderColor: PREMIUM.goldBorder,
+                color: PREMIUM.foreground,
               },
             ]}
             placeholder="Observações (opcional)"
@@ -363,7 +367,7 @@ export default function NovoCadastroScreen() {
         <Pressable
           style={({ pressed }) => [
             styles.botaoImportar,
-            { backgroundColor: colors.surface, borderColor: colors.primary },
+            { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.blue },
             pressed && { opacity: 0.85 },
           ]}
           onPress={() => {
@@ -380,7 +384,7 @@ export default function NovoCadastroScreen() {
         <Pressable
           style={({ pressed }) => [
             styles.botaoSalvar,
-            { backgroundColor: salvando ? colors.muted : colors.primary },
+            { backgroundColor: salvando ? '#475569' : PREMIUM.blue },
             pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
           ]}
           onPress={salvar}

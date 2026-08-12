@@ -35,6 +35,7 @@ import { useWorkSchedule } from "@/context/WorkScheduleContext";
 import { calcularStats, calcularValorPorTipo } from "@/types/installation";
 import { LineChart } from "react-native-chart-kit";
 import { CalendarView } from "@/components/calendar-view";
+import { PREMIUM, PremiumHeader, PremiumStatRow } from "@/components/premium-ui";
 
 type AbaAnalise =
   | "meta"
@@ -188,8 +189,8 @@ export default function AnaliseScreen() {
         style={[
           styles.abaItem,
           abaSelecionada === aba
-            ? { borderBottomColor: colors.primary, borderBottomWidth: 3 }
-            : { borderBottomColor: colors.border, borderBottomWidth: 1 },
+            ? { borderBottomColor: PREMIUM.blue, borderBottomWidth: 3 }
+            : { borderBottomColor: PREMIUM.divider, borderBottomWidth: 1 },
         ]}
         onPress={() => {
           haptic();
@@ -200,7 +201,7 @@ export default function AnaliseScreen() {
           style={[
             styles.abaTexto,
             {
-              color: abaSelecionada === aba ? colors.primary : colors.muted,
+              color: abaSelecionada === aba ? PREMIUM.blue : PREMIUM.muted,
               fontWeight: abaSelecionada === aba ? "700" : "600",
             },
           ]}
@@ -218,11 +219,12 @@ export default function AnaliseScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={[styles.titulo, { color: colors.foreground }]}>
-            Análise
-          </Text>
-        </View>
+        <PremiumHeader
+          title="Análise"
+          subtitle="Acompanhe sua meta, produtividade e evolução"
+          icon="chart.line.uptrend.xyaxis"
+          style={styles.header}
+        />
 
         {/* Abas */}
         <ScrollView
@@ -230,7 +232,7 @@ export default function AnaliseScreen() {
           showsHorizontalScrollIndicator={false}
           style={[
             styles.abasContainer,
-            { backgroundColor: colors.surface, borderColor: colors.border },
+            { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder },
           ]}
         >
           {renderAbaButton("meta", "Meta")}
@@ -249,7 +251,7 @@ export default function AnaliseScreen() {
             <View
               style={[
                 styles.card,
-                { backgroundColor: colors.primary, borderColor: colors.primary },
+                { backgroundColor: '#0D3EA8', borderColor: PREMIUM.blueSoft },
               ]}
             >
               <Text style={[styles.cardTitulo, { color: "#ffffff" }]}>
@@ -291,46 +293,11 @@ export default function AnaliseScreen() {
                 Estatísticas
               </Text>
               <View style={{ marginTop: 12 }}>
-                <View style={styles.statRow}>
-                  <Text style={[styles.statLabel, { color: colors.muted }]}>
-                    Dias úteis restantes
-                  </Text>
-                  <Text style={[styles.statValue, { color: colors.foreground }]}>
-                    {metaStats.diasUteisRestantes}
-                  </Text>
-                </View>
-                <View style={styles.statRow}>
-                  <Text style={[styles.statLabel, { color: colors.muted }]}>
-                    Meta por dia
-                  </Text>
-                  <Text style={[styles.statValue, { color: colors.foreground }]}>
-                    R$ {metaStats.metaDiaValor}
-                  </Text>
-                </View>
-                <View style={styles.statRow}>
-                  <Text style={[styles.statLabel, { color: colors.muted }]}>
-                    Hoje fez
-                  </Text>
-                  <Text style={[styles.statValue, { color: colors.foreground }]}>
-                    {metaStats.hojeFeZ}
-                  </Text>
-                </View>
-                <View style={styles.statRow}>
-                  <Text style={[styles.statLabel, { color: colors.muted }]}>
-                    Média diária
-                  </Text>
-                  <Text style={[styles.statValue, { color: colors.foreground }]}>
-                    {metaStats.mediadiaria.toFixed(1)}
-                  </Text>
-                </View>
-                <View style={styles.statRow}>
-                  <Text style={[styles.statLabel, { color: colors.muted }]}>
-                    Projeção do mês
-                  </Text>
-                  <Text style={[styles.statValue, { color: colors.foreground }]}>
-                    {metaStats.projecao}
-                  </Text>
-                </View>
+                <PremiumStatRow label="Dias úteis restantes" value={metaStats.diasUteisRestantes} icon="calendar" />
+                <PremiumStatRow label="Meta por dia" value={`R$ ${metaStats.metaDiaValor}`} icon="target" valueColor={PREMIUM.gold} />
+                <PremiumStatRow label="Hoje fez" value={metaStats.hojeFeZ} icon="check-circle" />
+                <PremiumStatRow label="Média diária" value={metaStats.mediadiaria.toFixed(1)} icon="chart.line.uptrend.xyaxis" />
+                <PremiumStatRow label="Projeção do mês" value={metaStats.projecao} icon="trending-up" last />
               </View>
             </View>
 
@@ -992,7 +959,7 @@ export default function AnaliseScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    padding: 16,
+    padding: 18,
     paddingBottom: 40,
   },
   header: {
@@ -1004,13 +971,14 @@ const styles = StyleSheet.create({
   },
   abasContainer: {
     flexDirection: "row",
-    marginBottom: 16,
-    borderRadius: 8,
+    marginBottom: 18,
+    borderRadius: 16,
     borderWidth: 1,
+    minHeight: 58,
   },
   abaItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 17,
     borderBottomWidth: 1,
   },
   abaTexto: {
@@ -1021,9 +989,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    borderRadius: 12,
+    borderRadius: 17,
     borderWidth: 1,
     padding: 16,
+    shadowColor: '#000000',
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: "row",
@@ -1031,8 +1004,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   cardTitulo: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "800",
   },
   cardValor: {
     fontSize: 18,

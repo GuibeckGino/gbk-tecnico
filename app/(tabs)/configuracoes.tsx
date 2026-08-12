@@ -29,6 +29,7 @@ import { useMonthlyConfig } from "@/hooks/use-monthly-config";
 import { prepararDadosRelatorio, calcularTopClientes, formatarValor, calcularCrescimento } from "@/lib/pdf-generator";
 import { compartilharRelatorio, gerarResumoRelatorio } from "@/lib/share-report";
 import { useFocusEffect } from "@react-navigation/native";
+import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -714,9 +715,12 @@ export default function ConfiguracoesScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.titulo, { color: colors.foreground }]}>
-          Configurações
-        </Text>
+        <PremiumHeader
+          title="Configurações"
+          subtitle="Personalize o app, a meta e seus dados"
+          icon="gearshape.fill"
+          style={styles.titulo}
+        />
 
         {/* Seção Aparência */}
         <Secao titulo="Aparência">
@@ -731,8 +735,8 @@ export default function ConfiguracoesScreen() {
                   toggleModoEscuro();
                 }}
                 trackColor={{
-                  false: colors.border,
-                  true: colors.primary,
+                  false: PREMIUM.divider,
+                  true: PREMIUM.blue,
                 }}
                 thumbColor="#fff"
               />
@@ -862,7 +866,7 @@ export default function ConfiguracoesScreen() {
           <View
             style={[
               styles.confirmContainer,
-              { backgroundColor: colors.surface, borderColor: colors.border },
+              { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder },
             ]}
           >
             <Text
@@ -1004,7 +1008,7 @@ export default function ConfiguracoesScreen() {
           <View
             style={[
               styles.confirmContainer,
-              { backgroundColor: colors.surface, borderColor: colors.border },
+              { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder },
             ]}
           >
             <Text
@@ -1072,7 +1076,7 @@ export default function ConfiguracoesScreen() {
           <View
             style={[
               styles.confirmContainer,
-              { backgroundColor: colors.surface, borderColor: colors.border },
+              { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder },
             ]}
           >
             <Text style={[styles.confirmTitulo, { color: colors.foreground }]}>
@@ -1267,7 +1271,7 @@ function Secao({
       <View
         style={[
           styles.secaoCard,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder },
         ]}
       >
         {children}
@@ -1280,7 +1284,7 @@ function Divisor() {
   const colors = useColors();
   return (
     <View
-      style={[styles.divisor, { backgroundColor: colors.border }]}
+      style={[styles.divisor, { backgroundColor: PREMIUM.divider }]}
     />
   );
 }
@@ -1369,7 +1373,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   secaoCard: {
-    borderRadius: 12,
+    borderRadius: 17,
     borderWidth: 1,
     overflow: "hidden",
   },

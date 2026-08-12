@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
 import { useColors } from '@/hooks/use-colors';
@@ -7,6 +7,7 @@ import { useMonth } from '@/context/MonthContext';
 import { calcularValorPorTipo } from '@/types/installation';
 import { useBairroFilter } from '@/context/BairroFilterContext';
 import { BairroFilter } from '@/components/bairro-filter';
+import { PREMIUM, PremiumHeader } from '@/components/premium-ui';
 
 interface DiaCalendario {
   dia: number;
@@ -125,13 +126,12 @@ export default function CalendarioScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, gap: 16 }}>
-        {/* Logo Header */}
-        <View style={{ alignItems: 'center', marginBottom: 8 }}>
-          <Image
-            source={require('@/assets/images/icon.png')}
-            style={{ width: 60, height: 60, borderRadius: 12 }}
-          />
-        </View>
+        <PremiumHeader
+          title="Calendário"
+          subtitle="Visualize suas instalações por dia"
+          icon="calendar"
+          style={{ marginBottom: 4 }}
+        />
 
         {/* Cabeçalho com Seletor de Ano */}
         <View>
@@ -160,7 +160,7 @@ export default function CalendarioScreen() {
         <BairroFilter bairroSelecionado={bairroSelecionado} onSelectBairro={setBairroSelecionado} />
 
         {/* Calendário */}
-        <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>
+        <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 14 }}>
           {/* Cabeçalho com dias da semana */}
           <View style={{ flexDirection: 'row', marginBottom: 8, gap: 4 }}>
             {nomesdia.map((nome, idx) => (
@@ -185,14 +185,14 @@ export default function CalendarioScreen() {
                     borderRadius: 8,
                     backgroundColor:
                       dia.dia === 0
-                        ? colors.background
+                        ? PREMIUM.background
                         : dia.dia === diaAtual
-                        ? colors.primary
+                        ? PREMIUM.blue
                         : dia.instalacoes > 0
-                        ? colors.border
-                        : colors.background,
+                        ? '#263A66'
+                        : PREMIUM.background,
                     borderWidth: dia.dia === diaAtual ? 2 : 1,
-                    borderColor: dia.dia === diaAtual ? colors.primary : colors.border,
+                    borderColor: dia.dia === diaAtual ? PREMIUM.blue : PREMIUM.divider,
                     justifyContent: 'center',
                     alignItems: 'center',
                     padding: 4,
@@ -230,7 +230,7 @@ export default function CalendarioScreen() {
 
         {/* Detalhes do dia selecionado */}
         {diaSelecionado && diaSelecionado.dia > 0 && (
-          <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, gap: 12 }}>
+          <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16, gap: 12 }}>
             <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
               {String(diaSelecionado.dia).padStart(2, '0')} de {nomesMes[mesIndex]}
             </Text>
@@ -288,7 +288,7 @@ export default function CalendarioScreen() {
         )}
 
         {/* Legenda */}
-        <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12, gap: 8 }}>
+        <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 14, gap: 8 }}>
           <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
             Legenda
           </Text>

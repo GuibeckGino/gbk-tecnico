@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, Dimensions, Image } from 'react-native';
+import { View, Text, ScrollView, Dimensions } from 'react-native';
 import { BarChart, PieChart, LineChart } from 'react-native-chart-kit';
 import { InteractiveBarChart } from '@/components/interactive-bar-chart';
 import { InteractivePieChart } from '@/components/interactive-pie-chart';
@@ -8,6 +8,7 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
 import { useMonth } from '@/context/MonthContext';
 import { useColors } from '@/hooks/use-colors';
+import { PREMIUM, PremiumHeader } from '@/components/premium-ui';
 import { calcularValorPorTipo } from '@/types/installation';
 import { filtrarPorMes } from '@/context/MonthContext';
 
@@ -149,9 +150,9 @@ export default function GraficosScreen() {
   }, [instalacoes, last6Months]);
 
   const chartConfig = {
-    backgroundColor: colors.background,
-    backgroundGradientFrom: colors.background,
-    backgroundGradientTo: colors.background,
+    backgroundColor: PREMIUM.surface,
+    backgroundGradientFrom: PREMIUM.surface,
+    backgroundGradientTo: PREMIUM.surface,
     color: () => colors.primary,
     strokeWidth: 2,
     barPercentage: 0.5,
@@ -163,26 +164,14 @@ export default function GraficosScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, gap: 24 }}>
-        {/* Logo Header */}
-        <View style={{ alignItems: 'center', marginBottom: 8 }}>
-          <Image
-            source={require('@/assets/images/icon.png')}
-            style={{ width: 60, height: 60, borderRadius: 12 }}
-          />
-        </View>
-
-        {/* Título */}
-        <View>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.foreground }}>
-            Gráficos
-          </Text>
-            <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4 }}>
-              Análise visual do faturamento e produtividade
-            </Text>
-        </View>
+        <PremiumHeader
+          title="Gráficos"
+          subtitle="Análise visual do faturamento e produtividade"
+          icon="chart.pie.fill"
+        />
 
         {/* Gráfico de Barras Interativo */}
-        <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>
+        <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16 }}>
           <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
             Quantidade por Tipo
           </Text>
@@ -203,7 +192,7 @@ export default function GraficosScreen() {
         </View>
 
         {/* Gráfico de Pizza Interativo */}
-        <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>
+        <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16 }}>
           <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
             Distribuição de Faturamento
           </Text>
@@ -225,7 +214,7 @@ export default function GraficosScreen() {
         </View>
 
         {/* Gráfico de Linha Interativo */}
-        <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>
+        <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16 }}>
           <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
             Tendência - Últimos 6 Meses
           </Text>
@@ -240,7 +229,7 @@ export default function GraficosScreen() {
         </View>
 
         {/* Resumo */}
-        <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, gap: 12 }}>
+        <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16, gap: 12 }}>
           <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
             Resumo
           </Text>

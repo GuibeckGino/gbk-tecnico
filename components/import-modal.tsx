@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { useColors } from "@/hooks/use-colors";
+import { PREMIUM } from "@/components/premium-ui";
 import { parseCSV, importRowToInstallation, type ParseResult } from "@/lib/parse-csv";
 import type { Installation } from "@/types/installation";
 import * as Haptics from "expo-haptics";
@@ -98,11 +99,13 @@ export function ImportModal({ visible, onClose, onImport }: ImportModalProps) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}>
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.78)" }}>
         <View
           style={{
             flex: 1,
-            backgroundColor: colors.background,
+            backgroundColor: PREMIUM.surface,
+            borderColor: PREMIUM.goldBorder,
+            borderWidth: 1,
             marginTop: 60,
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
@@ -118,7 +121,7 @@ export function ImportModal({ visible, onClose, onImport }: ImportModalProps) {
               paddingHorizontal: 16,
               paddingVertical: 16,
               borderBottomWidth: 1,
-              borderBottomColor: colors.border,
+              borderBottomColor: PREMIUM.divider,
             }}
           >
             <Text style={{ fontSize: 18, fontWeight: "600", color: colors.foreground }}>
@@ -147,8 +150,10 @@ export function ImportModal({ visible, onClose, onImport }: ImportModalProps) {
 
                 <View
                   style={{
-                    backgroundColor: colors.surface,
-                    borderRadius: 8,
+                    backgroundColor: PREMIUM.surfaceRaised,
+                    borderColor: PREMIUM.goldBorder,
+                    borderWidth: 1,
+                    borderRadius: 14,
                     padding: 12,
                     gap: 8,
                   }}
@@ -172,8 +177,10 @@ export function ImportModal({ visible, onClose, onImport }: ImportModalProps) {
 
                 <View
                   style={{
-                    backgroundColor: colors.surface,
-                    borderRadius: 8,
+                    backgroundColor: PREMIUM.surfaceRaised,
+                    borderColor: PREMIUM.goldBorder,
+                    borderWidth: 1,
+                    borderRadius: 14,
                     padding: 12,
                     gap: 8,
                   }}
@@ -194,8 +201,8 @@ export function ImportModal({ visible, onClose, onImport }: ImportModalProps) {
                   disabled={loading}
                   style={({ pressed }) => [
                     {
-                      backgroundColor: colors.primary,
-                      borderRadius: 8,
+                      backgroundColor: PREMIUM.blue,
+                      borderRadius: 12,
                       paddingVertical: 12,
                       alignItems: "center",
                       opacity: pressed ? 0.8 : 1,
@@ -217,8 +224,10 @@ export function ImportModal({ visible, onClose, onImport }: ImportModalProps) {
                 {/* Summary */}
                 <View
                   style={{
-                    backgroundColor: colors.surface,
-                    borderRadius: 8,
+                    backgroundColor: PREMIUM.surfaceRaised,
+                    borderColor: PREMIUM.goldBorder,
+                    borderWidth: 1,
+                    borderRadius: 14,
                     padding: 12,
                     gap: 8,
                   }}
@@ -378,8 +387,10 @@ export function ImportModal({ visible, onClose, onImport }: ImportModalProps) {
                 style={({ pressed }) => [
                   {
                     flex: 1,
-                    backgroundColor: colors.surface,
-                    borderRadius: 8,
+                    backgroundColor: PREMIUM.surfaceRaised,
+                    borderColor: PREMIUM.goldBorder,
+                    borderWidth: 1,
+                    borderRadius: 14,
                     paddingVertical: 10,
                     alignItems: "center",
                     opacity: pressed ? 0.8 : 1,

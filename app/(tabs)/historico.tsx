@@ -19,6 +19,7 @@ import { useMonth, filtrarPorMes } from "@/context/MonthContext";
 import { useColors } from "@/hooks/use-colors";
 import type { Installation, ServiceType } from "@/types/installation";
 import * as Haptics from "expo-haptics";
+import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
 
 const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança"];
 
@@ -179,26 +180,20 @@ export default function HistoricoScreen() {
   return (
     <ScreenContainer>
       {/* Header com Mês */}
-      <View
-        style={[styles.header, { borderBottomColor: colors.border }]}
-      >
-        <View style={styles.headerContent}>
-          <Text style={[styles.titulo, { color: colors.foreground }]}>
-            Histórico
-          </Text>
-          <Text style={[styles.mesSubtexto, { color: colors.muted }]}>
-            {mesAnoFormatado}
-          </Text>
-        </View>
-        <View
-          style={[styles.badgeTotal, { backgroundColor: colors.primary }]}
-        >
+      <View style={styles.header}>
+        <PremiumHeader
+          title="Histórico"
+          subtitle={mesAnoFormatado}
+          icon="list.bullet"
+          style={{ flex: 1, paddingBottom: 0 }}
+        />
+        <View style={[styles.badgeTotal, { backgroundColor: PREMIUM.blueDeep, borderColor: PREMIUM.blue }]}>
           <Text style={styles.badgeTotalTexto}>{instalacoesDoMes.length}</Text>
         </View>
       </View>
 
       {/* Filtro e Busca */}
-      <View style={[styles.filtroContainer, { backgroundColor: colors.surface }]}>
+      <View style={[styles.filtroContainer, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1 }]}>
         {/* Botões de Ordenação */}
         <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
           {(["recente", "antigo", "valor"] as const).map((tipo) => (
@@ -207,8 +202,8 @@ export default function HistoricoScreen() {
               style={[
                 styles.filtroBotao,
                 ordenacao === tipo
-                  ? { backgroundColor: colors.primary }
-                  : { backgroundColor: colors.border },
+                  ? { backgroundColor: PREMIUM.blue }
+                  : { backgroundColor: PREMIUM.surfaceRaised },
               ]}
               onPress={() => setOrdenacao(tipo)}
             >
@@ -227,7 +222,7 @@ export default function HistoricoScreen() {
           <TextInput
             style={[
               styles.searchInput,
-              { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background, flex: 1 },
+              { color: PREMIUM.foreground, borderColor: PREMIUM.goldBorder, backgroundColor: PREMIUM.background, flex: 1 },
             ]}
             placeholder="Buscar cliente..."
             placeholderTextColor={colors.muted}
@@ -258,8 +253,8 @@ export default function HistoricoScreen() {
               style={[
                 styles.filtroBotao,
                 filtroTipo === tipo
-                  ? { backgroundColor: colors.primary }
-                  : { backgroundColor: colors.border },
+                  ? { backgroundColor: PREMIUM.blue }
+                  : { backgroundColor: PREMIUM.surfaceRaised },
               ]}
               onPress={() => setFiltroTipo(tipo)}
             >
@@ -387,7 +382,7 @@ export default function HistoricoScreen() {
         onRequestClose={() => setBuscaAvancadaAberta(false)}
       >
         <View style={[styles.modalOverlay, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.modalContent, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1 }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitulo, { color: colors.foreground }]}>
                 Busca Avançada
@@ -417,9 +412,9 @@ export default function HistoricoScreen() {
                 style={[
                   styles.input,
                   {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                    color: colors.foreground,
+                    backgroundColor: PREMIUM.background,
+                    borderColor: PREMIUM.goldBorder,
+                    color: PREMIUM.foreground,
                   },
                 ]}
                 value={dataInicio}
@@ -441,9 +436,9 @@ export default function HistoricoScreen() {
                 style={[
                   styles.input,
                   {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                    color: colors.foreground,
+                    backgroundColor: PREMIUM.background,
+                    borderColor: PREMIUM.goldBorder,
+                    color: PREMIUM.foreground,
                   },
                 ]}
                 value={dataFim}
@@ -472,8 +467,8 @@ export default function HistoricoScreen() {
                     style={[
                       styles.filtroBotao,
                       filtroTipoBuscaAvancada === tipo
-                        ? { backgroundColor: colors.primary }
-                        : { backgroundColor: colors.border },
+                        ? { backgroundColor: PREMIUM.blue }
+                        : { backgroundColor: PREMIUM.surfaceRaised },
                     ]}
                     onPress={() => setFiltroTipoBuscaAvancada(tipo)}
                   >
@@ -507,9 +502,9 @@ export default function HistoricoScreen() {
                 style={[
                   styles.input,
                   {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                    color: colors.foreground,
+                    backgroundColor: PREMIUM.background,
+                    borderColor: PREMIUM.goldBorder,
+                    color: PREMIUM.foreground,
                   },
                 ]}
                 value={valorMin}
@@ -532,9 +527,9 @@ export default function HistoricoScreen() {
                 style={[
                   styles.input,
                   {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                    color: colors.foreground,
+                    backgroundColor: PREMIUM.background,
+                    borderColor: PREMIUM.goldBorder,
+                    color: PREMIUM.foreground,
                   },
                 ]}
                 value={valorMax}
@@ -569,7 +564,7 @@ export default function HistoricoScreen() {
                   style={({ pressed }) => [
                     styles.botaoSalvar,
                     {
-                      backgroundColor: colors.primary,
+                      backgroundColor: PREMIUM.blue,
                       opacity: pressed ? 0.85 : 1,
                       transform: pressed ? [{ scale: 0.97 }] : [],
                     },
@@ -603,10 +598,10 @@ function CardInstalacao({
   const colors = useColors();
 
   const corTipo: Record<ServiceType, string> = {
-    Instalação: "#1565C0",
-    "Tipo 3": "#0D47A1",
-    Mudança: "#1976D2",
-    Empresarial: "#F57C00",
+    Instalação: PREMIUM.blueDeep,
+    "Tipo 3": '#2447A8',
+    Mudança: '#2869D8',
+    Empresarial: '#9B741B',
   };
 
   return (
@@ -614,9 +609,9 @@ function CardInstalacao({
       style={[
         styles.card,
         {
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          shadowColor: colors.foreground,
+          backgroundColor: PREMIUM.surface,
+          borderColor: PREMIUM.goldBorder,
+          shadowColor: '#000000',
         },
       ]}
     >
@@ -739,7 +734,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   card: {
-    borderRadius: 12,
+    borderRadius: 17,
     borderWidth: 1,
     padding: 14,
     flexDirection: "row",
@@ -806,10 +801,12 @@ const styles = StyleSheet.create({
   },
   // Filtro e Busca
   filtroContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 17,
     gap: 10,
-    borderBottomWidth: 1,
+    borderWidth: 1,
   },
   searchInput: {
     borderWidth: 1,
@@ -824,8 +821,8 @@ const styles = StyleSheet.create({
   },
   filtroBotao: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingVertical: 8,
+    borderRadius: 10,
     marginRight: 8,
   },
   filtroBotaoTexto: {

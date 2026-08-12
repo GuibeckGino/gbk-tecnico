@@ -37,6 +37,8 @@ const MAPPING = {
   "building.2.fill": "business",
   "target": "track-changes",
   "clock.fill": "schedule",
+  "check-circle": "check-circle",
+  "trending-up": "trending-up",
   // GBK Técnico
   "chart.bar.fill": "bar-chart",
   "chart.line.uptrend.xyaxis": "trending-up",
