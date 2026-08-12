@@ -29,6 +29,11 @@ export function calcularValorPorTipo(
   totalInstalacoes: number,
   paymentMode: PaymentMode
 ): number {
+  // Tipo 3 vale sempre R$ 60
+  if (tipoServico === "Tipo 3") {
+    return 60;
+  }
+
   // Empresarial sempre é R$100
   if (tipoServico === "Empresarial") {
     return 100;

@@ -509,3 +509,8 @@
 - [x] Corrigir exportarCSV com tratamento de erro melhorado
 - [x] Corrigir exportarBackup com tratamento de erro melhorado
 - [x] Testar exportação em dispositivo Android
+
+- [x] Cancelar e remover a implementação pendente de OCR para adição de OS por print
+- [x] Atualizar o valor do serviço Tipo 3 para R$ 60,00 em todos os cálculos e telas
+- [x] Validar os cálculos dos demais tipos de serviço e executar testes
+- [ ] Salvar checkpoint da atualização do preço do Tipo 3

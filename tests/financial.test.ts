@@ -84,3 +84,20 @@ describe("Regra financeira retroativa", () => {
     expect(stats.porTipo.mudanca).toBe(1);
   });
 });
+
+  it("Tipo 3 vale sempre R$ 60", () => {
+    const instalacoes: Installation[] = [
+      {
+        id: "tipo3-1",
+        cliente: "Cliente Teste",
+        endereco: "Centro",
+        tipoServico: "Tipo 3" as const,
+        data: "01/01/2026",
+        observacoes: "",
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    const stats = calcularStats(instalacoes, "meta");
+    expect(stats.valorTotal).toBe(60);
+    expect(stats.porTipo.tipo3).toBe(1);
+  });
