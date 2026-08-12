@@ -30,14 +30,14 @@ function aplicarEsquema(escuro: boolean) {
 }
 
 export function GBKThemeProvider({ children }: { children: React.ReactNode }) {
-  const [modoEscuro, setModoEscuro] = useState(false);
+  // O visual premium escuro é o padrão; a preferência clara continua disponível em Configurações.
+  const [modoEscuro, setModoEscuro] = useState(true);
 
   useEffect(() => {
     AsyncStorage.getItem(THEME_KEY).then((val) => {
-      if (val === "true") {
-        setModoEscuro(true);
-        aplicarEsquema(true);
-      }
+      const escuro = val === null ? true : val === "true";
+      setModoEscuro(escuro);
+      aplicarEsquema(escuro);
     });
   }, []);
 

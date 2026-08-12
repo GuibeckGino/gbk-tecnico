@@ -6,7 +6,7 @@ import { ComponentProps } from "react";
 import { OpaqueColorValue, type StyleProp, type TextStyle } from "react-native";
 
 type IconMapping = Record<SymbolViewProps["name"], ComponentProps<typeof MaterialIcons>["name"]>;
-type IconSymbolName = keyof typeof MAPPING;
+type IconSymbolName = string;
 
 // Adicionar novo tipo para suportar ícones adicionais
 declare global {
@@ -28,6 +28,15 @@ const MAPPING = {
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
+  "chevron.left": "chevron-left",
+  "location.fill": "location-on",
+  "chevron.down": "expand-more",
+  "build.fill": "build",
+  "square.stack.3d.up.fill": "layers",
+  "arrow.triangle.2.circlepath": "sync",
+  "building.2.fill": "business",
+  "target": "track-changes",
+  "clock.fill": "schedule",
   // GBK Técnico
   "chart.bar.fill": "bar-chart",
   "chart.line.uptrend.xyaxis": "trending-up",
@@ -40,7 +49,7 @@ const MAPPING = {
   "magnifyingglass": "search",
   "calendar": "calendar-today",
   "eye.fill": "visibility",
-} as IconMapping;
+} as unknown as IconMapping;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.
@@ -59,5 +68,6 @@ export function IconSymbol({
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
+  const materialIcon = MAPPING[name as keyof typeof MAPPING] ?? 'help-outline';
+  return <MaterialIcons color={color} size={size} name={materialIcon} style={style} />;
 }

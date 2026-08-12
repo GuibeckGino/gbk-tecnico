@@ -513,4 +513,12 @@
 - [x] Cancelar e remover a implementação pendente de OCR para adição de OS por print
 - [x] Atualizar o valor do serviço Tipo 3 para R$ 60,00 em todos os cálculos e telas
 - [x] Validar os cálculos dos demais tipos de serviço e executar testes
-- [ ] Salvar checkpoint da atualização do preço do Tipo 3
+- [x] Salvar checkpoint da atualização do preço do Tipo 3
+
+## Atualização visual — Dashboard estilo referência
+- [x] Aplicar paleta escura premium com azul-marinho, dourado e azul elétrico
+- [x] Redesenhar cabeçalho, seletor de bairro e cartão de meta mensal
+- [x] Adicionar progresso circular e ícones por tipo de serviço
+- [x] Reorganizar cartão de análise mensal com separadores e indicadores
+- [x] Atualizar barra de navegação inferior para o estilo da referência
+- [x] Validar responsividade e salvar checkpoint

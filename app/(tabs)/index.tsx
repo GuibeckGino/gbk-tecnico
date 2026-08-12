@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { ScrollView, Text, View, TouchableOpacity, Animated } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
 import { useMonth } from '@/context/MonthContext';
@@ -14,6 +15,36 @@ import { useMetaMilestones } from '@/hooks/use-meta-milestones';
 import { Toast } from '@/components/toast';
 import { useBairroFilter } from '@/context/BairroFilterContext';
 import { BairroFilter } from '@/components/bairro-filter';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+
+const GOLD = '#F2B52B';
+const GOLD_BORDER = '#9B741B';
+const CARD = '#0B1426';
+const CARD_ALT = '#0D1A31';
+const BLUE = '#2F6BFF';
+const BLUE_DARK = '#1643B6';
+const DIVIDER = '#1D2B43';
+const WHITE = '#F8FAFC';
+const MUTED = '#B8C1D1';
+
+const SERVICE_CARDS = [
+  { label: 'Instalação', key: 'instalacao' as const, icon: 'build.fill' as const },
+  { label: 'Tipo 3', key: 'tipo3' as const, icon: 'square.stack.3d.up.fill' as const },
+  { label: 'Mudança', key: 'mudanca' as const, icon: 'arrow.triangle.2.circlepath' as const },
+  { label: 'Empresarial', key: 'empresarial' as const, icon: 'building.2.fill' as const },
+];
+
+const ANALYSIS_ROWS = [
+  { label: 'Meta por Dia', key: 'metaPorDiaValor' as const, icon: 'calendar' as const, unit: '' },
+  { label: 'Média Atual', key: 'mediaAtual' as const, icon: 'chart.line.uptrend.xyaxis' as const, unit: 'por dia' },
+  { label: 'Média Necessária', key: 'mediaNecess' as const, icon: 'target' as const, unit: 'por dia' },
+  { label: 'Projeção', key: 'projecao' as const, icon: 'chart.line.uptrend.xyaxis' as const, unit: 'instalações' },
+  { label: 'Dias Trabalhados', key: 'diasUteisTrabalhados' as const, icon: 'clock.fill' as const, unit: '' },
+];
+
+function formatCurrency(value: number) {
+  return `R$ ${value.toLocaleString('pt-BR')}`;
+}
 
 export default function DashboardScreen() {
   const { instalacoes, paymentMode, monthlyGoal } = useInstallations();
@@ -23,17 +54,13 @@ export default function DashboardScreen() {
   const { workDays } = useWorkSchedule();
   const [showToast, setShowToast] = React.useState(false);
   const { bairroSelecionado, setBairroSelecionado } = useBairroFilter();
-  
-  // Carregar configurações do mês (paymentMode e monthlyGoal)
+
   useMonthlyConfig();
-  
-  // Chave única para o mês (para rastrear milestones)
+
   const monthKey = `${ano}-${String(mes + 1).padStart(2, '0')}`;
 
-
-  // Atualizar quando mês mudar
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       Animated.sequence([
         Animated.timing(fadeAnim, { toValue: 0.5, duration: 200, useNativeDriver: true }),
         Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -41,71 +68,49 @@ export default function DashboardScreen() {
     }, [mes, ano, fadeAnim])
   );
 
-  // Calcular stats do mês
   const stats = useMemo(() => {
     const instalacoesDoMes = instalacoes.filter((inst) => {
-      const [d, m, a] = inst.data.split('/');
-      const mesMatch = parseInt(m) === mes + 1 && parseInt(a) === ano;
+      const [, mesRegistro, anoRegistro] = inst.data.split('/');
+      const mesMatch = parseInt(mesRegistro, 10) === mes + 1 && parseInt(anoRegistro, 10) === ano;
       const bairroMatch = !bairroSelecionado || inst.endereco === bairroSelecionado;
       return mesMatch && bairroMatch;
     });
 
-    // Usar calcularStats para cálculo correto de valor total
-    const stats = calcularStats(instalacoesDoMes, paymentMode);
-    const valorTotal = stats.valorTotal;
-    const contadores = stats.porTipo;
-
+    const resumo = calcularStats(instalacoesDoMes, paymentMode);
     const totalInstalacoes = instalacoesDoMes.length;
-    
-    // IMPORTANTE: monthlyGoal é em QUANTIDADE de instalações
-    // Converter para VALOR baseado no modo de pagamento
     const metaValor = monthlyGoal * calcularValorPorTipo('Instalação', totalInstalacoes, paymentMode);
-    const faltamValor = Math.max(0, metaValor - valorTotal);
-    
-    // Faltam em QUANTIDADE (para exibir "faltam X instalações")
+    const faltamValor = Math.max(0, metaValor - resumo.valorTotal);
     const faltamQuantidade = Math.max(0, monthlyGoal - totalInstalacoes);
-    
-    const hoje = new Date();
-    const hoje_dia = hoje.getDate();
-    const hoje_mes = hoje.getMonth() + 1;
-    const hoje_ano = hoje.getFullYear();
 
-    // Usar funções corretas com dias de trabalho customizados (mes é 0-based, converter para 1-based)
+    const hoje = new Date();
+    const hojeDia = hoje.getDate();
+    const hojeMes = hoje.getMonth() + 1;
+    const hojeAno = hoje.getFullYear();
     const primeiroDia = getPrimeiroDiaUtilMes(mes + 1, ano, workDays);
     const ultimoDia = getUltimoDiaUtilMes(mes + 1, ano, workDays);
-
-    // Se estamos no mês atual, usar data de hoje; senão usar último dia do mês
-    const dataFim =
-      mes === hoje_mes - 1 && ano === hoje_ano
-        ? new Date(hoje_ano, mes, hoje_dia)
-        : ultimoDia;
+    const dataFim = mes === hojeMes - 1 && ano === hojeAno
+      ? new Date(hojeAno, mes, hojeDia)
+      : ultimoDia;
 
     const diasUteisTotais = calcularDiasUteis(primeiroDia, ultimoDia, workDays);
     const diasUteisTrabalhados = calcularDiasUteis(primeiroDia, dataFim, workDays);
     const diasUteisRestantes = Math.max(0, diasUteisTotais - diasUteisTrabalhados);
-    
-    // Meta por dia em VALOR (não quantidade)
     const metaPorDiaValor = diasUteisRestantes > 0 ? Math.ceil(faltamValor / diasUteisRestantes) : 0;
-    
-    // Calcular percentual para detectar milestones
     const percentualMeta = monthlyGoal > 0 ? (totalInstalacoes / monthlyGoal) * 100 : 0;
-    
-    const hojeInstalacoes = instalacoes.filter((inst) => {
-      const [d, m, a] = inst.data.split('/');
-      return parseInt(d) === hoje_dia && parseInt(m) === hoje_mes && parseInt(a) === hoje_ano;
+    const hojeInstalacoes = instalacoesDoMes.filter((inst) => {
+      const [dia, mesRegistro, anoRegistro] = inst.data.split('/');
+      return parseInt(dia, 10) === hojeDia && parseInt(mesRegistro, 10) === hojeMes && parseInt(anoRegistro, 10) === hojeAno;
     }).length;
-    
-    // Média em QUANTIDADE por dia
     const mediaAtual = diasUteisTrabalhados > 0 ? (totalInstalacoes / diasUteisTrabalhados).toFixed(1) : '0';
-    const mediaNecess = (monthlyGoal / diasUteisTotais).toFixed(1);
-    const projecao = Math.round((parseFloat(mediaAtual) * diasUteisTotais));
+    const mediaNecess = diasUteisTotais > 0 ? (monthlyGoal / diasUteisTotais).toFixed(1) : '0';
+    const projecao = Math.round(parseFloat(mediaAtual) * diasUteisTotais);
 
     return {
       totalInstalacoes,
-      valorTotal: valorTotal,
+      valorTotal: resumo.valorTotal,
       faltamQuantidade,
       faltamValor,
-      contadores,
+      contadores: resumo.porTipo,
       metaPorDiaValor,
       mediaAtual,
       mediaNecess,
@@ -114,36 +119,42 @@ export default function DashboardScreen() {
       diasUteisRestantes,
       diasUteisTotais,
       percentualMeta,
+      hojeInstalacoes,
     };
-  }, [instalacoes, mes, ano, paymentMode, monthlyGoal, workDays]);
+  }, [instalacoes, mes, ano, paymentMode, monthlyGoal, workDays, bairroSelecionado]);
 
   const nomesMes = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
   ];
 
-  // Hook para detectar milestones de meta
   const { newMilestoneReached, dismissMilestone } = useMetaMilestones(
     stats.totalInstalacoes,
     monthlyGoal,
     monthKey
   );
-  
-  // Mostrar toast quando milestone for atingido
+
   React.useEffect(() => {
-    if (newMilestoneReached) {
-      setShowToast(true);
-    }
+    if (newMilestoneReached) setShowToast(true);
   }, [newMilestoneReached]);
-  
-  // Meta é atingida quando valor total >= meta em valor
+
   const metaValorEsperada = monthlyGoal * calcularValorPorTipo('Instalação', monthlyGoal, paymentMode);
-  const metaAtingida = stats.valorTotal >= metaValorEsperada;
-  const percentualMetaExibicao = (stats.valorTotal / metaValorEsperada) * 100;
+  const metaAtingida = metaValorEsperada > 0 && stats.valorTotal >= metaValorEsperada;
+  const percentualMetaExibicao = metaValorEsperada > 0
+    ? Math.min(100, (stats.valorTotal / metaValorEsperada) * 100)
+    : 0;
+  const progresso = monthlyGoal > 0 ? Math.min(1, stats.totalInstalacoes / monthlyGoal) : 0;
+  const circunferencia = 2 * Math.PI * 43;
   const mostrarNotificacao = percentualMetaExibicao >= 90 && percentualMetaExibicao < 100;
 
+  const alterarMes = (direcao: 'anterior' | 'proximo') => {
+    if (direcao === 'anterior') mesPrevio();
+    else proximoMes();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   return (
-    <ScreenContainer>
+    <ScreenContainer containerClassName="bg-background">
       {showToast && newMilestoneReached && (
         <Toast
           message={newMilestoneReached.message}
@@ -155,255 +166,167 @@ export default function DashboardScreen() {
           }}
         />
       )}
-      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}>
+
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 8, paddingBottom: 36 }}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View style={{ opacity: fadeAnim }}>
-          {/* Cabeçalho com navegação de meses */}
-          <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, gap: 8 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <TouchableOpacity
-                onPress={() => {
-                  mesPrevio();
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                style={{ padding: 8 }}
-              >
-                <Text style={{ fontSize: 20, color: colors.primary }}>‹</Text>
-              </TouchableOpacity>
-              <View style={{ position: 'relative', alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: colors.foreground }}>
-                  {nomesMes[mes]} {ano}
-                </Text>
-                {mostrarNotificacao && (
-                  <View style={{
-                    position: 'absolute',
-                    top: -10,
-                    right: -20,
-                    backgroundColor: colors.error,
-                    borderRadius: 12,
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    zIndex: 10,
-                  }}
-                  >
-                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>90%</Text>
-                  </View>
-                )}
-              </View>
-              <TouchableOpacity
-                onPress={() => {
-                  proximoMes();
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                style={{ padding: 8 }}
-              >
-                <Text style={{ fontSize: 20, color: colors.primary }}>›</Text>
-              </TouchableOpacity>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <TouchableOpacity onPress={() => alterarMes('anterior')} style={{ padding: 4 }}>
+              <IconSymbol name="chevron.left" size={34} color={GOLD} />
+            </TouchableOpacity>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ color: WHITE, fontSize: 22, fontWeight: '800', letterSpacing: 0.2 }}>
+                {nomesMes[mes]} {ano}
+              </Text>
+              {mostrarNotificacao && (
+                <Text style={{ color: GOLD, fontSize: 10, fontWeight: '800', marginTop: 2 }}>META A 90%</Text>
+              )}
             </View>
+            <TouchableOpacity onPress={() => alterarMes('proximo')} style={{ padding: 4 }}>
+              <IconSymbol name="chevron.right" size={34} color={GOLD} />
+            </TouchableOpacity>
           </View>
-          
-          {/* Filtro de Bairro */}
-          <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
+
+          <View style={{ marginBottom: 16 }}>
             <BairroFilter bairroSelecionado={bairroSelecionado} onSelectBairro={setBairroSelecionado} />
           </View>
 
-          {/* Card Principal - Meta */}
-          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-            <View
-              style={{
-                backgroundColor: colors.primary,
-                borderRadius: 16,
-                padding: 20,
-                gap: 12,
-                position: 'relative',
-              }}
-            >
-              {/* Badges de milestone */}
-              {stats.percentualMeta >= 50 && stats.percentualMeta < 75 && (
-                <View style={{
-                  position: 'absolute',
-                  top: 12,
-                  right: 12,
-                  backgroundColor: '#FFC107',
-                  borderRadius: 20,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  zIndex: 10,
-                }}>
-                  <Text style={{ color: '#000', fontSize: 12, fontWeight: '700' }}>50% \ud83c\udfaf</Text>
-                </View>
-              )}
-              {stats.percentualMeta >= 75 && stats.percentualMeta < 90 && (
-                <View style={{
-                  position: 'absolute',
-                  top: 12,
-                  right: 12,
-                  backgroundColor: '#FF9800',
-                  borderRadius: 20,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  zIndex: 10,
-                }}>
-                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>75% \ud83d\udd25</Text>
-                </View>
-              )}
-              {stats.percentualMeta >= 90 && stats.percentualMeta < 100 && (
-                <View style={{
-                  position: 'absolute',
-                  top: 12,
-                  right: 12,
-                  backgroundColor: '#FF5722',
-                  borderRadius: 20,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  zIndex: 10,
-                }}>
-                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>90% \u26a1</Text>
-                </View>
-              )}
-              <View style={{ gap: 4 }}>
-                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.background, opacity: 0.9 }}>
-                  Meta do Mês
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-                  <Text style={{ fontSize: 32, fontWeight: '800', color: colors.background }}>
-                    {stats.totalInstalacoes}
-                  </Text>
-                  <Text style={{ fontSize: 16, color: colors.background, opacity: 0.8 }}>
-                    / {monthlyGoal}
-                  </Text>
+          <View style={{
+            backgroundColor: CARD,
+            borderColor: GOLD_BORDER,
+            borderWidth: 1,
+            borderRadius: 20,
+            padding: 20,
+            marginBottom: 22,
+            shadowColor: GOLD,
+            shadowOpacity: 0.12,
+            shadowRadius: 14,
+            elevation: 3,
+          }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View>
+                <Text style={{ color: GOLD, fontSize: 17, fontWeight: '700', marginBottom: 10 }}>Meta do Mês</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                  <Text style={{ color: GOLD, fontSize: 52, lineHeight: 58, fontWeight: '800' }}>{stats.totalInstalacoes}</Text>
+                  <Text style={{ color: WHITE, fontSize: 24, fontWeight: '600', marginLeft: 8 }}>/ {monthlyGoal}</Text>
                 </View>
               </View>
-
-              {/* Barra de progresso */}
-              <View style={{ height: 8, backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden' }}>
-                <View
-                  style={{
-                    height: '100%',
-                    width: `${Math.min((stats.totalInstalacoes / monthlyGoal) * 100, 100)}%`,
-                    backgroundColor: metaAtingida ? '#4CAF50' : colors.background,
-                    borderRadius: 4,
-                  }}
-                />
-              </View>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <View>
-                  <Text style={{ fontSize: 12, color: colors.background, opacity: 0.8 }}>Faltam</Text>
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.background }}>
-                    R$ {stats.faltamValor.toLocaleString('pt-BR')}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.background, opacity: 0.8, marginTop: 4 }}>
-                    {stats.faltamQuantidade} instalação{stats.faltamQuantidade !== 1 ? 'ões' : ''}
-                  </Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 12, color: colors.background, opacity: 0.8 }}>Valor Total</Text>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.background }}>
-                    R$ {stats.valorTotal.toLocaleString('pt-BR')}
-                  </Text>
+              <View style={{ width: 106, height: 106, alignItems: 'center', justifyContent: 'center' }}>
+                <Svg width={106} height={106} viewBox="0 0 106 106">
+                  <Circle cx="53" cy="53" r="43" stroke="#1E2B41" strokeWidth="9" fill="none" />
+                  <Circle
+                    cx="53"
+                    cy="53"
+                    r="43"
+                    stroke={GOLD}
+                    strokeWidth="9"
+                    strokeLinecap="round"
+                    fill="none"
+                    strokeDasharray={`${circunferencia} ${circunferencia}`}
+                    strokeDashoffset={circunferencia * (1 - progresso)}
+                    rotation="-90"
+                    origin="53, 53"
+                  />
+                </Svg>
+                <View style={{ position: 'absolute', alignItems: 'center' }}>
+                  <Text style={{ color: GOLD, fontSize: 23, fontWeight: '800' }}>{Math.round(progresso * 100)}%</Text>
+                  <Text style={{ color: MUTED, fontSize: 12 }}>da meta</Text>
                 </View>
               </View>
-
-              {metaAtingida && (
-                <View style={{ backgroundColor: colors.background, borderRadius: 8, padding: 8, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>
-                    🎉 Meta Atingida! Bônus de R$5 por serviço
-                  </Text>
-                </View>
-              )}
             </View>
+
+            <View style={{ height: 10, borderRadius: 8, backgroundColor: '#1B2A43', overflow: 'hidden', marginTop: 12, marginBottom: 18 }}>
+              <View style={{ width: `${Math.round(progresso * 100)}%`, height: '100%', borderRadius: 8, backgroundColor: GOLD }} />
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: MUTED, fontSize: 15, marginBottom: 4 }}>Faltam</Text>
+                <Text style={{ color: GOLD, fontSize: 23, fontWeight: '800' }}>{formatCurrency(stats.faltamValor)}</Text>
+                <Text style={{ color: MUTED, fontSize: 14, marginTop: 4 }}>
+                  {stats.faltamQuantidade} instalação{stats.faltamQuantidade !== 1 ? 'ões' : ''}
+                </Text>
+              </View>
+              <View style={{ width: 1, backgroundColor: '#31415B', marginHorizontal: 18 }} />
+              <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                <Text style={{ color: MUTED, fontSize: 15, marginBottom: 4 }}>Valor Total</Text>
+                <Text style={{ color: GOLD, fontSize: 23, fontWeight: '800' }}>{formatCurrency(stats.valorTotal)}</Text>
+              </View>
+            </View>
+
+            {metaAtingida && (
+              <View style={{ backgroundColor: '#142C26', borderRadius: 10, padding: 9, alignItems: 'center', marginTop: 16 }}>
+                <Text style={{ color: '#63E6A2', fontSize: 12, fontWeight: '700' }}>Meta atingida — bônus de R$ 5 por serviço</Text>
+              </View>
+            )}
           </View>
 
-          {/* Grid de Tipos de Serviço */}
-          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.muted, marginBottom: 12 }}>
-              Por Tipo de Serviço
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
-              {[
-                { label: 'Instalação', count: stats.contadores.instalacao, color: '#0a7ea4' },
-                { label: 'Tipo 3', count: stats.contadores.tipo3, color: '#0d47a1' },
-                { label: 'Mudança', count: stats.contadores.mudanca, color: '#1565c0' },
-                { label: 'Empresarial', count: stats.contadores.empresarial, color: '#ff9800' },
-              ].map((tipo) => (
+          <Text style={{ color: WHITE, fontSize: 21, fontWeight: '700', marginBottom: 12 }}>Por Tipo de Serviço</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 22 }}>
+            {SERVICE_CARDS.map((service) => {
+              const count = stats.contadores[service.key];
+              const share = monthlyGoal > 0 ? Math.min(100, (count / monthlyGoal) * 100) : 0;
+              return (
                 <View
-                  key={tipo.label}
+                  key={service.label}
                   style={{
-                    flex: 1,
-                    minWidth: '45%',
-                    backgroundColor: tipo.color,
-                    borderRadius: 12,
+                    width: '48.5%',
+                    minHeight: 108,
+                    backgroundColor: CARD_ALT,
+                    borderColor: '#1E5BDB',
+                    borderWidth: 1,
+                    borderRadius: 15,
                     padding: 12,
+                    marginBottom: 12,
+                    flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 4,
+                    overflow: 'hidden',
                   }}
                 >
-                  <Text style={{ fontSize: 24, fontWeight: '800', color: '#fff' }}>
-                    {tipo.count}
-                  </Text>
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: '#fff', textAlign: 'center' }}>
-                    {tipo.label}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Métricas Detalhadas */}
-          <View style={{ paddingHorizontal: 16, marginBottom: 16, gap: 12 }}>
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderRadius: 12,
-                padding: 16,
-                gap: 12,
-              }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
-                Análise do Mês
-              </Text>
-              {[
-                { label: 'Meta por Dia', value: `R$ ${stats.metaPorDiaValor}`, unit: '' },
-                { label: 'Média Atual', value: stats.mediaAtual, unit: 'por dia' },
-                { label: 'Média Necessária', value: stats.mediaNecess, unit: 'por dia' },
-                { label: 'Projeção', value: `${stats.projecao}`, unit: 'instalações' },
-                { label: 'Dias Trabalhados', value: stats.diasUteisTrabalhados, unit: '' },
-                { label: 'Dias Restantes', value: stats.diasUteisRestantes, unit: '' },
-              ].map((metrica, idx) => (
-                <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 13, color: colors.muted }}>{metrica.label}</Text>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '700', color: colors.primary }}>
-                      {metrica.value}
-                    </Text>
-                    {metrica.unit ? (
-                      <Text style={{ fontSize: 11, color: colors.muted }}>{metrica.unit}</Text>
-                    ) : null}
+                  <View style={{ width: 54, height: 54, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: BLUE_DARK, marginRight: 12 }}>
+                    <IconSymbol name={service.icon} size={29} color={WHITE} />
                   </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: WHITE, fontSize: 30, lineHeight: 34, fontWeight: '800' }}>{count}</Text>
+                    <Text style={{ color: WHITE, fontSize: 15, fontWeight: '500' }} numberOfLines={1}>{service.label}</Text>
+                  </View>
+                  <View style={{ position: 'absolute', left: 0, bottom: 0, height: 3, width: `${share}%`, backgroundColor: BLUE }} />
                 </View>
-              ))}
-            </View>
+              );
+            })}
           </View>
 
-          {/* Alerta de Meta */}
+          <View style={{ backgroundColor: CARD, borderColor: '#1E5BDB', borderWidth: 1, borderRadius: 17, padding: 16, marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <IconSymbol name="chart.line.uptrend.xyaxis" size={26} color={BLUE} />
+              <Text style={{ color: WHITE, fontSize: 20, fontWeight: '700', marginLeft: 10 }}>Análise do Mês</Text>
+            </View>
+
+            {ANALYSIS_ROWS.map((row, index) => {
+              const rawValue = stats[row.key];
+              const displayValue = row.key === 'metaPorDiaValor'
+                ? formatCurrency(Number(rawValue))
+                : String(rawValue);
+              return (
+                <View key={row.label} style={{ flexDirection: 'row', alignItems: 'center', minHeight: 58, borderTopWidth: index === 0 ? 0 : 1, borderTopColor: DIVIDER }}>
+                  <IconSymbol name={row.icon} size={23} color={BLUE} />
+                  <Text style={{ flex: 1, color: WHITE, fontSize: 16, marginLeft: 14 }}>{row.label}</Text>
+                  <Text style={{ color: BLUE, fontSize: 19, fontWeight: '800' }}>{displayValue}</Text>
+                  {row.unit ? <Text style={{ color: MUTED, fontSize: 14, marginLeft: 10 }}>{row.unit}</Text> : null}
+                </View>
+              );
+            })}
+          </View>
+
           {stats.faltamQuantidade > 0 && stats.faltamQuantidade <= 10 && (
-            <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-              <View
-                style={{
-                  backgroundColor: '#FFF3CD',
-                  borderRadius: 12,
-                  padding: 12,
-                  borderLeftWidth: 4,
-                  borderLeftColor: '#FFC107',
-                }}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#856404' }}>
-                  ⚠️ Faltam R$ {stats.faltamValor.toLocaleString('pt-BR')} para a meta!
-                </Text>
-              </View>
+            <View style={{ backgroundColor: '#241D0B', borderColor: GOLD_BORDER, borderWidth: 1, borderRadius: 12, padding: 13, marginBottom: 10 }}>
+              <Text style={{ color: GOLD, fontSize: 13, fontWeight: '700' }}>
+                Atenção: faltam {formatCurrency(stats.faltamValor)} para a meta.
+              </Text>
             </View>
           )}
-
         </Animated.View>
       </ScrollView>
     </ScreenContainer>

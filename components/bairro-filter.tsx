@@ -4,6 +4,7 @@ import { useColors } from '@/hooks/use-colors';
 import { BAIRROS_LEM, buscarBairros } from '@/lib/bairros-lem';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 interface BairroFilterProps {
   bairroSelecionado: string | null;
@@ -39,22 +40,32 @@ export function BairroFilter({ bairroSelecionado, onSelectBairro }: BairroFilter
         style={({ pressed }) => [
           styles.botao,
           {
-            backgroundColor: bairroSelecionado ? colors.primary : colors.surface,
-            borderColor: colors.border,
+            backgroundColor: '#0B1426',
+            borderColor: '#C99524',
+            borderRadius: 12,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            justifyContent: 'space-between',
           },
           pressed && { opacity: 0.8 },
         ]}
         onPress={() => setMostrarLista(!mostrarLista)}
       >
-        <Text
-          style={{
-            color: bairroSelecionado ? '#fff' : colors.foreground,
-            fontSize: 14,
-            fontWeight: '500',
-          }}
-        >
-          {bairroSelecionado ? `📍 ${bairroSelecionado}` : 'Todos os bairros'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <IconSymbol name="location.fill" size={22} color={colors.primary} />
+          <Text
+            style={{
+              color: '#F8FAFC',
+              fontSize: 15,
+              fontWeight: '600',
+              marginLeft: 12,
+            }}
+            numberOfLines={1}
+          >
+            {bairroSelecionado || 'Todos os bairros'}
+          </Text>
+        </View>
+        <IconSymbol name="chevron.down" size={24} color={colors.muted} />
       </Pressable>
 
       {bairroSelecionado && (
@@ -74,8 +85,8 @@ export function BairroFilter({ bairroSelecionado, onSelectBairro }: BairroFilter
           style={[
             styles.lista,
             {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
+              backgroundColor: '#0B1426',
+              borderColor: '#C99524',
             },
           ]}
         >
@@ -83,9 +94,9 @@ export function BairroFilter({ bairroSelecionado, onSelectBairro }: BairroFilter
             style={[
               styles.busca,
               {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                color: colors.foreground,
+                backgroundColor: '#050A14',
+                borderColor: '#1E2A3F',
+                color: '#F8FAFC',
               },
             ]}
             placeholder="Buscar bairro..."
@@ -109,7 +120,7 @@ export function BairroFilter({ bairroSelecionado, onSelectBairro }: BairroFilter
               >
                 <Text
                   style={{
-                    color: bairroSelecionado === bairro ? '#fff' : colors.foreground,
+                    color: bairroSelecionado === bairro ? '#fff' : '#F8FAFC',
                     fontSize: 14,
                   }}
                 >
