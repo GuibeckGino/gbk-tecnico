@@ -1,270 +1,165 @@
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, Dimensions } from 'react-native';
-import { BarChart, PieChart, LineChart } from 'react-native-chart-kit';
-import { InteractiveBarChart } from '@/components/interactive-bar-chart';
-import { InteractivePieChart } from '@/components/interactive-pie-chart';
-import { InteractiveLineChart } from '@/components/interactive-line-chart';
-import { ScreenContainer } from '@/components/screen-container';
-import { useInstallations } from '@/context/InstallationsContext';
-import { useMonth } from '@/context/MonthContext';
-import { useColors } from '@/hooks/use-colors';
-import { PREMIUM } from '@/components/premium-ui';
+import { Dimensions, ScrollView, Text, View } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ScreenContainer } from '@/components/screen-container';
+import { PremiumCard, PREMIUM } from '@/components/premium-ui';
+import { ReferenceBarChart, ReferenceLineChart, ReferenceSemiDonut } from '@/components/reference-charts';
+import { useInstallations } from '@/context/InstallationsContext';
+import { filtrarPorMes, useMonth } from '@/context/MonthContext';
 import { calcularValorPorTipo } from '@/types/installation';
-import { filtrarPorMes } from '@/context/MonthContext';
 
 const screenWidth = Dimensions.get('window').width;
+const chartWidth = Math.min(Math.max(screenWidth - 76, 280), 780);
+
+const SERVICE_COLORS = {
+  Instalação: '#1768E5',
+  'Tipo 3': '#234FB8',
+  Mudança: '#13A5C6',
+  Empresarial: '#F2B52B',
+};
+
+type ServiceType = keyof typeof SERVICE_COLORS;
+
+function SectionHeader({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+      <View style={{ width: 50, height: 50, borderRadius: 12, backgroundColor: '#0A2A70', borderWidth: 1, borderColor: PREMIUM.blue, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+        <IconSymbol name={icon} size={28} color={PREMIUM.blue} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: PREMIUM.foreground, fontSize: 19, lineHeight: 24, fontWeight: '800' }}>{title}</Text>
+        <Text style={{ color: PREMIUM.muted, fontSize: 14, lineHeight: 19, marginTop: 3 }}>{subtitle}</Text>
+      </View>
+    </View>
+  );
+}
 
 export default function GraficosScreen() {
   const { instalacoes, paymentMode } = useInstallations();
   const { mes, ano } = useMonth();
-  const colors = useColors();
-
-  // Filtrar instalações do mês selecionado
   const instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
 
-  // Calcular dados por tipo (apenas do mês para gráficos)
   const dataByType = useMemo(() => {
-    const types = {
-      'Instalação': 0,
+    const types: Record<ServiceType, number> = {
+      Instalação: 0,
       'Tipo 3': 0,
-      'Mudança': 0,
-      'Empresarial': 0,
-    };
-
-    const valueByType = {
-      'Instalação': 0,
-      'Tipo 3': 0,
-      'Mudança': 0,
-      'Empresarial': 0,
+      Mudança: 0,
+      Empresarial: 0,
     };
 
     instalacoesDoMes.forEach((inst: any) => {
-      const tipo = inst.tipoServico as keyof typeof types;
-      types[tipo] = (types[tipo] || 0) + 1;
-      
-      const value = calcularValorPorTipo(inst.tipoServico, instalacoesDoMes.length, paymentMode);
-      valueByType[tipo] = (valueByType[tipo] || 0) + value;
+      const tipo = inst.tipoServico as ServiceType;
+      if (tipo in types) types[tipo] += 1;
     });
 
-    return { types, valueByType };
-  }, [instalacoesDoMes, paymentMode]);
+    return types;
+  }, [instalacoesDoMes]);
 
-  // Calcular faturamento total do histórico completo
-  const faturamentoTotal = useMemo(() => {
-    const valueByType = {
-      'Instalação': 0,
+  const historyByType = useMemo(() => {
+    const values: Record<ServiceType, number> = {
+      Instalação: 0,
       'Tipo 3': 0,
-      'Mudança': 0,
-      'Empresarial': 0,
+      Mudança: 0,
+      Empresarial: 0,
+    };
+    const quantities: Record<ServiceType, number> = {
+      Instalação: 0,
+      'Tipo 3': 0,
+      Mudança: 0,
+      Empresarial: 0,
     };
 
     instalacoes.forEach((inst: any) => {
-      const tipo = inst.tipoServico as keyof typeof valueByType;
-      const value = calcularValorPorTipo(inst.tipoServico, instalacoes.length, paymentMode);
-      valueByType[tipo] = (valueByType[tipo] || 0) + value;
+      const tipo = inst.tipoServico as ServiceType;
+      if (!(tipo in values)) return;
+      quantities[tipo] += 1;
+      values[tipo] += calcularValorPorTipo(inst.tipoServico, instalacoes.length, paymentMode);
     });
 
-    return Object.values(valueByType).reduce((a: number, b: number) => a + b, 0);
+    return { values, quantities };
   }, [instalacoes, paymentMode]);
 
-  // Dados para gráfico de barras (quantidade)
-  const barChartData = {
-    labels: ['Inst.', 'Tipo 3', 'Mudança', 'Emp.'],
-    datasets: [
-      {
-        data: [
-          dataByType.types['Instalação'] || 0,
-          dataByType.types['Tipo 3'] || 0,
-          dataByType.types['Mudança'] || 0,
-          dataByType.types['Empresarial'] || 0,
-        ],
-      },
-    ],
-  };
+  const faturamentoTotal = useMemo(
+    () => Object.values(historyByType.values).reduce((sum, value) => sum + value, 0),
+    [historyByType],
+  );
 
-  // Dados para gráfico de pizza (faturamento)
-  const pieChartData = [
-    {
-      name: 'Instalação',
-      value: dataByType.valueByType['Instalação'] || 0,
-      color: '#0a7ea4',
-      legendFontColor: colors.foreground,
-      legendFontSize: 12,
-    },
-    {
-      name: 'Tipo 3',
-      value: dataByType.valueByType['Tipo 3'] || 0,
-      color: '#0d47a1',
-      legendFontColor: colors.foreground,
-      legendFontSize: 12,
-    },
-    {
-      name: 'Mudança',
-      value: dataByType.valueByType['Mudança'] || 0,
-      color: '#1565c0',
-      legendFontColor: colors.foreground,
-      legendFontSize: 12,
-    },
-    {
-      name: 'Empresarial',
-      value: dataByType.valueByType['Empresarial'] || 0,
-      color: '#ff9800',
-      legendFontColor: colors.foreground,
-      legendFontSize: 12,
-    },
-  ];
-
-  // Dados para gráfico de linha (últimos 6 meses)
   const last6Months = useMemo(() => {
-    const months = [];
+    const months: Array<{ label: string; month: number; year: number }> = [];
     const today = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      months.push({
-        month: date.toLocaleString('pt-BR', { month: 'short' }),
-        year: date.getFullYear(),
-        monthNum: date.getMonth(),
-        yearNum: date.getFullYear(),
-      });
+    for (let index = 5; index >= 0; index -= 1) {
+      const date = new Date(today.getFullYear(), today.getMonth() - index, 1);
+      const label = date.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
+      months.push({ label: label.charAt(0).toUpperCase() + label.slice(1), month: date.getMonth(), year: date.getFullYear() });
     }
     return months;
   }, []);
 
-  const lineChartData = useMemo(() => {
-    const values = last6Months.map((m: any) => {
-      const monthInstallations = instalacoes.filter((inst: any) => {
-        const date = new Date(inst.data);
-        return date.getMonth() === m.monthNum && date.getFullYear() === m.yearNum;
-      });
-      return monthInstallations.length;
-    });
+  const lineValues = useMemo(
+    () => last6Months.map(({ month, year }) => instalacoes.filter((inst: any) => {
+      const date = new Date(inst.data);
+      return date.getMonth() === month && date.getFullYear() === year;
+    }).length),
+    [instalacoes, last6Months],
+  );
 
-    return {
-      labels: last6Months.map((m: any) => m.month),
-      datasets: [
-        {
-          data: values.length > 0 ? values : [0],
-        },
-      ],
-    };
-  }, [instalacoes, last6Months]);
-
-  const chartConfig = {
-    backgroundColor: PREMIUM.surface,
-    backgroundGradientFrom: PREMIUM.surface,
-    backgroundGradientTo: PREMIUM.surface,
-    color: () => colors.primary,
-    strokeWidth: 2,
-    barPercentage: 0.5,
-    useShadowColorFromDataset: false,
-    decimalPlaces: 0,
-    formatYLabel: (yLabel: string) => yLabel,
-  };
+  const pieItems = (Object.keys(SERVICE_COLORS) as ServiceType[]).map((name) => ({
+    name,
+    value: historyByType.values[name],
+    quantity: historyByType.quantities[name],
+    color: SERVICE_COLORS[name],
+  }));
 
   return (
-    <ScreenContainer>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, gap: 24 }}>
+    <ScreenContainer containerClassName="bg-background">
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 22, paddingBottom: 112, gap: 20 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-          <View style={{ width: 58, height: 58, borderRadius: 16, backgroundColor: '#2A2410', borderWidth: 1, borderColor: '#5F4B12', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-            <IconSymbol name="chart.pie.fill" size={32} color={PREMIUM.gold} />
+          <View style={{ width: 60, height: 60, borderRadius: 16, backgroundColor: '#2A2410', borderWidth: 1, borderColor: '#5F4B12', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+            <IconSymbol name="chart.pie.fill" size={34} color={PREMIUM.gold} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: PREMIUM.foreground, fontSize: 29, lineHeight: 34, fontWeight: '800' }}>Gráficos</Text>
-            <Text style={{ color: PREMIUM.muted, fontSize: 16, marginTop: 3 }}>Análise visual do seu serviço e produtividade</Text>
+            <Text style={{ color: PREMIUM.foreground, fontSize: 30, lineHeight: 35, fontWeight: '800' }}>Gráficos</Text>
+            <Text style={{ color: PREMIUM.muted, fontSize: 16, lineHeight: 21, marginTop: 3 }}>Análise visual do seu serviço e produtividade</Text>
           </View>
         </View>
 
-        {/* Gráfico de Barras Interativo */}
-        <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#0B2A70', borderWidth: 1, borderColor: PREMIUM.blue, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-              <IconSymbol name="chart.bar.fill" size={26} color={PREMIUM.blue} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>Quantidade por Tipo</Text>
-              <Text style={{ fontSize: 13, color: colors.muted, marginTop: 4 }}>Instalações por tipo de serviço</Text>
-            </View>
-          </View>
-          <InteractiveBarChart
-            data={barChartData}
-            chartConfig={chartConfig}
-            quantities={[
-              dataByType.types['Instalação'] || 0,
-              dataByType.types['Tipo 3'] || 0,
-              dataByType.types['Mudança'] || 0,
-              dataByType.types['Empresarial'] || 0,
-            ]}
-            colors={colors}
+        <PremiumCard accent="gold" style={{ padding: 20 }}>
+          <SectionHeader icon="chart.bar.fill" title="Quantidade por Tipo" subtitle="Instalações por tipo de serviço" />
+          <ReferenceBarChart
+            width={chartWidth}
+            labels={['Instalação', 'Tipo 3', 'Mudança', 'Empresarial']}
+            values={[dataByType.Instalação, dataByType['Tipo 3'], dataByType.Mudança, dataByType.Empresarial]}
           />
-        </View>
+        </PremiumCard>
 
-        {/* Gráfico de Pizza Interativo */}
-        <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#0B2A70', borderWidth: 1, borderColor: PREMIUM.blue, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-              <IconSymbol name="chart.pie.fill" size={26} color={PREMIUM.blue} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>Distribuição de Faturamento</Text>
-              <Text style={{ fontSize: 13, color: colors.muted, marginTop: 4 }}>Proporção do faturamento por tipo de serviço</Text>
-            </View>
-          </View>
-          {pieChartData.some((d) => d.value > 0) ? (
-            <InteractivePieChart
-              data={pieChartData}
-              chartConfig={chartConfig}
-              quantities={dataByType.types}
-              colors={colors}
-            />
-          ) : (
-            <Text style={{ color: colors.muted, textAlign: 'center', paddingVertical: 40 }}>
-              Sem dados para exibir
-            </Text>
-          )}
-        </View>
+        <PremiumCard accent="blue" style={{ padding: 20 }}>
+          <SectionHeader icon="chart.pie.fill" title="Distribuição de Faturamento" subtitle="Proporção do faturamento por tipo de serviço" />
+          <ReferenceSemiDonut items={pieItems} total={faturamentoTotal} width={chartWidth} />
+        </PremiumCard>
 
-        {/* Gráfico de Linha Interativo */}
-        <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#0B2A70', borderWidth: 1, borderColor: PREMIUM.blue, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-              <IconSymbol name="chart.line.uptrend.xyaxis" size={26} color={PREMIUM.blue} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>Tendência - Últimos 6 Meses</Text>
-              <Text style={{ fontSize: 13, color: colors.muted, marginTop: 4 }}>Instalações realizadas por mês</Text>
-            </View>
-          </View>
-          <InteractiveLineChart
-            data={lineChartData}
-            chartConfig={chartConfig}
-            colors={colors}
-          />
-        </View>
+        <PremiumCard accent="blue" style={{ padding: 20 }}>
+          <SectionHeader icon="chart.line.uptrend.xyaxis" title="Tendência - Últimos 6 Meses" subtitle="Instalações realizadas por mês" />
+          <ReferenceLineChart width={chartWidth} labels={last6Months.map((month) => month.label)} values={lineValues} />
+        </PremiumCard>
 
-        {/* Resumo */}
-        <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16, gap: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#0B2A70', borderWidth: 1, borderColor: PREMIUM.blue, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-              <IconSymbol name="calendar" size={26} color={PREMIUM.blue} />
+        <PremiumCard accent="blue" style={{ padding: 20 }}>
+          <SectionHeader icon="calendar" title="Resumo" subtitle="Visão consolidada do histórico" />
+          <View style={{ borderTopWidth: 1, borderTopColor: PREMIUM.divider }}>
+            <View style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: PREMIUM.divider }}>
+              <Text style={{ flex: 1, color: PREMIUM.muted, fontSize: 16 }}>Total de Instalações</Text>
+              <Text style={{ color: PREMIUM.foreground, fontSize: 19, fontWeight: '800' }}>{instalacoes.length}</Text>
             </View>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>Resumo</Text>
-          </View>
-          <View style={{ gap: 8 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ color: colors.muted }}>Total de Instalações:</Text>
-              <Text style={{ fontWeight: '600', color: colors.foreground }}>
-                {instalacoes.length}
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ color: colors.muted }}>Faturamento Total:</Text>
-              <Text style={{ fontWeight: '600', color: colors.primary }}>
+            <View style={{ minHeight: 56, flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ flex: 1, color: PREMIUM.muted, fontSize: 16 }}>Faturamento Total</Text>
+              <Text style={{ color: PREMIUM.blue, fontSize: 18, fontWeight: '800' }}>
                 R$ {faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </Text>
             </View>
           </View>
-        </View>
+        </PremiumCard>
       </ScrollView>
     </ScreenContainer>
   );

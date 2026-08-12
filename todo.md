@@ -530,9 +530,9 @@
 - [x] Harmonizar navegação, estados vazios, filtros, modais e formulários
 - [x] Validar todas as telas, executar testes e salvar checkpoint
 
-## Ajuste visual da aba Gráficos e bairros
-- [x] Localizar a fonte da lista de bairros e a estrutura atual da aba Gráficos
-- [x] Remover Chácara Santa Cruz e preservar a busca por Santa Cruz
-- [x] Refinar a aba Gráficos conforme a nova referência visual
-- [x] Validar filtros, cálculos, testes e compilação
-- [x] Salvar checkpoint da atualização
+## Correção fiel da aba Gráficos
+- [x] Revisar as diferenças entre a implementação atual e a imagem de referência
+- [x] Reestruturar o layout em cartões e dimensões fiéis ao modelo
+- [x] Implementar semicírculo, barras e tendência com labels e cores da referência
+- [x] Validar dados, tooltips, bairros, testes e compilação
+- [ ] Salvar checkpoint somente após confirmar a nova versão
