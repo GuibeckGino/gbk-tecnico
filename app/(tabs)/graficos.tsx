@@ -8,7 +8,8 @@ import { ScreenContainer } from '@/components/screen-container';
 import { useInstallations } from '@/context/InstallationsContext';
 import { useMonth } from '@/context/MonthContext';
 import { useColors } from '@/hooks/use-colors';
-import { PREMIUM, PremiumHeader } from '@/components/premium-ui';
+import { PREMIUM } from '@/components/premium-ui';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { calcularValorPorTipo } from '@/types/installation';
 import { filtrarPorMes } from '@/context/MonthContext';
 
@@ -164,20 +165,27 @@ export default function GraficosScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, gap: 24 }}>
-        <PremiumHeader
-          title="Gráficos"
-          subtitle="Análise visual do faturamento e produtividade"
-          icon="chart.pie.fill"
-        />
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+          <View style={{ width: 58, height: 58, borderRadius: 16, backgroundColor: '#2A2410', borderWidth: 1, borderColor: '#5F4B12', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
+            <IconSymbol name="chart.pie.fill" size={32} color={PREMIUM.gold} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: PREMIUM.foreground, fontSize: 29, lineHeight: 34, fontWeight: '800' }}>Gráficos</Text>
+            <Text style={{ color: PREMIUM.muted, fontSize: 16, marginTop: 3 }}>Análise visual do seu serviço e produtividade</Text>
+          </View>
+        </View>
 
         {/* Gráfico de Barras Interativo */}
         <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16 }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
-            Quantidade por Tipo
-          </Text>
-          <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 8 }}>
-            Toque nas barras para ver detalhes
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#0B2A70', borderWidth: 1, borderColor: PREMIUM.blue, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+              <IconSymbol name="chart.bar.fill" size={26} color={PREMIUM.blue} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>Quantidade por Tipo</Text>
+              <Text style={{ fontSize: 13, color: colors.muted, marginTop: 4 }}>Instalações por tipo de serviço</Text>
+            </View>
+          </View>
           <InteractiveBarChart
             data={barChartData}
             chartConfig={chartConfig}
@@ -193,12 +201,15 @@ export default function GraficosScreen() {
 
         {/* Gráfico de Pizza Interativo */}
         <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16 }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
-            Distribuição de Faturamento
-          </Text>
-          <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 8 }}>
-            Toque nas fatias para ver detalhes
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#0B2A70', borderWidth: 1, borderColor: PREMIUM.blue, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+              <IconSymbol name="chart.pie.fill" size={26} color={PREMIUM.blue} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>Distribuição de Faturamento</Text>
+              <Text style={{ fontSize: 13, color: colors.muted, marginTop: 4 }}>Proporção do faturamento por tipo de serviço</Text>
+            </View>
+          </View>
           {pieChartData.some((d) => d.value > 0) ? (
             <InteractivePieChart
               data={pieChartData}
@@ -215,12 +226,15 @@ export default function GraficosScreen() {
 
         {/* Gráfico de Linha Interativo */}
         <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16 }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
-            Tendência - Últimos 6 Meses
-          </Text>
-          <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 8 }}>
-            Toque nos pontos para ver detalhes
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#0B2A70', borderWidth: 1, borderColor: PREMIUM.blue, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+              <IconSymbol name="chart.line.uptrend.xyaxis" size={26} color={PREMIUM.blue} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>Tendência - Últimos 6 Meses</Text>
+              <Text style={{ fontSize: 13, color: colors.muted, marginTop: 4 }}>Instalações realizadas por mês</Text>
+            </View>
+          </View>
           <InteractiveLineChart
             data={lineChartData}
             chartConfig={chartConfig}
@@ -230,9 +244,12 @@ export default function GraficosScreen() {
 
         {/* Resumo */}
         <View style={{ backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1, borderRadius: 17, padding: 16, gap: 12 }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
-            Resumo
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: '#0B2A70', borderWidth: 1, borderColor: PREMIUM.blue, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+              <IconSymbol name="calendar" size={26} color={PREMIUM.blue} />
+            </View>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.foreground }}>Resumo</Text>
+          </View>
           <View style={{ gap: 8 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ color: colors.muted }}>Total de Instalações:</Text>

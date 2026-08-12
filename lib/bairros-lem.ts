@@ -32,8 +32,6 @@ const BAIRROS_PRINCIPAIS = [
 // Loteamentos e conjuntos habitacionais
 const LOTEAMENTOS_E_RESIDENCIAIS = [
   'Aroldo da Cruz',
-  'Chácaras Santa Cruz I',
-  'Chácaras Santa Cruz II',
   'Chiodi',
   'Cidade Santa Cruz II',
   'Jardim das Acácias II',
@@ -47,7 +45,7 @@ const LOTEAMENTOS_E_RESIDENCIAIS = [
 // Regiões da cidade (para organização)
 export const REGIOES_LEM = {
   'Centro': ['Centro', 'Setor C Sul Arnaldo H. Ferreira'],
-  'Santa Cruz': ['Santa Cruz', 'Cidade Santa Cruz', 'Cidade Santa Cruz II', 'Chácaras Santa Cruz I', 'Chácaras Santa Cruz II'],
+  'Santa Cruz': ['Santa Cruz', 'Cidade Santa Cruz', 'Cidade Santa Cruz II'],
   'Jardim Paraíso': ['Jardim Paraíso', 'Jardim Paraíso II', 'Jardim Paraíso III'],
   'Boa Vista': ['Boa Vista', 'Tropical Ville'],
   'Universitário': ['Universitário', 'Cidade do Automóvel'],

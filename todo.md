@@ -529,3 +529,10 @@
 - [x] Reestilizar as abas Novo, Histórico, Gráficos, Análise, Calendário e Configurações
 - [x] Harmonizar navegação, estados vazios, filtros, modais e formulários
 - [x] Validar todas as telas, executar testes e salvar checkpoint
+
+## Ajuste visual da aba Gráficos e bairros
+- [x] Localizar a fonte da lista de bairros e a estrutura atual da aba Gráficos
+- [x] Remover Chácara Santa Cruz e preservar a busca por Santa Cruz
+- [x] Refinar a aba Gráficos conforme a nova referência visual
+- [x] Validar filtros, cálculos, testes e compilação
+- [x] Salvar checkpoint da atualização
