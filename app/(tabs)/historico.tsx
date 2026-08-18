@@ -18,10 +18,12 @@ import { useInstallations } from "@/context/InstallationsContext";
 import { useMonth, filtrarPorMes } from "@/context/MonthContext";
 import { useColors } from "@/hooks/use-colors";
 import type { Installation, ServiceType } from "@/types/installation";
+import { calcularValorPorTipo } from "@/types/installation";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import * as Haptics from "expo-haptics";
 import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
 
-const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança"];
+const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança", "Empresarial"];
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -42,7 +44,7 @@ function hapticSuccess() {
 }
 
 export default function HistoricoScreen() {
-  const { instalacoes, stats, removerInstalacao, atualizarInstalacao, setInstallations, toggleFavorito } =
+  const { instalacoes, paymentMode, removerInstalacao, atualizarInstalacao, setInstallations, toggleFavorito } =
     useInstallations();
   const { mes, ano, mesAnoFormatado } = useMonth();
   const colors = useColors();
@@ -71,10 +73,13 @@ export default function HistoricoScreen() {
     );
   }
 
-  // Aplicar busca por cliente
+  // Aplicar busca por cliente, OS ou endereço
   if (buscaCliente.trim()) {
+    const termo = buscaCliente.toLowerCase().trim();
     instalacoesDoMes = instalacoesDoMes.filter((inst) =>
-      inst.cliente.toLowerCase().includes(buscaCliente.toLowerCase())
+      inst.cliente.toLowerCase().includes(termo) ||
+      inst.id.toLowerCase().includes(termo) ||
+      inst.endereco.toLowerCase().includes(termo)
     );
   }
 
@@ -179,7 +184,6 @@ export default function HistoricoScreen() {
 
   return (
     <ScreenContainer>
-      {/* Header com Mês */}
       <View style={styles.header}>
         <PremiumHeader
           title="Histórico"
@@ -188,82 +192,53 @@ export default function HistoricoScreen() {
           style={{ flex: 1, paddingBottom: 0 }}
         />
         <View style={[styles.badgeTotal, { backgroundColor: PREMIUM.blueDeep, borderColor: PREMIUM.blue }]}>
+          <IconSymbol name="doc.text.fill" size={25} color="#FFFFFF" />
           <Text style={styles.badgeTotalTexto}>{instalacoesDoMes.length}</Text>
         </View>
       </View>
 
-      {/* Filtro e Busca */}
-      <View style={[styles.filtroContainer, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1 }]}>
-        {/* Botões de Ordenação */}
-        <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
+      <View style={[styles.filtroContainer, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.divider, borderWidth: 1 }]}>
+        <View style={styles.ordenacaoRow}>
           {(["recente", "antigo", "valor"] as const).map((tipo) => (
             <Pressable
               key={tipo}
-              style={[
-                styles.filtroBotao,
-                ordenacao === tipo
-                  ? { backgroundColor: PREMIUM.blue }
-                  : { backgroundColor: PREMIUM.surfaceRaised },
-              ]}
+              style={[styles.ordenacaoBotao, ordenacao === tipo && styles.ordenacaoBotaoAtivo]}
               onPress={() => setOrdenacao(tipo)}
             >
-              <Text
-                style={[
-                  styles.filtroBotaoTexto,
-                  { color: ordenacao === tipo ? "#fff" : colors.foreground },
-                ]}
-              >
+              <Text style={[styles.ordenacaoTexto, { color: ordenacao === tipo ? PREMIUM.blue : colors.muted }]}>
                 {tipo === "recente" ? "Recente" : tipo === "antigo" ? "Antigo" : "Valor"}
               </Text>
             </Pressable>
           ))}
         </View>
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <TextInput
-            style={[
-              styles.searchInput,
-              { color: PREMIUM.foreground, borderColor: PREMIUM.goldBorder, backgroundColor: PREMIUM.background, flex: 1 },
-            ]}
-            placeholder="Buscar cliente..."
-            placeholderTextColor={colors.muted}
-            value={buscaCliente}
-            onChangeText={setBuscaCliente}
-          />
+
+        <View style={styles.buscaRow}>
+          <View style={styles.searchWrap}>
+            <IconSymbol name="magnifyingglass" size={25} color={colors.muted} />
+            <TextInput
+              style={[styles.searchInput, { color: PREMIUM.foreground }]}
+              placeholder="Buscar cliente, OS ou endereço..."
+              placeholderTextColor={colors.muted}
+              value={buscaCliente}
+              onChangeText={setBuscaCliente}
+            />
+          </View>
           <Pressable
-            style={[
-              styles.filtroBotao,
-              { backgroundColor: buscaAvancadaAberta ? colors.primary : colors.border },
-            ]}
+            style={[styles.filterActionButton, { backgroundColor: buscaAvancadaAberta ? PREMIUM.blue : PREMIUM.blueDeep, borderColor: PREMIUM.blue }]}
             onPress={() => setBuscaAvancadaAberta(!buscaAvancadaAberta)}
           >
-            <Text style={[
-              styles.filtroBotaoTexto,
-              { color: buscaAvancadaAberta ? "#fff" : colors.foreground },
-            ]}>🔍</Text>
+            <IconSymbol name="line.3.horizontal.decrease.circle" size={26} color="#FFFFFF" />
           </Pressable>
         </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filtroScroll}
-        >
-          {(["Todos", "Instalação", "Tipo 3", "Mudança"] as const).map((tipo) => (
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtroScroll} contentContainerStyle={{ paddingRight: 8 }}>
+          {(["Todos", ...TIPOS] as const).map((tipo) => (
             <Pressable
               key={tipo}
-              style={[
-                styles.filtroBotao,
-                filtroTipo === tipo
-                  ? { backgroundColor: PREMIUM.blue }
-                  : { backgroundColor: PREMIUM.surfaceRaised },
-              ]}
+              style={[styles.filtroBotao, filtroTipo === tipo ? { backgroundColor: PREMIUM.blue, borderColor: PREMIUM.blue } : { backgroundColor: PREMIUM.background, borderColor: PREMIUM.divider }]}
               onPress={() => setFiltroTipo(tipo)}
             >
-              <Text
-                style={[
-                  styles.filtroBotaoTexto,
-                  { color: filtroTipo === tipo ? "#fff" : colors.foreground },
-                ]}
-              >
+              <Text style={[styles.filtroBotaoTexto, { color: filtroTipo === tipo ? "#fff" : colors.foreground }]}>
                 {tipo}
               </Text>
             </Pressable>
@@ -293,7 +268,7 @@ export default function HistoricoScreen() {
           renderItem={({ item }) => (
             <CardInstalacao
               instalacao={item}
-              valorIndividual={stats.valorIndividual}
+              valor={calcularValorPorTipo(item.tipoServico, instalacoes.length, paymentMode)}
               onExcluir={() => abrirConfirmacaoExclusao(item)}
               onDuplicar={() => duplicarInstalacao(item)}
               onToggleFavorito={() => toggleFavorito(item.id)}
@@ -461,7 +436,7 @@ export default function HistoricoScreen() {
                 showsHorizontalScrollIndicator={false}
                 style={{ marginTop: 8 }}
               >
-                {(["Todos", "Instalação", "Tipo 3", "Mudança"] as const).map((tipo) => (
+                {(["Todos", ...TIPOS] as const).map((tipo) => (
                   <Pressable
                     key={tipo}
                     style={[
@@ -584,13 +559,13 @@ export default function HistoricoScreen() {
 
 function CardInstalacao({
   instalacao,
-  valorIndividual,
+  valor,
   onExcluir,
   onDuplicar,
   onToggleFavorito,
 }: {
   instalacao: Installation;
-  valorIndividual: number;
+  valor: number;
   onExcluir: () => void;
   onDuplicar: () => void;
   onToggleFavorito: () => void;
@@ -603,6 +578,15 @@ function CardInstalacao({
     Mudança: '#2869D8',
     Empresarial: '#9B741B',
   };
+  const iconeTipo: Record<ServiceType, string> = {
+    Instalação: 'build.fill',
+    "Tipo 3": 'square.stack.3d.up.fill',
+    Mudança: 'arrow.triangle.2.circlepath',
+    Empresarial: 'building.2.fill',
+  };
+  const horario = instalacao.createdAt
+    ? new Date(instalacao.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    : '';
 
   return (
     <View
@@ -610,67 +594,57 @@ function CardInstalacao({
         styles.card,
         {
           backgroundColor: PREMIUM.surface,
-          borderColor: PREMIUM.goldBorder,
+          borderColor: PREMIUM.divider,
+          borderLeftColor: PREMIUM.blue,
+          borderLeftWidth: 3,
           shadowColor: '#000000',
         },
       ]}
     >
+      <View style={styles.cardServiceIcon}>
+        <IconSymbol name={iconeTipo[instalacao.tipoServico]} size={35} color="#C9D8F7" />
+      </View>
+
       <View style={styles.cardInfo}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <Text
-            style={[styles.cardCliente, { color: colors.foreground, flex: 1 }]}
-            numberOfLines={1}
-          >
-            {instalacao.cliente}
+        <View style={styles.cardTitleRow}>
+          <Text style={[styles.cardCliente, { color: colors.foreground }]} numberOfLines={1}>
+            OS: {instalacao.cliente}
           </Text>
-          <Pressable onPress={onToggleFavorito}>
-            <Text style={{ fontSize: 18 }}>{instalacao.isFavorito ? "⭐" : "☆"}</Text>
-          </Pressable>
+          <Text style={[styles.cardDateTime, { color: colors.muted }]} numberOfLines={1}>
+            • {instalacao.data}{horario ? ` ${horario}` : ''}
+          </Text>
         </View>
-        <Text
-          style={[styles.cardEndereco, { color: colors.muted }]}
-          numberOfLines={1}
-        >
-          {instalacao.endereco}
-        </Text>
+        <View style={styles.cardAddressRow}>
+          <IconSymbol name="location.fill" size={18} color={colors.muted} />
+          <Text style={[styles.cardEndereco, { color: colors.muted }]} numberOfLines={1}>
+            {instalacao.endereco}
+          </Text>
+        </View>
         <View style={styles.cardMeta}>
-          <View
-            style={[
-              styles.badgeTipo,
-              { backgroundColor: corTipo[instalacao.tipoServico] },
-            ]}
-          >
+          <View style={[styles.badgeTipo, { backgroundColor: corTipo[instalacao.tipoServico] }]}>
             <Text style={styles.badgeTipoTexto}>{instalacao.tipoServico}</Text>
           </View>
-          <Text style={[styles.cardData, { color: colors.muted }]}>
-            {instalacao.data}
-          </Text>
-          <Text style={[styles.cardValor, { color: colors.success }]}>
-            R$ {valorIndividual}
-          </Text>
+          <Text style={[styles.cardData, { color: colors.muted }]}>{instalacao.data}</Text>
+          <Text style={[styles.cardValor, { color: colors.success }]}>R$ {valor}</Text>
         </View>
       </View>
 
       <View style={styles.cardAcoes}>
+        <Pressable onPress={onToggleFavorito} style={styles.favoriteButton}>
+          <IconSymbol name={instalacao.isFavorito ? 'star.fill' : 'star'} size={30} color="#81A7F0" />
+        </Pressable>
+        <View style={styles.actionDivider} />
         <Pressable
-          style={({ pressed }) => [
-            styles.acaoBotao,
-            { backgroundColor: colors.warning },
-            pressed && { opacity: 0.7 },
-          ]}
+          style={({ pressed }) => [styles.acaoBotao, { backgroundColor: '#513A0E', borderColor: PREMIUM.gold }, pressed && { opacity: 0.7 }]}
           onPress={onDuplicar}
         >
-          <Text style={styles.acaoBotaoTexto}>📋</Text>
+          <IconSymbol name="doc.on.clipboard" size={25} color="#FFFFFF" />
         </Pressable>
         <Pressable
-          style={({ pressed }) => [
-            styles.acaoBotao,
-            { backgroundColor: colors.error },
-            pressed && { opacity: 0.7 },
-          ]}
+          style={({ pressed }) => [styles.acaoBotao, { backgroundColor: '#681F27', borderColor: PREMIUM.error }, pressed && { opacity: 0.7 }]}
           onPress={onExcluir}
         >
-          <Text style={styles.acaoBotaoTexto}>🗑️</Text>
+          <IconSymbol name="trash.fill" size={25} color="#FFFFFF" />
         </Pressable>
       </View>
     </View>
@@ -699,11 +673,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   badgeTotal: {
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    minWidth: 40,
+    borderRadius: 24,
+    paddingHorizontal: 17,
+    paddingVertical: 12,
+    minWidth: 104,
+    flexDirection: 'row',
+    gap: 9,
     alignItems: "center",
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   badgeTotalTexto: {
     color: "#fff",
@@ -734,30 +712,76 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   card: {
-    borderRadius: 17,
+    borderRadius: 18,
     borderWidth: 1,
     padding: 14,
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
+    alignItems: "stretch",
+    minHeight: 154,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardServiceIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    backgroundColor: '#102A64',
+    borderWidth: 1,
+    borderColor: PREMIUM.blue,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginRight: 14,
   },
   cardInfo: {
     flex: 1,
-    marginRight: 10,
+    justifyContent: 'center',
+    marginRight: 8,
+    minWidth: 0,
+  },
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
+  },
+  cardDateTime: {
+    fontSize: 15,
+    lineHeight: 21,
+    marginLeft: 6,
+    flexShrink: 1,
+  },
+  cardAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 9,
+    minWidth: 0,
+  },
+  favoriteButton: {
+    width: 50,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionDivider: {
+    width: 1,
+    flex: 1,
+    minHeight: 24,
+    backgroundColor: PREMIUM.divider,
+    marginVertical: 4,
   },
   cardCliente: {
-    fontSize: 15,
-    fontWeight: "600",
-    lineHeight: 20,
+    fontSize: 20,
+    fontWeight: "800",
+    lineHeight: 25,
+    flexShrink: 1,
   },
   cardEndereco: {
-    fontSize: 12,
-    marginTop: 2,
-    lineHeight: 16,
+    fontSize: 16,
+    lineHeight: 21,
+    flexShrink: 1,
   },
   cardMeta: {
     flexDirection: "row",
@@ -784,12 +808,19 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   cardAcoes: {
-    gap: 8,
+    width: 52,
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderLeftWidth: 1,
+    borderLeftColor: PREMIUM.divider,
+    paddingLeft: 10,
   },
   acaoBotao: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -801,33 +832,80 @@ const styles = StyleSheet.create({
   },
   // Filtro e Busca
   filtroContainer: {
-    marginHorizontal: 16,
+    marginHorizontal: 18,
     marginBottom: 8,
-    padding: 14,
-    borderRadius: 17,
-    gap: 10,
+    padding: 16,
+    borderRadius: 18,
+    gap: 14,
     borderWidth: 1,
   },
-  searchInput: {
+  ordenacaoRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: PREMIUM.divider,
+    paddingHorizontal: 2,
+  },
+  ordenacaoBotao: {
+    minWidth: 105,
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginRight: 6,
+  },
+  ordenacaoBotaoAtivo: {
+    borderBottomWidth: 3,
+    borderBottomColor: PREMIUM.blue,
+  },
+  ordenacaoTexto: {
+    fontSize: 18,
+    lineHeight: 23,
+    fontWeight: '700',
+  },
+  buscaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  searchWrap: {
+    flex: 1,
+    minHeight: 58,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: PREMIUM.divider,
+    borderRadius: 16,
+    backgroundColor: PREMIUM.background,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
     paddingVertical: 10,
-    fontSize: 14,
-    height: 40,
+    fontSize: 16,
+    height: 52,
+  },
+  filterActionButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filtroScroll: {
     flexDirection: "row",
   },
   filtroBotao: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    marginRight: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 14,
+    marginRight: 10,
+    borderWidth: 1,
   },
   filtroBotaoTexto: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 16,
+    lineHeight: 20,
+    fontWeight: "700",
   },
   // Modal de Edição
   modalOverlay: {

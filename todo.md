@@ -543,3 +543,10 @@
 - [x] Recalcular barras, faturamento, donut e resumo conforme o período
 - [x] Atualizar labels, tooltips e estados visuais do período escolhido
 - [x] Executar testes, TypeScript, validar servidor e salvar checkpoint
+
+## Reformulação visual da aba Histórico
+- [x] Revisar a estrutura atual do Histórico, seus filtros e ações dos cartões
+- [x] Reestruturar cabeçalho, abas internas, busca, filtro e chips de serviço
+- [x] Redesenhar os cartões de OS e ações no padrão da referência
+- [x] Validar filtros, ordenação, preços, testes, TypeScript e servidor
+- [x] Salvar checkpoint e entregar a atualização do Histórico

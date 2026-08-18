@@ -51,6 +51,12 @@ const MAPPING = {
   "magnifyingglass": "search",
   "calendar": "calendar-today",
   "eye.fill": "visibility",
+  "star.fill": "star",
+  "star": "star-border",
+  "doc.on.clipboard": "content-copy",
+  "doc.text.fill": "description",
+  "trash.fill": "delete-outline",
+  "line.3.horizontal.decrease.circle": "filter-list",
 } as unknown as IconMapping;
 
 /**
