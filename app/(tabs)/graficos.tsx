@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenContainer } from '@/components/screen-container';
@@ -8,6 +8,8 @@ import { useInstallations } from '@/context/InstallationsContext';
 import { filtrarPorMes, useMonth } from '@/context/MonthContext';
 import { calcularValorPorTipo } from '@/types/installation';
 import { getChartPeriodLabel, selectChartInstallations, type ChartPeriod } from '@/lib/chart-period';
+import { obterPaymentModeDoMes } from '@/lib/monthly-payment-mode';
+import type { PaymentModesByMonth } from '@/lib/analytics';
 
 const screenWidth = Dimensions.get('window').width;
 const chartWidth = Math.min(Math.max(screenWidth - 76, 280), 780);
@@ -60,7 +62,27 @@ export default function GraficosScreen() {
   const { instalacoes, paymentMode } = useInstallations();
   const { mes, ano } = useMonth();
   const [period, setPeriod] = useState<ChartPeriod>('history');
+  const [paymentModesByMonth, setPaymentModesByMonth] = useState<PaymentModesByMonth>({});
   const instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
+
+  useEffect(() => {
+    let cancelado = false;
+    const meses = Array.from(new Set(instalacoes.map((inst) => {
+      const [, mesDoDado, anoDoDado] = inst.data.split('/');
+      return `${anoDoDado}-${mesDoDado}`;
+    })));
+
+    Promise.all(meses.map(async (chave) => {
+      const [anoDoDado, mesDoDado] = chave.split('-').map(Number);
+      return [chave, await obterPaymentModeDoMes(mesDoDado - 1, anoDoDado)] as const;
+    })).then((entradas) => {
+      if (!cancelado) setPaymentModesByMonth(Object.fromEntries(entradas));
+    });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [instalacoes]);
   const periodInstallations = selectChartInstallations(instalacoesDoMes, instalacoes, period);
   const monthLabel = new Date(ano, mes, 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
   const periodLabel = getChartPeriodLabel(period, monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1));
@@ -79,15 +101,25 @@ export default function GraficosScreen() {
       Empresarial: 0,
     };
 
+    const totaisPorMes = periodInstallations.reduce<Record<string, number>>((totais, inst: any) => {
+      const [, mesDoDado, anoDoDado] = inst.data.split('/');
+      const chave = `${anoDoDado}-${mesDoDado}`;
+      totais[chave] = (totais[chave] || 0) + 1;
+      return totais;
+    }, {});
+
     periodInstallations.forEach((inst: any) => {
       const tipo = inst.tipoServico as ServiceType;
       if (!(tipo in quantities)) return;
+      const [, mesDoDado, anoDoDado] = inst.data.split('/');
+      const chave = `${anoDoDado}-${mesDoDado}`;
+      const modoDoMes = paymentModesByMonth[chave] || (chave === `${ano}-${String(mes + 1).padStart(2, '0')}` ? paymentMode : 'meta');
       quantities[tipo] += 1;
-      values[tipo] += calcularValorPorTipo(inst.tipoServico, periodInstallations.length, paymentMode);
+      values[tipo] += calcularValorPorTipo(inst.tipoServico, totaisPorMes[chave] || 1, modoDoMes);
     });
 
     return { quantities, values };
-  }, [periodInstallations, paymentMode]);
+  }, [periodInstallations, paymentModesByMonth, paymentMode, mes, ano]);
 
   const periodTotal = useMemo(
     () => Object.values(periodByType.values).reduce((sum, value) => sum + value, 0),

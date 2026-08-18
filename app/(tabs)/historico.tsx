@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -21,6 +21,8 @@ import type { Installation, ServiceType } from "@/types/installation";
 import { calcularValorPorTipo } from "@/types/installation";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { applyQuickEdit } from "@/lib/quick-edit";
+import { obterPaymentModeDoMes } from "@/lib/monthly-payment-mode";
+import type { PaymentModesByMonth } from "@/lib/analytics";
 import * as Haptics from "expo-haptics";
 import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
 
@@ -68,7 +70,41 @@ export default function HistoricoScreen() {
   const [editEndereco, setEditEndereco] = useState("");
   const [editTipo, setEditTipo] = useState<ServiceType>("Instalação");
   const [editData, setEditData] = useState("");
-  const [editObservacoes, setEditObservacoes] = useState("");
+    const [editObservacoes, setEditObservacoes] = useState("");
+  const [paymentModesByMonth, setPaymentModesByMonth] = useState<PaymentModesByMonth>({});
+
+  useEffect(() => {
+    let cancelado = false;
+    const meses = Array.from(new Set(instalacoes.map((inst) => {
+      const [, mesDoDado, anoDoDado] = inst.data.split('/');
+      return `${anoDoDado}-${mesDoDado}`;
+    })));
+
+    Promise.all(meses.map(async (chave) => {
+      const [anoDoDado, mesDoDado] = chave.split('-').map(Number);
+      return [chave, await obterPaymentModeDoMes(mesDoDado - 1, anoDoDado)] as const;
+    })).then((entradas) => {
+      if (!cancelado) setPaymentModesByMonth(Object.fromEntries(entradas));
+    });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [instalacoes]);
+
+  const totaisPorMes = instalacoes.reduce<Record<string, number>>((totais, inst) => {
+    const [, mesDoDado, anoDoDado] = inst.data.split('/');
+    const chave = `${anoDoDado}-${mesDoDado}`;
+    totais[chave] = (totais[chave] || 0) + 1;
+    return totais;
+  }, {});
+
+  function calcularValorDaOS(inst: Installation): number {
+    const [, mesDoDado, anoDoDado] = inst.data.split('/');
+    const chave = `${anoDoDado}-${mesDoDado}`;
+    const modoDoMes = paymentModesByMonth[chave] || (chave === `${ano}-${String(mes + 1).padStart(2, '0')}` ? paymentMode : 'meta');
+    return calcularValorPorTipo(inst.tipoServico, totaisPorMes[chave] || 1, modoDoMes);
+  }
 
   // Filtrar instalações do mês selecionado
   let instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
@@ -318,7 +354,7 @@ export default function HistoricoScreen() {
           renderItem={({ item }) => (
             <CardInstalacao
               instalacao={item}
-              valor={calcularValorPorTipo(item.tipoServico, instalacoes.length, paymentMode)}
+              valor={calcularValorDaOS(item)}
               onEditar={() => abrirEdicao(item)}
               onExcluir={() => abrirConfirmacaoExclusao(item)}
               onDuplicar={() => duplicarInstalacao(item)}

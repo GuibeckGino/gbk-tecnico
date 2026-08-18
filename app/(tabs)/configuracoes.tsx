@@ -22,6 +22,7 @@ import { useMonth } from "@/context/MonthContext";
 import { useGBKTheme } from "@/context/ThemeContext";
 import { useColors } from "@/hooks/use-colors";
 import { useWorkSchedule, type DayOfWeek } from "@/context/WorkScheduleContext";
+import { calcularValorPorTipo } from "@/types/installation";
 
 import * as Haptics from "expo-haptics";
 import { useState as useStateReact, useEffect } from "react";
@@ -30,6 +31,7 @@ import { prepararDadosRelatorio, calcularTopClientes, formatarValor, calcularCre
 import { compartilharRelatorio, gerarResumoRelatorio } from "@/lib/share-report";
 import { useFocusEffect } from "@react-navigation/native";
 import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
+import { obterPaymentModeDoMes } from "@/lib/monthly-payment-mode";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -433,9 +435,19 @@ export default function ConfiguracoesScreen() {
         return;
       }
 
-      // Preparar dados do relatório
-      const dados = prepararDadosRelatorio(instalacoes, mes, ano, paymentMode);
-      const topClientes = calcularTopClientes(dados.instalacoes, paymentMode);
+      // Carregar as regras configuradas para todos os meses presentes no relatório
+      const chavesDeMes = Array.from(new Set(instalacoes.map((inst) => {
+        const [, mesDoDado, anoDoDado] = inst.data.split('/');
+        return `${anoDoDado}-${mesDoDado}`;
+      })));
+      const modosPorMes = Object.fromEntries(await Promise.all(chavesDeMes.map(async (chave) => {
+        const [anoDoDado, mesDoDado] = chave.split('-').map(Number);
+        return [chave, await obterPaymentModeDoMes(mesDoDado - 1, anoDoDado)] as const;
+      })));
+
+      // Preparar dados do relatório; prepararDadosRelatorio usa mês 1–12
+      const dados = prepararDadosRelatorio(instalacoes, mes + 1, ano, paymentMode, modosPorMes);
+      const topClientes = calcularTopClientes(dados.instalacoes, paymentMode, modosPorMes);
       const crescimento = calcularCrescimento(dados.stats.valorTotal, dados.mesAnterior?.valorTotal || 0);
 
       // Gerar HTML para o PDF
@@ -516,15 +528,15 @@ export default function ConfiguracoesScreen() {
       analisePortipo: {
         instalacao: {
           quantidade: dados.stats.porTipo.instalacao,
-          valor: formatarValor(dados.stats.porTipo.instalacao * (dados.stats.total >= 104 ? 70 : 65)),
+          valor: formatarValor(dados.stats.porTipo.instalacao * calcularValorPorTipo("Instalação", dados.stats.total, dados.paymentMode)),
         },
         tipo3: {
           quantidade: dados.stats.porTipo.tipo3,
-          valor: formatarValor(dados.stats.porTipo.tipo3 * (dados.stats.total >= 104 ? 70 : 65)),
+          valor: formatarValor(dados.stats.porTipo.tipo3 * calcularValorPorTipo("Tipo 3", dados.stats.total, dados.paymentMode)),
         },
         mudanca: {
           quantidade: dados.stats.porTipo.mudanca,
-          valor: formatarValor(dados.stats.porTipo.mudanca * (dados.stats.total >= 104 ? 70 : 65)),
+          valor: formatarValor(dados.stats.porTipo.mudanca * calcularValorPorTipo("Mudança", dados.stats.total, dados.paymentMode)),
         },
         empresarial: {
           quantidade: dados.stats.porTipo.empresarial,
@@ -546,7 +558,7 @@ export default function ConfiguracoesScreen() {
         endereco: inst.endereco,
         tipo: inst.tipoServico,
         data: inst.data,
-        valor: inst.tipoServico === "Empresarial" ? "R$ 100" : inst.tipoServico === "Empresarial" ? "R$ 100" : formatarValor(dados.stats.total >= 104 ? 70 : 65),
+        valor: formatarValor(calcularValorPorTipo(inst.tipoServico, dados.stats.total, dados.paymentMode)),
         observacoes: inst.observacoes,
       })),
     };
@@ -560,7 +572,7 @@ export default function ConfiguracoesScreen() {
           <td>${inst.cliente}</td>
           <td>${inst.tipoServico}</td>
           <td>${inst.data}</td>
-          <td>${inst.tipoServico === "Empresarial" ? "R$ 100" : "R$ " + (dados.stats.total >= 104 ? "70" : "65")}</td>
+          <td>${formatarValor(calcularValorPorTipo(inst.tipoServico, dados.stats.total, dados.paymentMode))}</td>
         </tr>
       `
       )
@@ -629,17 +641,17 @@ export default function ConfiguracoesScreen() {
             <tr>
               <td>Instalação</td>
               <td>${dados.stats.porTipo.instalacao}</td>
-              <td>${formatarValor(dados.stats.porTipo.instalacao * (dados.stats.total >= 104 ? 70 : 65))}</td>
+              <td>${formatarValor(dados.stats.porTipo.instalacao * calcularValorPorTipo("Instalação", dados.stats.total, dados.paymentMode))}</td>
             </tr>
             <tr>
               <td>Tipo 3</td>
               <td>${dados.stats.porTipo.tipo3}</td>
-              <td>${formatarValor(dados.stats.porTipo.tipo3 * (dados.stats.total >= 104 ? 70 : 65))}</td>
+              <td>${formatarValor(dados.stats.porTipo.tipo3 * calcularValorPorTipo("Tipo 3", dados.stats.total, dados.paymentMode))}</td>
             </tr>
             <tr>
               <td>Mudança</td>
               <td>${dados.stats.porTipo.mudanca}</td>
-              <td>${formatarValor(dados.stats.porTipo.mudanca * (dados.stats.total >= 104 ? 70 : 65))}</td>
+              <td>${formatarValor(dados.stats.porTipo.mudanca * calcularValorPorTipo("Mudança", dados.stats.total, dados.paymentMode))}</td>
             </tr>
             <tr>
               <td>Empresarial</td>

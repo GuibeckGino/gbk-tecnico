@@ -1,4 +1,4 @@
-import { Installation, calcularValorPorTipo } from '@/types/installation';
+import { Installation, calcularValorPorTipo, type PaymentMode } from '@/types/installation';
 
 export interface DayProductivity {
   day: string;
@@ -27,7 +27,8 @@ const dayNames = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', '
 export function analisarProdutividadePorDia(
   installations: Installation[],
   mes: number,
-  ano: number
+  ano: number,
+  paymentMode: PaymentMode = 'meta'
 ): ProductivityReport {
   // Inicializar array de dias
   const dayData: DayProductivity[] = dayNames.map((day, index) => ({
@@ -56,7 +57,7 @@ export function analisarProdutividadePorDia(
     const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
     if (dayData[adjustedDay]) {
-      const valor = calcularValorPorTipo(installation.tipoServico, installations.length, 'meta');
+      const valor = calcularValorPorTipo(installation.tipoServico, installations.length, paymentMode);
       dayData[adjustedDay].installations += 1;
       dayData[adjustedDay].totalValue += valor;
       totalInstallations += 1;

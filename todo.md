@@ -556,3 +556,10 @@
 - [x] Implementar toque no cartão para abrir edição rápida da OS
 - [x] Adicionar contador do mês e contador total do histórico no cabeçalho
 - [x] Validar edição, persistência, filtros, testes, TypeScript e servidor
+
+## Regra de pagamento por mês/ano
+- [x] Revisar o armazenamento atual do modo de pagamento e os relatórios mensais
+- [x] Criar persistência da configuração Meta alcançável ou Direto R$ 70 por mês/ano
+- [x] Aplicar o modo correto nos cálculos de mês a mês, gráficos, análises e histórico
+- [x] Definir compatibilidade para meses antigos e corrigir testes de valores
+- [x] Validar relatórios, executar testes e salvar checkpoint

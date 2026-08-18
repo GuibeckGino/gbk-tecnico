@@ -1,4 +1,14 @@
-import type { Installation } from "@/types/installation";
+import { calcularValorPorTipo, type Installation, type PaymentMode } from "@/types/installation";
+
+export type PaymentModesByMonth = Record<string, PaymentMode>;
+
+function getMonthKey(mes: number, ano: number): string {
+  return `${ano}-${String(mes).padStart(2, "0")}`;
+}
+
+function calcularValorDoMes(instalacao: Installation, totalDoMes: number, modo: PaymentMode): number {
+  return calcularValorPorTipo(instalacao.tipoServico, totalDoMes, modo);
+}
 
 export interface ReportData {
   mes: number;
@@ -36,7 +46,8 @@ export function prepararDadosRelatorio(
   instalacoes: Installation[],
   mes: number,
   ano: number,
-  paymentMode: "meta" | "fixo65" | "fixo70"
+  paymentMode: PaymentMode,
+  paymentModesByMonth: PaymentModesByMonth = {}
 ): ReportData {
   // Filtrar instalações do mês
   const instalacoesDoMes = instalacoes.filter((inst) => {
@@ -44,23 +55,13 @@ export function prepararDadosRelatorio(
     return parseInt(m) === mes && parseInt(a) === ano;
   });
 
-  // Calcular stats
+  // Calcular stats usando o modo específico do mês selecionado
   const total = instalacoesDoMes.length;
-  let valorTotal = 0;
-
-  instalacoesDoMes.forEach((inst) => {
-    if (inst.tipoServico === "Empresarial") {
-      valorTotal += 100;
-    } else {
-      if (paymentMode === "fixo65") {
-        valorTotal += 65;
-      } else if (paymentMode === "fixo70") {
-        valorTotal += 70;
-      } else {
-        valorTotal += total >= 104 ? 70 : 65;
-      }
-    }
-  });
+  const modoDoMes = paymentModesByMonth[getMonthKey(mes, ano)] || paymentMode;
+  const valorTotal = instalacoesDoMes.reduce(
+    (totalAtual, inst) => totalAtual + calcularValorDoMes(inst, total, modoDoMes),
+    0,
+  );
 
   const porTipo = {
     instalacao: instalacoesDoMes.filter((i) => i.tipoServico === "Instalação")
@@ -86,20 +87,11 @@ export function prepararDadosRelatorio(
   });
 
   mesAnterior.total = instalacoesAnterior.length;
-  instalacoesAnterior.forEach((inst) => {
-    if (inst.tipoServico === "Empresarial") {
-      mesAnterior.valorTotal += 100;
-    } else {
-      if (paymentMode === "fixo65") {
-        mesAnterior.valorTotal += 65;
-      } else if (paymentMode === "fixo70") {
-        mesAnterior.valorTotal += 70;
-      } else {
-        mesAnterior.valorTotal +=
-          instalacoesAnterior.length >= 104 ? 70 : 65;
-      }
-    }
-  });
+  const modoDoMesAnterior = paymentModesByMonth[getMonthKey(mesAnteriorNum, anoAnterior)] || "meta";
+  mesAnterior.valorTotal = instalacoesAnterior.reduce(
+    (totalAtual, inst) => totalAtual + calcularValorDoMes(inst, mesAnterior.total, modoDoMesAnterior),
+    0,
+  );
 
   // Calcular últimos 6 meses
   const ultimosMeses = [];
@@ -116,20 +108,11 @@ export function prepararDadosRelatorio(
       return parseInt(mm) === m && parseInt(aa) === a;
     });
 
-    let valorMes = 0;
-    instsMes.forEach((inst) => {
-      if (inst.tipoServico === "Empresarial") {
-        valorMes += 100;
-      } else {
-        if (paymentMode === "fixo65") {
-          valorMes += 65;
-        } else if (paymentMode === "fixo70") {
-          valorMes += 70;
-        } else {
-          valorMes += instsMes.length >= 104 ? 70 : 65;
-        }
-      }
-    });
+    const modoDoMesHistorico = paymentModesByMonth[getMonthKey(m, a)] || "meta";
+    const valorMes = instsMes.reduce(
+      (totalAtual, inst) => totalAtual + calcularValorDoMes(inst, instsMes.length, modoDoMesHistorico),
+      0,
+    );
 
     ultimosMeses.push({
       mes: m,
@@ -159,7 +142,7 @@ export function prepararDadosRelatorio(
     ano,
     mesAnoFormatado: `${meses[mes - 1]} de ${ano}`,
     instalacoes: instalacoesDoMes,
-    paymentMode,
+    paymentMode: modoDoMes,
     stats: {
       total,
       valorTotal,
@@ -175,7 +158,8 @@ export function prepararDadosRelatorio(
  */
 export function calcularTopClientes(
   instalacoes: Installation[],
-  paymentMode: "meta" | "fixo65" | "fixo70"
+  paymentMode: PaymentMode,
+  paymentModesByMonth: PaymentModesByMonth = {}
 ): Array<{
   cliente: string;
   quantidade: number;
@@ -192,17 +176,14 @@ export function calcularTopClientes(
       valorTotal: 0,
     };
 
-    let valor = 0;
-    if (inst.tipoServico === "Empresarial") {
-      valor = 100;
-    } else {
-      valor =
-        paymentMode === "fixo65"
-          ? 65
-          : paymentMode === "fixo70"
-            ? 70
-            : 65; // padrão meta
-    }
+    const [, mes, ano] = inst.data.split('/').map(Number);
+    const chave = getMonthKey(mes, ano);
+    const totalDoMes = instalacoes.filter((item) => {
+      const [, mesDoItem, anoDoItem] = item.data.split('/').map(Number);
+      return mesDoItem === mes && anoDoItem === ano;
+    }).length;
+    const modoDoMes = paymentModesByMonth[chave] || paymentMode;
+    const valor = calcularValorDoMes(inst, totalDoMes, modoDoMes);
 
     clienteMap.set(inst.cliente, {
       quantidade: existing.quantidade + 1,

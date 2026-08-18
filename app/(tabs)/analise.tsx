@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -36,6 +36,8 @@ import { calcularStats, calcularValorPorTipo } from "@/types/installation";
 import { LineChart } from "react-native-chart-kit";
 import { CalendarView } from "@/components/calendar-view";
 import { PREMIUM, PremiumHeader, PremiumStatRow } from "@/components/premium-ui";
+import { obterPaymentModeDoMes } from "@/lib/monthly-payment-mode";
+import type { PaymentModesByMonth } from "@/lib/analytics";
 
 type AbaAnalise =
   | "meta"
@@ -59,10 +61,30 @@ export default function AnaliseScreen() {
   const colors = useColors();
   const [abaSelecionada, setAbaSelecionada] = useState<AbaAnalise>("meta");
   const [filtroMeses, setFiltroMeses] = useState<3 | 6 | 12>(6); // Filtro para Dia a Dia
+  const [paymentModesByMonth, setPaymentModesByMonth] = useState<PaymentModesByMonth>({});
   const { workDays } = useWorkSchedule();
   
   // Carregar configurações do mês (paymentMode e monthlyGoal)
   useMonthlyConfig();
+
+  useEffect(() => {
+    let cancelado = false;
+    const meses = Array.from(new Set(instalacoes.map((inst) => {
+      const [, mes, ano] = inst.data.split("/");
+      return `${ano}-${mes}`;
+    })));
+
+    Promise.all(meses.map(async (chave) => {
+      const [anoDoDado, mesDoDado] = chave.split("-").map(Number);
+      return [chave, await obterPaymentModeDoMes(mesDoDado - 1, anoDoDado)] as const;
+    })).then((entradas) => {
+      if (!cancelado) setPaymentModesByMonth(Object.fromEntries(entradas));
+    });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [instalacoes]);
   
   const [metaStats, setMetaStats] = useState({
     diasUteisPassados: 0,
@@ -137,24 +159,24 @@ export default function AnaliseScreen() {
 
   // Memoizar análises para evitar recálculos desnecessários
   const analisesSemanal = useMemo(
-    () => analisarSemanal(instalacoes),
-    [instalacoes]
+    () => analisarSemanal(instalacoes, paymentModesByMonth),
+    [instalacoes, paymentModesByMonth]
   );
   const analisesPorCliente = useMemo(
-    () => analisarPorCliente(instalacoes),
-    [instalacoes]
+    () => analisarPorCliente(instalacoes, paymentModesByMonth),
+    [instalacoes, paymentModesByMonth]
   );
   const analisesMesAMes = useMemo(
-    () => analisarMesAMes(instalacoes),
-    [instalacoes]
+    () => analisarMesAMes(instalacoes, paymentModesByMonth),
+    [instalacoes, paymentModesByMonth]
   );
   const analisesRentabilidade = useMemo(
-    () => analisarRentabilidade(instalacoes),
-    [instalacoes]
+    () => analisarRentabilidade(instalacoes, paymentModesByMonth),
+    [instalacoes, paymentModesByMonth]
   );
   const analisestendencias = useMemo(
-    () => analisarTendencias(instalacoes),
-    [instalacoes]
+    () => analisarTendencias(instalacoes, paymentModesByMonth),
+    [instalacoes, paymentModesByMonth]
   );
   const analisesDiaADia = useMemo(
     () => analisarDiaADia(instalacoes, filtroMeses),
@@ -615,11 +637,11 @@ export default function AnaliseScreen() {
                     ]}
                   >
                     {gerarResumoTextual(
-                      analisarProdutividadePorDia(instalacoesDoMes, mes, ano)
+                      analisarProdutividadePorDia(instalacoesDoMes, mes, ano, paymentMode)
                     )}
                   </Text>
                 </View>
-                {analisarProdutividadePorDia(instalacoesDoMes, mes, ano).days.map(
+                {analisarProdutividadePorDia(instalacoesDoMes, mes, ano, paymentMode).days.map(
                   (dia, idx) => (
                     <View
                       key={idx}
