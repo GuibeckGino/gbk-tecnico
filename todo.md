@@ -536,3 +536,10 @@
 - [x] Implementar semicírculo, barras e tendência com labels e cores da referência
 - [x] Validar dados, tooltips, bairros, testes e compilação
 - [ ] Salvar checkpoint somente após confirmar a nova versão
+
+## Alternador de período nos Gráficos
+- [x] Revisar os dados atuais e definir o comportamento dos dois períodos
+- [x] Implementar seletor entre mês selecionado e histórico completo
+- [x] Recalcular barras, faturamento, donut e resumo conforme o período
+- [x] Atualizar labels, tooltips e estados visuais do período escolhido
+- [x] Executar testes, TypeScript, validar servidor e salvar checkpoint
