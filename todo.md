@@ -550,3 +550,9 @@
 - [x] Redesenhar os cartões de OS e ações no padrão da referência
 - [x] Validar filtros, ordenação, preços, testes, TypeScript e servidor
 - [x] Salvar checkpoint e entregar a atualização do Histórico
+
+## Melhorias do Histórico — edição rápida e contadores
+- [x] Revisar o fluxo atual de edição, os dados do Histórico e os contadores
+- [x] Implementar toque no cartão para abrir edição rápida da OS
+- [x] Adicionar contador do mês e contador total do histórico no cabeçalho
+- [x] Validar edição, persistência, filtros, testes, TypeScript e servidor

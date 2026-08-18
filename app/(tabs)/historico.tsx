@@ -20,6 +20,7 @@ import { useColors } from "@/hooks/use-colors";
 import type { Installation, ServiceType } from "@/types/installation";
 import { calcularValorPorTipo } from "@/types/installation";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { applyQuickEdit } from "@/lib/quick-edit";
 import * as Haptics from "expo-haptics";
 import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
 
@@ -62,6 +63,12 @@ export default function HistoricoScreen() {
   const [valorMax, setValorMax] = useState("");
   const [filtroTipoBuscaAvancada, setFiltroTipoBuscaAvancada] = useState<ServiceType | "Todos">("Todos");
   const [ordenacao, setOrdenacao] = useState<"recente" | "antigo" | "valor">("recente");
+  const [editando, setEditando] = useState<Installation | null>(null);
+  const [editCliente, setEditCliente] = useState("");
+  const [editEndereco, setEditEndereco] = useState("");
+  const [editTipo, setEditTipo] = useState<ServiceType>("Instalação");
+  const [editData, setEditData] = useState("");
+  const [editObservacoes, setEditObservacoes] = useState("");
 
   // Filtrar instalações do mês selecionado
   let instalacoesDoMes = filtrarPorMes(instalacoes, mes, ano);
@@ -144,6 +151,40 @@ export default function HistoricoScreen() {
     }
   }
 
+  function abrirEdicao(inst: Installation) {
+    haptic();
+    setEditando(inst);
+    setEditCliente(inst.cliente);
+    setEditEndereco(inst.endereco);
+    setEditTipo(inst.tipoServico);
+    setEditData(inst.data);
+    setEditObservacoes(inst.observacoes || "");
+  }
+
+  function fecharEdicao() {
+    setEditando(null);
+  }
+
+  async function salvarEdicao() {
+    if (!editando) return;
+    if (!editCliente.trim() || !editEndereco.trim() || !editData.trim()) {
+      hapticError();
+      Alert.alert("Campos obrigatórios", "Preencha OS/cliente, endereço e data.");
+      return;
+    }
+
+    await atualizarInstalacao(applyQuickEdit(editando, {
+      cliente: editCliente,
+      endereco: editEndereco,
+      tipoServico: editTipo,
+      data: editData,
+      observacoes: editObservacoes,
+    }));
+    hapticSuccess();
+    fecharEdicao();
+    Alert.alert("Salvo", "A OS foi atualizada.");
+  }
+
   function abrirConfirmacaoExclusao(inst: Installation) {
     haptic();
     setConfirmandoExclusao(inst);
@@ -191,9 +232,18 @@ export default function HistoricoScreen() {
           icon="list.bullet"
           style={{ flex: 1, paddingBottom: 0 }}
         />
-        <View style={[styles.badgeTotal, { backgroundColor: PREMIUM.blueDeep, borderColor: PREMIUM.blue }]}>
-          <IconSymbol name="doc.text.fill" size={25} color="#FFFFFF" />
-          <Text style={styles.badgeTotalTexto}>{instalacoesDoMes.length}</Text>
+        <View style={styles.counterGroup}>
+          <View style={[styles.badgeTotal, { backgroundColor: PREMIUM.blueDeep, borderColor: PREMIUM.blue }]}>
+            <IconSymbol name="doc.text.fill" size={23} color="#FFFFFF" />
+            <View>
+              <Text style={styles.badgeTotalTexto}>{instalacoesDoMes.length}</Text>
+              <Text style={styles.badgeTotalLegenda}>neste mês</Text>
+            </View>
+          </View>
+          <View style={styles.totalHistoricoBadge}>
+            <Text style={styles.totalHistoricoNumero}>{instalacoes.length}</Text>
+            <Text style={styles.totalHistoricoLegenda}>total</Text>
+          </View>
         </View>
       </View>
 
@@ -269,6 +319,7 @@ export default function HistoricoScreen() {
             <CardInstalacao
               instalacao={item}
               valor={calcularValorPorTipo(item.tipoServico, instalacoes.length, paymentMode)}
+              onEditar={() => abrirEdicao(item)}
               onExcluir={() => abrirConfirmacaoExclusao(item)}
               onDuplicar={() => duplicarInstalacao(item)}
               onToggleFavorito={() => toggleFavorito(item.id)}
@@ -345,6 +396,87 @@ export default function HistoricoScreen() {
                 )}
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Edição Rápida */}
+      <Modal
+        visible={editando !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={fecharEdicao}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, borderWidth: 1 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitulo, { color: PREMIUM.foreground }]}>Editar OS</Text>
+              <Pressable onPress={fecharEdicao} style={styles.modalFechar}>
+                <Text style={[styles.modalFecharTexto, { color: PREMIUM.muted }]}>✕</Text>
+              </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled">
+              <Text style={[styles.campoLabel, { color: PREMIUM.foreground }]}>OS / Cliente</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: PREMIUM.background, borderColor: PREMIUM.divider, color: PREMIUM.foreground }]}
+                value={editCliente}
+                onChangeText={setEditCliente}
+                placeholder="Número da OS ou cliente"
+                placeholderTextColor={PREMIUM.muted}
+              />
+
+              <Text style={[styles.campoLabel, { color: PREMIUM.foreground, marginTop: 12 }]}>Endereço / Bairro</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: PREMIUM.background, borderColor: PREMIUM.divider, color: PREMIUM.foreground }]}
+                value={editEndereco}
+                onChangeText={setEditEndereco}
+                placeholder="Endereço ou bairro"
+                placeholderTextColor={PREMIUM.muted}
+              />
+
+              <Text style={[styles.campoLabel, { color: PREMIUM.foreground, marginTop: 12 }]}>Tipo de Serviço</Text>
+              <View style={styles.tiposRow}>
+                {TIPOS.map((tipo) => (
+                  <Pressable
+                    key={tipo}
+                    onPress={() => setEditTipo(tipo)}
+                    style={[styles.tipoBotao, { borderColor: editTipo === tipo ? PREMIUM.blue : PREMIUM.divider, backgroundColor: editTipo === tipo ? PREMIUM.blueDeep : PREMIUM.background }]}
+                  >
+                    <Text style={[styles.tipoBotaoTexto, { color: editTipo === tipo ? '#FFFFFF' : PREMIUM.muted }]}>{tipo}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <Text style={[styles.campoLabel, { color: PREMIUM.foreground, marginTop: 12 }]}>Data</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: PREMIUM.background, borderColor: PREMIUM.divider, color: PREMIUM.foreground }]}
+                value={editData}
+                onChangeText={(texto) => setEditData(formatarData(texto))}
+                placeholder="dd/mm/aaaa"
+                placeholderTextColor={PREMIUM.muted}
+                keyboardType="numeric"
+              />
+
+              <Text style={[styles.campoLabel, { color: PREMIUM.foreground, marginTop: 12 }]}>Observações</Text>
+              <TextInput
+                style={[styles.input, styles.inputMultilinha, { backgroundColor: PREMIUM.background, borderColor: PREMIUM.divider, color: PREMIUM.foreground }]}
+                value={editObservacoes}
+                onChangeText={setEditObservacoes}
+                placeholder="Observações da OS"
+                placeholderTextColor={PREMIUM.muted}
+                multiline
+                textAlignVertical="top"
+              />
+
+              <View style={styles.confirmBotoes}>
+                <Pressable style={[styles.botaoCancelar, { backgroundColor: PREMIUM.surfaceRaised }]} onPress={fecharEdicao}>
+                  <Text style={[styles.botaoCancelarTexto, { color: PREMIUM.muted }]}>Cancelar</Text>
+                </Pressable>
+                <Pressable style={[styles.botaoSalvar, { backgroundColor: PREMIUM.blue, flex: 1 }]} onPress={salvarEdicao}>
+                  <Text style={styles.botaoSalvarTexto}>Salvar</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -560,12 +692,14 @@ export default function HistoricoScreen() {
 function CardInstalacao({
   instalacao,
   valor,
+  onEditar,
   onExcluir,
   onDuplicar,
   onToggleFavorito,
 }: {
   instalacao: Installation;
   valor: number;
+  onEditar: () => void;
   onExcluir: () => void;
   onDuplicar: () => void;
   onToggleFavorito: () => void;
@@ -589,8 +723,9 @@ function CardInstalacao({
     : '';
 
   return (
-    <View
-      style={[
+    <Pressable
+      onPress={onEditar}
+      style={({ pressed }) => [
         styles.card,
         {
           backgroundColor: PREMIUM.surface,
@@ -598,6 +733,7 @@ function CardInstalacao({
           borderLeftColor: PREMIUM.blue,
           borderLeftWidth: 3,
           shadowColor: '#000000',
+          opacity: pressed ? 0.94 : 1,
         },
       ]}
     >
@@ -647,7 +783,7 @@ function CardInstalacao({
           <IconSymbol name="trash.fill" size={25} color="#FFFFFF" />
         </Pressable>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -672,6 +808,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
+  counterGroup: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
   badgeTotal: {
     borderRadius: 24,
     paddingHorizontal: 17,
@@ -685,9 +825,30 @@ const styles = StyleSheet.create({
   },
   badgeTotalTexto: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-    textAlign: "center",
+    fontSize: 18,
+    lineHeight: 20,
+    fontWeight: "800",
+  },
+  badgeTotalLegenda: {
+    color: '#DCE8FF',
+    fontSize: 10,
+    lineHeight: 13,
+    marginTop: 1,
+  },
+  totalHistoricoBadge: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+    paddingRight: 8,
+  },
+  totalHistoricoNumero: {
+    color: PREMIUM.muted,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  totalHistoricoLegenda: {
+    color: PREMIUM.muted,
+    fontSize: 12,
   },
   lista: {
     padding: 16,
