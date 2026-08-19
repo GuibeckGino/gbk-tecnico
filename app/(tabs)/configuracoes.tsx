@@ -756,8 +756,8 @@ export default function ConfiguracoesScreen() {
           />
         </Secao>
 
-        {/* Seção Modo de Pagamento */}
-        <Secao titulo="Modo de Pagamento">
+        {/* Seção Modo de Pagamento e Preços */}
+        <Secao titulo="Modo de Pagamento e Preços">
           <ItemConfig
             icone="💳"
             label="Modo Atual"
@@ -770,6 +770,16 @@ export default function ConfiguracoesScreen() {
             label="Meta Mensal"
             sublabel={`${monthlyGoal} instalações`}
             onPress={() => setEditandoMeta(true)}
+          />
+          <Divisor />
+          <ItemConfig
+            icone="💲"
+            label="Preços do Mês"
+            sublabel={`Ajustar valores para ${mesAnoFormatado}`}
+            onPress={() => {
+              haptic();
+              Alert.alert("Preços do Mês", `Os preços para ${mesAnoFormatado} utilizam o padrão do sistema ou o modo de pagamento vigente. Para customizações avançadas, utilize a regra por tipo.`);
+            }}
           />
         </Secao>
 

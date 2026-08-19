@@ -571,3 +571,9 @@
 - [x] Atualizar a tela de Configurações para permitir ajustar os preços vigentes de cada mês/ano
 - [x] Criar testes unitários para a regra retroativa da Tipo 3 e preços customizáveis mensais
 - [x] Validar telas, relatórios, testes Vitest, TypeScript e salvar checkpoint
+
+## Atualização v7.0.0 — Customização de Preços por Mês e Preço Unitário no Histórico
+- [x] Adicionar modal/seção nas Configurações para ajustar os preços de Instalação, Tipo 3, Mudança e Empresarial para o mês e ano selecionados
+- [x] Persistir preços customizados por mês/ano via AsyncStorage
+- [x] Atualizar a aba Histórico para exibir o valor unitário aplicado em cada OS no card
+- [x] Atualizar testes unitários e validar compilação e servidor

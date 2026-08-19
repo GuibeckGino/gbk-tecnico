@@ -103,7 +103,8 @@ export default function HistoricoScreen() {
     const [, mesDoDado, anoDoDado] = inst.data.split('/');
     const chave = `${anoDoDado}-${mesDoDado}`;
     const modoDoMes = paymentModesByMonth[chave] || (chave === `${ano}-${String(mes + 1).padStart(2, '0')}` ? paymentMode : 'meta');
-    return calcularValorPorTipo(inst.tipoServico, totaisPorMes[chave] || 1, modoDoMes);
+    // Carregar customPrices do storage local ou usar undefined
+    return calcularValorPorTipo(inst.tipoServico, totaisPorMes[chave] || 1, modoDoMes, undefined, inst.data);
   }
 
   // Filtrar instalações do mês selecionado
@@ -796,7 +797,7 @@ function CardInstalacao({
           <View style={[styles.badgeTipo, { backgroundColor: corTipo[instalacao.tipoServico] }]}>
             <Text style={styles.badgeTipoTexto}>{instalacao.tipoServico}</Text>
           </View>
-          <Text style={[styles.cardData, { color: colors.muted }]}>{instalacao.data}</Text>
+          <Text style={[styles.cardData, { color: colors.muted }]}>Unit: R$ {valor}</Text>
           <Text style={[styles.cardValor, { color: colors.success }]}>R$ {valor}</Text>
         </View>
       </View>
