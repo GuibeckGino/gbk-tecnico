@@ -15,15 +15,15 @@ describe('Modo de pagamento por mês/ano', () => {
       createdAt: '2026-08-18T10:00:00.000Z',
     };
 
-    expect(calcularValorConfiguradoDoMes(instalacao, 2, 8, 2026, {
+    expect(calcularValorConfiguradoDoMes(instalacao, 2, 7, 2026, {
       '2026-08': 'fixo70',
     })).toBe(70);
-    expect(calcularValorConfiguradoDoMes({ ...instalacao, data: '18/07/2026' }, 2, 7, 2026, {
+    expect(calcularValorConfiguradoDoMes({ ...instalacao, data: '18/07/2026' }, 2, 6, 2026, {
       '2026-07': 'meta',
     })).toBe(65);
   });
 
-  it('mantém Tipo 3 em R$ 60 e Empresarial em R$ 100 independentemente do modo', () => {
+  it('mantém Tipo 3 em R$ 60 a partir de agosto de 2026 e usa valor padrão antes disso', () => {
     const base: Installation = {
       id: 'os-2',
       cliente: '2',
@@ -34,8 +34,16 @@ describe('Modo de pagamento por mês/ano', () => {
       createdAt: '2026-08-18T10:00:00.000Z',
     };
 
-    expect(calcularValorConfiguradoDoMes(base, 120, 8, 2026, { '2026-08': 'fixo70' })).toBe(60);
-    expect(calcularValorConfiguradoDoMes({ ...base, tipoServico: 'Empresarial' }, 120, 8, 2026, { '2026-08': 'meta' })).toBe(100);
+    // A partir de agosto de 2026: R$ 60
+    expect(calcularValorConfiguradoDoMes(base, 120, 7, 2026, { '2026-08': 'fixo70' })).toBe(60);
+    
+    // Antes de agosto de 2026 (ex: 18/07/2026): segue o modo de pagamento (fixo70 = 70, meta < 104 = 65)
+    const baseAntiga = { ...base, data: '18/07/2026', createdAt: '2026-07-18T10:00:00.000Z' };
+    expect(calcularValorConfiguradoDoMes(baseAntiga, 50, 6, 2026, { '2026-07': 'fixo70' })).toBe(70);
+    expect(calcularValorConfiguradoDoMes(baseAntiga, 50, 6, 2026, { '2026-07': 'meta' })).toBe(65);
+
+    // Empresarial sempre R$ 100
+    expect(calcularValorConfiguradoDoMes({ ...base, tipoServico: 'Empresarial' }, 120, 7, 2026, { '2026-08': 'meta' })).toBe(100);
   });
 
   it('calcula mês a mês com o modo correspondente a cada chave histórica', () => {

@@ -19,12 +19,16 @@ function calcularValorHistorico(
   inst: Installation,
   totaisPorMes: Record<string, number>,
   paymentModes: PaymentModesByMonth,
+  customPricesByMonth?: Record<string, import("../types/installation").CustomPrices>,
 ): number {
   const chave = getMonthKey(inst.data);
+  const customPrices = customPricesByMonth ? customPricesByMonth[chave] : undefined;
   return calcularValorPorTipo(
     inst.tipoServico,
     totaisPorMes[chave] || 1,
     paymentModes[chave] || "meta",
+    customPrices,
+    inst.data,
   );
 }
 
@@ -80,7 +84,11 @@ export function obterSemanaDoAno(data: string): number {
   return semana;
 }
 
-export function analisarSemanal(instalacoes: Installation[], paymentModes: PaymentModesByMonth = {}): AnalyticsSemanal[] {
+export function analisarSemanal(
+  instalacoes: Installation[],
+  paymentModes: PaymentModesByMonth = {},
+  customPricesByMonth?: Record<string, import("../types/installation").CustomPrices>,
+): AnalyticsSemanal[] {
   const totaisPorMes = buildMonthTotals(instalacoes);
   const mapa = new Map<string, Installation[]>();
 
@@ -103,7 +111,7 @@ export function analisarSemanal(instalacoes: Installation[], paymentModes: Payme
     // Calcular valor correto considerando tipo de serviço
     let valorTotal = 0;
     insts.forEach((inst) => {
-      valorTotal += calcularValorHistorico(inst, totaisPorMes, paymentModes);
+      valorTotal += calcularValorHistorico(inst, totaisPorMes, paymentModes, customPricesByMonth);
     });
 
     resultado.push({
@@ -122,7 +130,11 @@ export function analisarSemanal(instalacoes: Installation[], paymentModes: Payme
   });
 }
 
-export function analisarPorCliente(instalacoes: Installation[], paymentModes: PaymentModesByMonth = {}): AnalyticsCliente[] {
+export function analisarPorCliente(
+  instalacoes: Installation[],
+  paymentModes: PaymentModesByMonth = {},
+  customPricesByMonth?: Record<string, import("../types/installation").CustomPrices>,
+): AnalyticsCliente[] {
   const totaisPorMes = buildMonthTotals(instalacoes);
   const mapa = new Map<string, Installation[]>();
 
@@ -140,7 +152,7 @@ export function analisarPorCliente(instalacoes: Installation[], paymentModes: Pa
     // Calcular valor correto considerando tipo de serviço
     let valorTotal = 0;
     insts.forEach((inst) => {
-      valorTotal += calcularValorHistorico(inst, totaisPorMes, paymentModes);
+      valorTotal += calcularValorHistorico(inst, totaisPorMes, paymentModes, customPricesByMonth);
     });
     const valorMedio = valorTotal / totalInstalacoes;
 
@@ -169,7 +181,11 @@ export function analisarPorCliente(instalacoes: Installation[], paymentModes: Pa
   return resultado.sort((a, b) => b.valorTotal - a.valorTotal);
 }
 
-export function analisarRentabilidade(instalacoes: Installation[], paymentModes: PaymentModesByMonth = {}): AnalyticsRentabilidade[] {
+export function analisarRentabilidade(
+  instalacoes: Installation[],
+  paymentModes: PaymentModesByMonth = {},
+  customPricesByMonth?: Record<string, import("../types/installation").CustomPrices>,
+): AnalyticsRentabilidade[] {
   const totaisPorMes = buildMonthTotals(instalacoes);
   const mapa = new Map<string, Installation[]>();
 
@@ -187,7 +203,7 @@ export function analisarRentabilidade(instalacoes: Installation[], paymentModes:
     // Calcular valor correto considerando tipo de serviço
     let valorTotal = 0;
     insts.forEach((inst) => {
-      valorTotal += calcularValorHistorico(inst, totaisPorMes, paymentModes);
+      valorTotal += calcularValorHistorico(inst, totaisPorMes, paymentModes, customPricesByMonth);
     });
     const valorMedio = valorTotal / totalInstalacoes;
 
@@ -220,7 +236,11 @@ export function analisarRentabilidade(instalacoes: Installation[], paymentModes:
   return resultado.sort((a, b) => b.valorTotal - a.valorTotal);
 }
 
-export function analisarTendencias(instalacoes: Installation[], paymentModes: PaymentModesByMonth = {}): AnalyticsTendencias[] {
+export function analisarTendencias(
+  instalacoes: Installation[],
+  paymentModes: PaymentModesByMonth = {},
+  customPricesByMonth?: Record<string, import("../types/installation").CustomPrices>,
+): AnalyticsTendencias[] {
   const totaisPorMes = buildMonthTotals(instalacoes);
   const mapa = new Map<string, Installation[]>();
 
@@ -243,7 +263,7 @@ export function analisarTendencias(instalacoes: Installation[], paymentModes: Pa
     // Calcular valor correto considerando tipo de serviço
     let valorTotal = 0;
     insts.forEach((inst) => {
-      valorTotal += calcularValorHistorico(inst, totaisPorMes, paymentModes);
+      valorTotal += calcularValorHistorico(inst, totaisPorMes, paymentModes, customPricesByMonth);
     });
     valores.push(valorTotal);
 
@@ -282,7 +302,11 @@ export function analisarTendencias(instalacoes: Installation[], paymentModes: Pa
   });
 }
 
-export function analisarMesAMes(instalacoes: Installation[], paymentModes: PaymentModesByMonth = {}): AnalyticsMesAMes[] {
+export function analisarMesAMes(
+  instalacoes: Installation[],
+  paymentModes: PaymentModesByMonth = {},
+  customPricesByMonth?: Record<string, import("../types/installation").CustomPrices>,
+): AnalyticsMesAMes[] {
   const totaisPorMes = buildMonthTotals(instalacoes);
   const mapa = new Map<string, Installation[]>();
 
@@ -305,7 +329,7 @@ export function analisarMesAMes(instalacoes: Installation[], paymentModes: Payme
     // Calcular valor correto considerando tipo de serviço
     let valorTotal = 0;
     insts.forEach((inst) => {
-      valorTotal += calcularValorHistorico(inst, totaisPorMes, paymentModes);
+      valorTotal += calcularValorHistorico(inst, totaisPorMes, paymentModes, customPricesByMonth);
     });
 
     let crescimento = 0;

@@ -563,3 +563,11 @@
 - [x] Aplicar o modo correto nos cálculos de mês a mês, gráficos, análises e histórico
 - [x] Definir compatibilidade para meses antigos e corrigir testes de valores
 - [x] Validar relatórios, executar testes e salvar checkpoint
+
+## Atualização v6.0.0 — Preços Customizáveis por Mês/Ano e Transição da Tipo 3
+- [x] Ajustar a regra da Tipo 3 para valer R$ 60 apenas a partir de 01/08/2026 (antes mantendo o valor padrão do mês ou R$ 50/outro valor histórico)
+- [x] Criar estrutura de preços customizáveis por mês/ano nas Configurações para todos os tipos de serviço (Instalação, Tipo 3, Mudança, Empresarial)
+- [x] Atualizar calcularValorPorTipo para aceitar preços personalizados do mês e data da OS (verificando se a data é anterior a agosto de 2026 para a Tipo 3)
+- [x] Atualizar a tela de Configurações para permitir ajustar os preços vigentes de cada mês/ano
+- [x] Criar testes unitários para a regra retroativa da Tipo 3 e preços customizáveis mensais
+- [x] Validar telas, relatórios, testes Vitest, TypeScript e salvar checkpoint
