@@ -30,6 +30,7 @@ import { useState as useStateReact, useEffect } from "react";
 import { useMonthlyConfig } from "@/hooks/use-monthly-config";
 import { prepararDadosRelatorio, calcularTopClientes, formatarValor, calcularCrescimento } from "@/lib/pdf-generator";
 import { compartilharRelatorio, gerarResumoRelatorio } from "@/lib/share-report";
+import { buildCsvPreview, buildPdfPreview } from "@/lib/share-preview";
 import { useFocusEffect } from "@react-navigation/native";
 import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
 import { obterPaymentModeDoMes } from "@/lib/monthly-payment-mode";
@@ -52,6 +53,13 @@ function hapticSuccess() {
   }
 }
 
+type SharePreview = {
+  kind: "csv" | "pdf";
+  title: string;
+  uri: string;
+  content: string;
+};
+
 export default function ConfiguracoesScreen() {
   const { instalacoes, stats, limparDados, exportarJSON, importarJSON, paymentMode, setPaymentMode, monthlyGoal, setMonthlyGoal } =
     useInstallations();
@@ -65,6 +73,7 @@ export default function ConfiguracoesScreen() {
   const [ultimoCSVUri, setUltimoCSVUri] = useStateReact<string | null>(null);
   const [ultimoBackupUri, setUltimoBackupUri] = useStateReact<string | null>(null);
   const [ultimoBackupJSON, setUltimoBackupJSON] = useStateReact<string | null>(null);
+  const [sharePreview, setSharePreview] = useStateReact<SharePreview | null>(null);
 
   // Modal de confirmação para limpar dados
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
@@ -77,6 +86,24 @@ export default function ConfiguracoesScreen() {
   const cloud = useSync();
   const [diasSelecionados, setDiasSelecionados] = useStateReact<DayOfWeek[]>(workSchedule.workDays);
   const dayNames = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+
+  async function compartilharPrevia() {
+    if (!sharePreview) return;
+    if (Platform.OS === "web") {
+      Alert.alert("Compartilhamento", "O compartilhamento nativo está disponível no aplicativo móvel.");
+      return;
+    }
+    if (!(await Sharing.isAvailableAsync())) {
+      Alert.alert("Compartilhamento indisponível", "Este aparelho não oferece compartilhamento nativo.");
+      return;
+    }
+    await Sharing.shareAsync(sharePreview.uri, {
+      mimeType: sharePreview.kind === "csv" ? "text/csv" : "application/pdf",
+      dialogTitle: `Compartilhar ${sharePreview.title}`,
+    });
+    hapticSuccess();
+    setSharePreview(null);
+  }
 
   async function compartilharMes() {
     const instalacoesDoMes = instalacoes.filter((inst) => {
@@ -190,13 +217,15 @@ export default function ConfiguracoesScreen() {
         throw new Error("Arquivo CSV não foi criado no sistema de arquivos");
       }
 
-      // Armazenar URI e abrir a folha nativa imediatamente, sem segunda etapa manual.
+      // Abrir a prévia antes do compartilhamento nativo.
       setUltimoCSVUri(uri);
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: "text/csv", dialogTitle: "Compartilhar CSV GBK Técnico" });
-      }
       hapticSuccess();
-      Alert.alert("Pronto", "CSV criado e aberto para compartilhamento.");
+      setSharePreview({
+        kind: "csv",
+        title: "Planilha CSV",
+        uri,
+        content: buildCsvPreview(csv),
+      });
     
     } catch (error) {
       console.error("[CSV] Erro ao exportar:", error);
@@ -501,18 +530,18 @@ export default function ConfiguracoesScreen() {
         throw new Error("Não foi possível gerar PDF ou iniciar impressão");
       }
 
-      // Compartilhar PDF se arquivo foi gerado
-      if (uri && (await Sharing.isAvailableAsync())) {
-        console.log("[PDF] Iniciando compartilhamento");
-        await Sharing.shareAsync(uri, {
-          mimeType: "application/pdf",
-          dialogTitle: "Compartilhar Relatório",
+      // Mostrar um resumo do conteúdo antes de abrir o compartilhamento do PDF.
+      if (uri) {
+        const previewContent = buildPdfPreview({
+          monthLabel: dados.mesAnoFormatado,
+          total: dados.stats.total,
+          revenue: formatarValor(dados.stats.valorTotal),
+          paymentMode: dados.paymentMode === "meta" ? "Meta Progressiva" : dados.paymentMode === "fixo65" ? "Fixo R$ 65" : "Fixo R$ 70",
+          byType: dados.stats.porTipo,
+          growth: crescimento,
         });
         hapticSuccess();
-        Alert.alert("Sucesso", "Relatório PDF gerado e pronto para compartilhar!");
-      } else if (uri) {
-        hapticSuccess();
-        Alert.alert("Sucesso", `PDF salvo em:\n${uri}`);
+        setSharePreview({ kind: "pdf", title: "Relatório em PDF", uri, content: previewContent });
       } else {
         hapticSuccess();
         Alert.alert("Sucesso", "Relatório enviado para impressão!");
@@ -951,6 +980,44 @@ export default function ConfiguracoesScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={Boolean(sharePreview)}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setSharePreview(null)}
+      >
+        <View style={styles.confirmOverlay}>
+          <View style={[styles.previewContainer, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder }]}>
+            <Text style={[styles.confirmTitulo, { color: colors.foreground }]}>Pré-visualização</Text>
+            <Text style={[styles.previewSubtitle, { color: colors.muted }]}>
+              {sharePreview?.title} · confira antes de compartilhar
+            </Text>
+            <ScrollView
+              style={[styles.previewContent, { borderColor: PREMIUM.divider }]}
+              contentContainerStyle={styles.previewContentInner}
+            >
+              <Text style={[styles.previewText, { color: colors.foreground }]} selectable>
+                {sharePreview?.content}
+              </Text>
+            </ScrollView>
+            <View style={styles.confirmBotoes}>
+              <Pressable
+                style={({ pressed }) => [styles.botaoCancelar, { backgroundColor: colors.muted, opacity: pressed ? 0.7 : 1 }]}
+                onPress={() => setSharePreview(null)}
+              >
+                <Text style={styles.botaoCancelarTexto}>Voltar</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.botaoConfirmar, { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}
+                onPress={compartilharPrevia}
+              >
+                <Text style={styles.botaoConfirmarTexto}>Compartilhar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal de Seleção de Modo de Pagamento */}
       <Modal
@@ -1450,6 +1517,34 @@ function ItemConfig({
 }
 
 const styles = StyleSheet.create({
+  previewContainer: {
+    width: "90%",
+    maxWidth: 560,
+    maxHeight: "82%",
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 20,
+  },
+  previewSubtitle: {
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: -6,
+    marginBottom: 16,
+  },
+  previewContent: {
+    maxHeight: 390,
+    borderWidth: 1,
+    borderRadius: 12,
+    marginBottom: 18,
+  },
+  previewContentInner: {
+    padding: 14,
+  },
+  previewText: {
+    fontSize: 12,
+    lineHeight: 19,
+    fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
+  },
   scroll: {
     padding: 16,
     paddingBottom: 40,

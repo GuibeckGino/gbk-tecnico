@@ -584,3 +584,9 @@
 - [x] Exibir status de sincronização, backup e recuperação de dados na interface
 - [x] Reformular compartilhamento de relatório, CSV e backup em um fluxo unificado
 - [x] Testar autenticação, sincronização, conflitos e compartilhamento antes do checkpoint
+
+## Atualização v8.1.0 — Pré-visualização de Compartilhamentos
+- [x] Criar tela de pré-visualização do CSV antes de abrir o compartilhamento nativo
+- [x] Criar tela de pré-visualização do relatório antes de compartilhar o PDF
+- [x] Permitir confirmar ou cancelar o compartilhamento a partir da prévia
+- [x] Criar testes e validar TypeScript, interface e fluxo de compartilhamento
