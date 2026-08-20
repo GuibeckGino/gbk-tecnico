@@ -22,6 +22,7 @@ import { useMonth } from "@/context/MonthContext";
 import { useGBKTheme } from "@/context/ThemeContext";
 import { useColors } from "@/hooks/use-colors";
 import { useWorkSchedule, type DayOfWeek } from "@/context/WorkScheduleContext";
+import { useSync } from "@/context/SyncContext";
 import { calcularValorPorTipo } from "@/types/installation";
 
 import * as Haptics from "expo-haptics";
@@ -73,6 +74,7 @@ export default function ConfiguracoesScreen() {
   const [novaMetaInput, setNovaMetaInput] = useStateReact(monthlyGoal.toString());
   const [editandoAgenda, setEditandoAgenda] = useStateReact(false);
   const workSchedule = useWorkSchedule();
+  const cloud = useSync();
   const [diasSelecionados, setDiasSelecionados] = useStateReact<DayOfWeek[]>(workSchedule.workDays);
   const dayNames = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
@@ -88,8 +90,10 @@ export default function ConfiguracoesScreen() {
     }
 
     const totalInstalacoes = instalacoesDoMes.length;
-    const valorIndividual = totalInstalacoes >= 104 ? 70 : 65;
-    const totalValor = totalInstalacoes * valorIndividual;
+    const totalValor = instalacoesDoMes.reduce(
+      (total, instalacao) => total + calcularValorPorTipo(instalacao.tipoServico, totalInstalacoes, paymentMode, undefined, instalacao.data),
+      0,
+    );
     const valorFormatado = totalValor.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
@@ -107,7 +111,8 @@ export default function ConfiguracoesScreen() {
       `📋 Por Tipo:\n` +
       `  • Instalação: ${contagem.Instalacao}\n` +
       `  • Tipo 3: ${contagem.Tipo3}\n` +
-      `  • Mudança: ${contagem.Mudanca}\n\n` +
+      `  • Mudança: ${contagem.Mudanca}\n` +
+      `  • Empresarial: ${instalacoesDoMes.filter((i) => i.tipoServico === "Empresarial").length}\n\n` +
       `Gerado em: ${new Date().toLocaleDateString("pt-BR")}`;
 
     if (Platform.OS === "web") {
@@ -119,9 +124,11 @@ export default function ConfiguracoesScreen() {
     }
 
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(mensagem, {
-        dialogTitle: "Compartilhar Relatório",
-      });
+      const fileName = `relatorio-gbk-${ano}-${String(mes).padStart(2, "0")}.txt`;
+      const uri = `${FileSystem.documentDirectory}${fileName}`;
+      await FileSystem.writeAsStringAsync(uri, mensagem, { encoding: FileSystem.EncodingType.UTF8 });
+      await Sharing.shareAsync(uri, { mimeType: "text/plain", dialogTitle: "Compartilhar Resumo Mensal" });
+      hapticSuccess();
     }
   }
 
@@ -183,10 +190,13 @@ export default function ConfiguracoesScreen() {
         throw new Error("Arquivo CSV não foi criado no sistema de arquivos");
       }
 
-      // Armazenar URI para compartilhamento posterior
+      // Armazenar URI e abrir a folha nativa imediatamente, sem segunda etapa manual.
       setUltimoCSVUri(uri);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: "text/csv", dialogTitle: "Compartilhar CSV GBK Técnico" });
+      }
       hapticSuccess();
-      Alert.alert("Sucesso", "CSV exportado com sucesso!\n\nUse o botão 'Compartilhar CSV' para enviar via WhatsApp, Email, etc.");
+      Alert.alert("Pronto", "CSV criado e aberto para compartilhamento.");
     
     } catch (error) {
       console.error("[CSV] Erro ao exportar:", error);
@@ -329,11 +339,17 @@ export default function ConfiguracoesScreen() {
         throw new Error("Arquivo JSON não foi criado no sistema de arquivos");
       }
 
-      // Armazenar URI e JSON para compartilhamento posterior
+      // Armazenar URI e JSON e abrir o compartilhamento sem exigir uma segunda ação.
       setUltimoBackupUri(uri);
       setUltimoBackupJSON(json);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/json",
+          dialogTitle: "Compartilhar Backup GBK Técnico",
+        });
+      }
       hapticSuccess();
-      Alert.alert("Sucesso", "Backup exportado com sucesso!\n\nUse os botões de compartilhamento para enviar.");
+      Alert.alert("Pronto", "Backup criado e aberto para compartilhamento.");
     
     } catch (error) {
       console.error("[JSON] Erro ao exportar:", error);
@@ -793,6 +809,57 @@ export default function ConfiguracoesScreen() {
           />
         </Secao>
 
+        <Secao titulo="Nuvem e Conta">
+          <ItemConfig
+            icone="☁️"
+            label={cloud.isAuthenticated ? "Nuvem conectada" : "Conectar à nuvem"}
+            sublabel={cloud.isAuthenticated
+              ? `${cloud.accountName ?? "Conta conectada"}${cloud.lastSyncTime ? ` · sincronizado às ${cloud.lastSyncTime.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}`
+              : "Entre para salvar e recuperar dados em outros aparelhos"}
+            onPress={async () => {
+              if (!cloud.isAuthenticated) {
+                await cloud.connectCloudAccount();
+                return;
+              }
+              const synced = await cloud.syncInstallations();
+              Alert.alert(synced ? "Sincronização concluída" : "Não foi possível sincronizar", synced ? "Seus dados estão atualizados na nuvem." : (cloud.syncError ?? "Tente novamente em instantes."));
+            }}
+            desabilitado={cloud.isAuthLoading || cloud.isSyncing}
+          />
+          {cloud.isAuthenticated && (
+            <>
+              <Divisor />
+              <ItemConfig
+                icone="↻"
+                label={cloud.isSyncing ? "Sincronizando…" : "Sincronizar agora"}
+                sublabel="Enviar alterações e recuperar dados da conta"
+                onPress={async () => {
+                  const synced = await cloud.syncInstallations();
+                  Alert.alert(synced ? "Sincronização concluída" : "Não foi possível sincronizar", synced ? "Seus dados estão atualizados na nuvem." : (cloud.syncError ?? "Tente novamente em instantes."));
+                }}
+                desabilitado={cloud.isSyncing}
+              />
+              <Divisor />
+              <ItemConfig
+                icone="⇥"
+                label="Sair da nuvem"
+                sublabel="Desconectar esta conta deste aparelho"
+                onPress={async () => {
+                  await cloud.disconnectCloudAccount();
+                  Alert.alert("Conta desconectada", "Os dados deste aparelho permanecem salvos localmente.");
+                }}
+                cor="error"
+              />
+            </>
+          )}
+          <Divisor />
+          <ItemConfig
+            icone="G"
+            label="Google Drive"
+            sublabel="Conexão opcional disponível quando as credenciais Google forem configuradas"
+          />
+        </Secao>
+
         {/* Seção Dados */}
         <Secao titulo="Dados">
           <ItemConfig
@@ -829,29 +896,37 @@ export default function ConfiguracoesScreen() {
 
         </Secao>
 
-        {/* Seção Compartilhamento */}
-        <Secao titulo="Compartilhamento">
+        {/* Central de Compartilhamento */}
+        <Secao titulo="Central de Compartilhamento">
           <ItemConfig
-            icone="📤"
-            label="Compartilhar CSV"
-            sublabel="Enviar via WhatsApp, Email, etc"
-            onPress={() => compartilharCSV()}
-            desabilitado={!ultimoCSVUri}
-          />
-          <Divisor />
-          <ItemConfig
-            icone="📤"
-            label="Compartilhar Backup"
-            sublabel="Enviar JSON via WhatsApp, Email, etc"
-            onPress={() => compartilharBackup()}
-            desabilitado={!ultimoBackupUri}
-          />
-          <Divisor />
-          <ItemConfig
-            icone="📤"
-            label="Compartilhar Relatório"
-            sublabel={`Mês: ${mesAnoFormatado}`}
+            icone="📊"
+            label="Resumo mensal"
+            sublabel={`Texto pronto para enviar · ${mesAnoFormatado}`}
             onPress={compartilharMes}
+          />
+          <Divisor />
+          <ItemConfig
+            icone="📄"
+            label="Relatório em PDF"
+            sublabel="Gerar e compartilhar em uma única etapa"
+            onPress={exportarRelatorioPDF}
+            desabilitado={gerandoPDF}
+          />
+          <Divisor />
+          <ItemConfig
+            icone="🧾"
+            label="Planilha CSV"
+            sublabel="Gerar e compartilhar em uma única etapa"
+            onPress={exportarCSV}
+            desabilitado={exportando}
+          />
+          <Divisor />
+          <ItemConfig
+            icone="💾"
+            label="Backup completo"
+            sublabel="Gerar arquivo JSON para guardar ou enviar"
+            onPress={exportarBackup}
+            desabilitado={exportando}
           />
         </Secao>
 
@@ -872,7 +947,7 @@ export default function ConfiguracoesScreen() {
             GBK Técnico v1.1.0
           </Text>
           <Text style={[styles.infoTexto, { color: colors.muted }]}>
-            100% offline · AsyncStorage
+            Nuvem opcional · sincronização por conta
           </Text>
         </View>
       </ScrollView>
@@ -1598,4 +1673,3 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 });
-

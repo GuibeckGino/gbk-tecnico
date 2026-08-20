@@ -577,3 +577,10 @@
 - [x] Persistir preços customizados por mês/ano via AsyncStorage
 - [x] Atualizar a aba Histórico para exibir o valor unitário aplicado em cada OS no card
 - [x] Atualizar testes unitários e validar compilação e servidor
+
+## Atualização v8.0.0 — Conta Google, Sincronização Online e Compartilhamento
+- [x] Definir a arquitetura de login Google e armazenamento online por conta
+- [x] Substituir a dependência imediata do Google Drive por nuvem própria do aplicativo
+- [x] Exibir status de sincronização, backup e recuperação de dados na interface
+- [x] Reformular compartilhamento de relatório, CSV e backup em um fluxo unificado
+- [x] Testar autenticação, sincronização, conflitos e compartilhamento antes do checkpoint
