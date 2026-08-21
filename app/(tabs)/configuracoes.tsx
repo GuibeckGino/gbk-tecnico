@@ -89,6 +89,7 @@ export default function ConfiguracoesScreen() {
 
   async function compartilharPrevia() {
     if (!sharePreview) return;
+    const preview = sharePreview;
     if (Platform.OS === "web") {
       Alert.alert("Compartilhamento", "O compartilhamento nativo está disponível no aplicativo móvel.");
       return;
@@ -97,12 +98,26 @@ export default function ConfiguracoesScreen() {
       Alert.alert("Compartilhamento indisponível", "Este aparelho não oferece compartilhamento nativo.");
       return;
     }
-    await Sharing.shareAsync(sharePreview.uri, {
-      mimeType: sharePreview.kind === "csv" ? "text/csv" : "application/pdf",
-      dialogTitle: `Compartilhar ${sharePreview.title}`,
-    });
-    hapticSuccess();
+
+    // O Android não abre a folha de apps sobre um Modal ativo. Fecha a prévia
+    // e aguarda a animação terminar antes de chamar o compartilhamento nativo.
     setSharePreview(null);
+    await new Promise<void>((resolve) => setTimeout(resolve, 350));
+
+    try {
+      await Sharing.shareAsync(preview.uri, {
+        mimeType: preview.kind === "csv" ? "text/csv" : "application/pdf",
+        dialogTitle: `Compartilhar ${preview.title}`,
+      });
+      hapticSuccess();
+    } catch (error) {
+      console.error("[Share] Falha ao abrir compartilhamento nativo:", error);
+      hapticError();
+      Alert.alert(
+        "Não foi possível compartilhar",
+        "O arquivo foi criado, mas não foi possível abrir a lista de aplicativos. Tente novamente.",
+      );
+    }
   }
 
   async function compartilharMes() {

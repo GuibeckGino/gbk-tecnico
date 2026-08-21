@@ -590,3 +590,8 @@
 - [x] Criar tela de pré-visualização do relatório antes de compartilhar o PDF
 - [x] Permitir confirmar ou cancelar o compartilhamento a partir da prévia
 - [x] Criar testes e validar TypeScript, interface e fluxo de compartilhamento
+
+## Correção v8.1.1 — Abertura da Folha Nativa
+- [x] Fechar a pré-visualização antes de solicitar o compartilhamento nativo
+- [x] Assegurar que a folha de aplicativos do Android abra após a confirmação
+- [x] Validar a correção e registrar o checkpoint
