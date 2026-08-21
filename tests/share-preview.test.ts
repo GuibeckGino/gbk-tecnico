@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCsvPreview, buildPdfPreview } from "../lib/share-preview";
+import { buildCsvPreview, buildPdfPreview, formatFileSize, getFileNameFromUri } from "../lib/share-preview";
 
 describe("pré-visualização de compartilhamento", () => {
   it("limita a prévia CSV ao número configurado de linhas e sinaliza conteúdo adicional", () => {
@@ -20,5 +20,12 @@ describe("pré-visualização de compartilhamento", () => {
 
     expect(preview).toContain("Faturamento: R$ 840,00");
     expect(preview).toContain("Comparativo com o mês anterior: +10.5%");
+  });
+
+  it("identifica o nome e formata o tamanho do arquivo antes do envio", () => {
+    expect(getFileNameFromUri("file:///dados/relatorio%20agosto.pdf")).toBe("relatorio agosto.pdf");
+    expect(formatFileSize(0)).toBe("0 B");
+    expect(formatFileSize(1536)).toBe("1.5 KB");
+    expect(formatFileSize(2 * 1024 * 1024)).toBe("2.0 MB");
   });
 });

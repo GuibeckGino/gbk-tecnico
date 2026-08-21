@@ -14,8 +14,11 @@ import {
 } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
+import * as Clipboard from "expo-clipboard";
+import * as IntentLauncher from "expo-intent-launcher";
 import * as DocumentPicker from "expo-document-picker";
 import * as Print from "expo-print";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
 import { useMonth } from "@/context/MonthContext";
@@ -30,7 +33,7 @@ import { useState as useStateReact, useEffect } from "react";
 import { useMonthlyConfig } from "@/hooks/use-monthly-config";
 import { prepararDadosRelatorio, calcularTopClientes, formatarValor, calcularCrescimento } from "@/lib/pdf-generator";
 import { compartilharRelatorio, gerarResumoRelatorio } from "@/lib/share-report";
-import { buildCsvPreview, buildPdfPreview } from "@/lib/share-preview";
+import { buildCsvPreview, buildPdfPreview, formatFileSize, getFileNameFromUri } from "@/lib/share-preview";
 import { useFocusEffect } from "@react-navigation/native";
 import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
 import { obterPaymentModeDoMes } from "@/lib/monthly-payment-mode";
@@ -58,7 +61,18 @@ type SharePreview = {
   title: string;
   uri: string;
   content: string;
+  fileName: string;
+  fileSize: number;
 };
+
+type PreferredShareTarget = "sheet" | "whatsapp" | "whatsappBusiness" | "gmail";
+
+const SHARE_TARGETS: Array<{ id: PreferredShareTarget; label: string; packageName?: string }> = [
+  { id: "sheet", label: "Todos os apps" },
+  { id: "whatsapp", label: "WhatsApp", packageName: "com.whatsapp" },
+  { id: "whatsappBusiness", label: "WhatsApp Business", packageName: "com.whatsapp.w4b" },
+  { id: "gmail", label: "Gmail", packageName: "com.google.android.gm" },
+];
 
 export default function ConfiguracoesScreen() {
   const { instalacoes, stats, limparDados, exportarJSON, importarJSON, paymentMode, setPaymentMode, monthlyGoal, setMonthlyGoal } =
@@ -74,6 +88,8 @@ export default function ConfiguracoesScreen() {
   const [ultimoBackupUri, setUltimoBackupUri] = useStateReact<string | null>(null);
   const [ultimoBackupJSON, setUltimoBackupJSON] = useStateReact<string | null>(null);
   const [sharePreview, setSharePreview] = useStateReact<SharePreview | null>(null);
+  const [preferredShareTarget, setPreferredShareTarget] = useStateReact<PreferredShareTarget>("sheet");
+  const [copiedPreview, setCopiedPreview] = useStateReact(false);
 
   // Modal de confirmação para limpar dados
   const [confirmandoLimpeza, setConfirmandoLimpeza] = useStateReact(false);
@@ -86,6 +102,28 @@ export default function ConfiguracoesScreen() {
   const cloud = useSync();
   const [diasSelecionados, setDiasSelecionados] = useStateReact<DayOfWeek[]>(workSchedule.workDays);
   const dayNames = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+
+  useEffect(() => {
+    AsyncStorage.getItem("@gbk_preferred_share_target")
+      .then((savedTarget) => {
+        if (SHARE_TARGETS.some((target) => target.id === savedTarget)) {
+          setPreferredShareTarget(savedTarget as PreferredShareTarget);
+        }
+      })
+      .catch((error) => console.warn("[Share] Não foi possível carregar destino favorito:", error));
+  }, []);
+
+  async function salvarDestinoPreferido(target: PreferredShareTarget) {
+    setPreferredShareTarget(target);
+    await AsyncStorage.setItem("@gbk_preferred_share_target", target);
+  }
+
+  async function copiarResumoDaPrevia() {
+    if (!sharePreview) return;
+    await Clipboard.setStringAsync(sharePreview.content);
+    setCopiedPreview(true);
+    hapticSuccess();
+  }
 
   async function compartilharPrevia() {
     if (!sharePreview) return;
@@ -105,10 +143,35 @@ export default function ConfiguracoesScreen() {
     await new Promise<void>((resolve) => setTimeout(resolve, 350));
 
     try {
-      await Sharing.shareAsync(preview.uri, {
-        mimeType: preview.kind === "csv" ? "text/csv" : "application/pdf",
-        dialogTitle: `Compartilhar ${preview.title}`,
-      });
+      const mimeType = preview.kind === "csv" ? "text/csv" : "application/pdf";
+      const preferredTarget = SHARE_TARGETS.find((target) => target.id === preferredShareTarget);
+      let sharedWithFavorite = false;
+
+      if (Platform.OS === "android" && preferredTarget?.packageName) {
+        try {
+          const contentUri = await FileSystem.getContentUriAsync(preview.uri);
+          await IntentLauncher.startActivityAsync("android.intent.action.SEND", {
+            packageName: preferredTarget.packageName,
+            type: mimeType,
+            flags: 1,
+            extra: {
+              "android.intent.extra.STREAM": contentUri,
+              "android.intent.extra.TEXT": preview.content,
+              "android.intent.extra.TITLE": preview.title,
+            },
+          });
+          sharedWithFavorite = true;
+        } catch (targetError) {
+          console.warn("[Share] Destino favorito indisponível; abrindo lista de aplicativos:", targetError);
+        }
+      }
+
+      if (!sharedWithFavorite) {
+        await Sharing.shareAsync(preview.uri, {
+          mimeType,
+          dialogTitle: `Compartilhar ${preview.title}`,
+        });
+      }
       hapticSuccess();
     } catch (error) {
       console.error("[Share] Falha ao abrir compartilhamento nativo:", error);
@@ -235,11 +298,14 @@ export default function ConfiguracoesScreen() {
       // Abrir a prévia antes do compartilhamento nativo.
       setUltimoCSVUri(uri);
       hapticSuccess();
+      setCopiedPreview(false);
       setSharePreview({
         kind: "csv",
         title: "Planilha CSV",
         uri,
         content: buildCsvPreview(csv),
+        fileName,
+        fileSize: fileInfo.size ?? 0,
       });
     
     } catch (error) {
@@ -555,8 +621,17 @@ export default function ConfiguracoesScreen() {
           byType: dados.stats.porTipo,
           growth: crescimento,
         });
+        const fileInfo = await FileSystem.getInfoAsync(uri);
         hapticSuccess();
-        setSharePreview({ kind: "pdf", title: "Relatório em PDF", uri, content: previewContent });
+        setCopiedPreview(false);
+        setSharePreview({
+          kind: "pdf",
+          title: "Relatório em PDF",
+          uri,
+          content: previewContent,
+          fileName: getFileNameFromUri(uri),
+          fileSize: fileInfo.exists ? fileInfo.size ?? 0 : 0,
+        });
       } else {
         hapticSuccess();
         Alert.alert("Sucesso", "Relatório enviado para impressão!");
@@ -1008,6 +1083,9 @@ export default function ConfiguracoesScreen() {
             <Text style={[styles.previewSubtitle, { color: colors.muted }]}>
               {sharePreview?.title} · confira antes de compartilhar
             </Text>
+            <Text style={[styles.previewFileMeta, { color: colors.muted }]}>
+              {sharePreview ? `${sharePreview.fileName} · ${formatFileSize(sharePreview.fileSize)}` : ""}
+            </Text>
             <ScrollView
               style={[styles.previewContent, { borderColor: PREMIUM.divider }]}
               contentContainerStyle={styles.previewContentInner}
@@ -1016,6 +1094,36 @@ export default function ConfiguracoesScreen() {
                 {sharePreview?.content}
               </Text>
             </ScrollView>
+            <Pressable
+              style={({ pressed }) => [styles.previewCopyButton, { borderColor: PREMIUM.goldBorder, opacity: pressed ? 0.7 : 1 }]}
+              onPress={copiarResumoDaPrevia}
+            >
+              <Text style={[styles.previewCopyButtonText, { color: PREMIUM.gold }]}>
+                {copiedPreview ? "Resumo copiado" : "Copiar resumo"}
+              </Text>
+            </Pressable>
+            <Text style={[styles.previewTargetLabel, { color: colors.muted }]}>Compartilhamento rápido</Text>
+            <View style={styles.previewTargetChoices}>
+              {SHARE_TARGETS.map((target) => {
+                const selected = preferredShareTarget === target.id;
+                return (
+                  <Pressable
+                    key={target.id}
+                    style={({ pressed }) => [
+                      styles.previewTargetChip,
+                      {
+                        backgroundColor: selected ? colors.primary : PREMIUM.surface,
+                        borderColor: selected ? colors.primary : PREMIUM.divider,
+                        opacity: pressed ? 0.75 : 1,
+                      },
+                    ]}
+                    onPress={() => void salvarDestinoPreferido(target.id)}
+                  >
+                    <Text style={[styles.previewTargetChipText, { color: selected ? "#FFFFFF" : colors.foreground }]}>{target.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
             <View style={styles.confirmBotoes}>
               <Pressable
                 style={({ pressed }) => [styles.botaoCancelar, { backgroundColor: colors.muted, opacity: pressed ? 0.7 : 1 }]}
@@ -1546,6 +1654,12 @@ const styles = StyleSheet.create({
     marginTop: -6,
     marginBottom: 16,
   },
+  previewFileMeta: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: -10,
+    marginBottom: 12,
+  },
   previewContent: {
     maxHeight: 390,
     borderWidth: 1,
@@ -1559,6 +1673,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 19,
     fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
+  },
+  previewCopyButton: {
+    minHeight: 42,
+    borderWidth: 1,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  previewCopyButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  previewTargetLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  previewTargetChoices: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 18,
+  },
+  previewTargetChip: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  previewTargetChipText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
   scroll: {
     padding: 16,

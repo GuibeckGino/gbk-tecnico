@@ -595,3 +595,9 @@
 - [x] Fechar a pré-visualização antes de solicitar o compartilhamento nativo
 - [x] Assegurar que a folha de aplicativos do Android abra após a confirmação
 - [x] Validar a correção e registrar o checkpoint
+
+## Atualização v8.2.0 — Compartilhamento Rápido
+- [x] Adicionar botão para copiar o resumo exibido na pré-visualização
+- [x] Exibir nome e tamanho do arquivo antes do compartilhamento
+- [x] Permitir escolher e salvar uma preferência de aplicativo para compartilhamento rápido
+- [x] Validar TypeScript, testes e fluxo de compartilhamento

@@ -6,6 +6,19 @@ export function buildCsvPreview(csv: string, maxLines = 12): string {
     : visibleLines;
 }
 
+export function getFileNameFromUri(uri: string): string {
+  const cleanUri = uri.split("?")[0] ?? uri;
+  const segment = cleanUri.split("/").filter(Boolean).pop();
+  return segment ? decodeURIComponent(segment) : "arquivo";
+}
+
+export function formatFileSize(bytes: number | undefined): string {
+  const safeBytes = Math.max(0, bytes ?? 0);
+  if (safeBytes < 1024) return `${safeBytes} B`;
+  if (safeBytes < 1024 * 1024) return `${(safeBytes / 1024).toFixed(1)} KB`;
+  return `${(safeBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function buildPdfPreview(input: {
   monthLabel: string;
   total: number;
