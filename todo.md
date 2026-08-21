@@ -601,3 +601,9 @@
 - [x] Exibir nome e tamanho do arquivo antes do compartilhamento
 - [x] Permitir escolher e salvar uma preferência de aplicativo para compartilhamento rápido
 - [x] Validar TypeScript, testes e fluxo de compartilhamento
+
+## Atualização v8.3.0 — Nova Instalação Premium
+- [x] Reformular o cabeçalho e o cartão do formulário da tela Nova Instalação
+- [x] Melhorar a busca e seleção de bairro sem alterar os dados disponíveis
+- [x] Reaplicar cartões de tipo de serviço, data, observações e botão de salvar no estilo premium
+- [x] Validar o cadastro, calendário, TypeScript e acabamento mobile

@@ -10,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
 import { useColors } from "@/hooks/use-colors";
@@ -20,9 +21,16 @@ import { DatePickerModal } from "@/components/date-picker-modal";
 import { BAIRROS_LEM, buscarBairros, validarBairro } from "@/lib/bairros-lem";
 import { ImportModal } from "@/components/import-modal";
 import type { Installation } from "@/types/installation";
-import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
+import { PREMIUM } from "@/components/premium-ui";
 
 const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança", "Empresarial"];
+
+const TIPO_ICONS: Record<ServiceType, React.ComponentProps<typeof MaterialIcons>["name"]> = {
+  "Instalação": "construction",
+  "Tipo 3": "layers",
+  "Mudança": "sync",
+  "Empresarial": "business",
+};
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -147,15 +155,28 @@ export default function NovoCadastroScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <PremiumHeader
-          title="Nova Instalação"
-          subtitle="Registre uma nova ordem de serviço"
-          icon="plus.circle.fill"
-          style={styles.titulo}
-        />
+        <View style={styles.headerRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Voltar"
+            style={({ pressed }) => [styles.backButton, { borderColor: PREMIUM.goldBorder, opacity: pressed ? 0.7 : 1 }]}
+            onPress={() => router.back()}
+          >
+            <MaterialIcons name="arrow-back" size={24} color={PREMIUM.foreground} />
+          </Pressable>
+          <View style={[styles.headerIcon, { backgroundColor: PREMIUM.blue }]}>
+            <MaterialIcons name="add" size={30} color="#FFFFFF" />
+          </View>
+          <View style={styles.headerCopy}>
+            <Text style={[styles.headerTitle, { color: PREMIUM.foreground }]}>Nova Instalação</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.muted }]}>Registre uma nova ordem de serviço</Text>
+          </View>
+        </View>
+
+        <View style={[styles.formCard, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.divider }]}>
 
         {/* Campo Cliente */}
-        <FormField label="Cliente *">
+        <FormField label="Cliente *" icon="person-outline">
           <TextInput
             style={[
               styles.input,
@@ -174,7 +195,7 @@ export default function NovoCadastroScreen() {
         </FormField>
 
         {/* Campo Bairro */}
-        <FormField label="Bairro *">
+        <FormField label="Bairro *" icon="location-on">
           <View>
             <Pressable
               style={[
@@ -190,17 +211,12 @@ export default function NovoCadastroScreen() {
                 setMostrarBairros(!mostrarBairros);
               }}
             >
-              <Text
-                style={[
-                  {
-                    color: bairro ? colors.foreground : colors.muted,
-                    fontSize: 16,
-                    paddingVertical: 12,
-                  },
-                ]}
-              >
-                {bairro || 'Selecione um bairro'}
-              </Text>
+              <View style={styles.bairroSelectorContent}>
+                <Text style={{ color: bairro ? colors.foreground : colors.muted, fontSize: 16 }}>
+                  {bairro || 'Selecione um bairro'}
+                </Text>
+                <MaterialIcons name="keyboard-arrow-down" size={24} color={PREMIUM.blue} />
+              </View>
             </Pressable>
             
             {/* Lista de bairros */}
@@ -244,14 +260,10 @@ export default function NovoCadastroScreen() {
                       ]}
                       onPress={() => handleSelectBairro(b)}
                     >
-                      <Text
-                        style={{
-                          color: bairro === b ? '#fff' : colors.foreground,
-                          fontSize: 14,
-                        }}
-                      >
-                        {b}
-                      </Text>
+                      <View style={styles.bairroItem}>
+                        <MaterialIcons name="location-on" size={18} color={bairro === b ? "#FFFFFF" : PREMIUM.blue} />
+                        <Text style={{ color: bairro === b ? '#fff' : colors.foreground, fontSize: 14 }}>{b}</Text>
+                      </View>
                     </Pressable>
                   ))}
                 </ScrollView>
@@ -261,7 +273,7 @@ export default function NovoCadastroScreen() {
         </FormField>
 
         {/* Tipo de Serviço */}
-        <FormField label="Tipo de Serviço *">
+        <FormField label="Tipo de Serviço *" icon="build">
           <View style={styles.tiposRow}>
             {TIPOS.map((tipo) => (
               <Pressable
@@ -281,6 +293,11 @@ export default function NovoCadastroScreen() {
                   setTipoServico(tipo);
                 }}
               >
+                <MaterialIcons
+                  name={TIPO_ICONS[tipo]}
+                  size={20}
+                  color={tipoServico === tipo ? "#FFFFFF" : PREMIUM.foreground}
+                />
                 <Text
                   style={[
                     styles.tipoBotaoTexto,
@@ -298,7 +315,7 @@ export default function NovoCadastroScreen() {
         </FormField>
 
         {/* Campo Data */}
-        <FormField label="Data *">
+        <FormField label="Data *" icon="event">
           <Pressable
             style={({ pressed }) => [
               styles.input,
@@ -314,18 +331,12 @@ export default function NovoCadastroScreen() {
               setMostrarDatePicker(true);
             }}
           >
-            <Text
-              style={[
-                styles.dateDisplayText,
-                {
-                  color: data ? colors.foreground : colors.muted,
-                  fontSize: 16,
-                  paddingVertical: 12,
-                },
-              ]}
-            >
-              {data || "Clique para selecionar a data"}
-            </Text>
+            <View style={styles.bairroSelectorContent}>
+              <Text style={[styles.dateDisplayText, { color: data ? colors.foreground : colors.muted }]}>
+                {data || "Clique para selecionar a data"}
+              </Text>
+              <MaterialIcons name="event" size={23} color={PREMIUM.blue} />
+            </View>
           </Pressable>
         </FormField>
 
@@ -341,7 +352,7 @@ export default function NovoCadastroScreen() {
         />
 
         {/* Campo Observações */}
-        <FormField label="Observações">
+        <FormField label="Observações" icon="description">
           <TextInput
             style={[
               styles.input,
@@ -360,8 +371,12 @@ export default function NovoCadastroScreen() {
             numberOfLines={4}
             textAlignVertical="top"
             returnKeyType="done"
+            maxLength={200}
           />
+          <Text style={[styles.characterCount, { color: colors.muted }]}>{observacoes.length}/200</Text>
         </FormField>
+
+        </View>
 
         {/* Botão Importar */}
         <Pressable
@@ -375,9 +390,8 @@ export default function NovoCadastroScreen() {
             setMostrarImportModal(true);
           }}
         >
-          <Text style={[styles.botaoImportarTexto, { color: colors.primary }]}>
-            📥 Importar CSV
-          </Text>
+          <MaterialIcons name="upload-file" size={20} color={colors.primary} />
+          <Text style={[styles.botaoImportarTexto, { color: colors.primary }]}>Importar CSV</Text>
         </Pressable>
 
         {/* Botão Salvar */}
@@ -390,6 +404,7 @@ export default function NovoCadastroScreen() {
           onPress={salvar}
           disabled={salvando}
         >
+          <MaterialIcons name="save" size={23} color="#FFFFFF" />
           <Text style={styles.botaoSalvarTexto}>
             {salvando ? "Salvando..." : "Salvar Instalação"}
           </Text>
@@ -408,17 +423,22 @@ export default function NovoCadastroScreen() {
 
 function FormField({
   label,
+  icon,
   children,
 }: {
   label: string;
+  icon: React.ComponentProps<typeof MaterialIcons>["name"];
   children: React.ReactNode;
 }) {
   const colors = useColors();
   return (
     <View style={styles.campo}>
-      <Text style={[styles.campoLabel, { color: colors.foreground }]}>
-        {label}
-      </Text>
+      <View style={styles.fieldLabelRow}>
+        <View style={[styles.fieldIcon, { backgroundColor: PREMIUM.blueSoft }]}>
+          <MaterialIcons name={icon} size={19} color={PREMIUM.blue} />
+        </View>
+        <Text style={[styles.campoLabel, { color: colors.foreground }]}>{label}</Text>
+      </View>
       {children}
     </View>
   );
@@ -426,62 +446,125 @@ function FormField({
 
 const styles = StyleSheet.create({
   scroll: {
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 42,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 22,
+  },
+  backButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 18,
+    shadowColor: PREMIUM.blue,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  headerCopy: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  headerTitle: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "800",
+  },
+  headerSubtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 2,
+  },
+  formCard: {
+    borderWidth: 1,
+    borderRadius: 20,
     padding: 16,
-    paddingBottom: 40,
-  },
-  titulo: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 20,
-  },
-  campo: {
     marginBottom: 16,
   },
+  campo: {
+    marginBottom: 20,
+  },
+  fieldLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 9,
+  },
+  fieldIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
   campoLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 6,
+    fontSize: 16,
+    fontWeight: "700",
   },
   input: {
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    lineHeight: 22,
+    borderRadius: 13,
+    paddingHorizontal: 16,
+    minHeight: 56,
+    fontSize: 16,
+    lineHeight: 23,
   },
   dateDisplayText: {
     fontSize: 16,
+    lineHeight: 23,
   },
   inputMultilinha: {
-    minHeight: 100,
-    paddingTop: 12,
+    minHeight: 122,
+    paddingTop: 14,
   },
   tiposRow: {
     flexDirection: "row",
-    gap: 8,
+    flexWrap: "wrap",
+    gap: 10,
   },
   tipoBotao: {
-    flex: 1,
+    minWidth: "47%",
+    flexGrow: 1,
     borderWidth: 1.5,
-    borderRadius: 10,
-    paddingVertical: 10,
+    borderRadius: 13,
+    paddingVertical: 12,
+    paddingHorizontal: 11,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 7,
   },
   tipoBotaoTexto: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
   },
   botaoSalvar: {
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 15,
+    minHeight: 62,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 10,
     marginTop: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowColor: PREMIUM.blue,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.32,
+    shadowRadius: 10,
+    elevation: 7,
   },
   botaoSalvarTexto: {
     color: "#fff",
@@ -490,14 +573,33 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   botaoImportar: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 14,
+    minHeight: 52,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
     alignItems: "center",
     marginTop: 8,
-    borderWidth: 2,
+    borderWidth: 1,
   },
   botaoImportarTexto: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
+  },
+  bairroSelectorContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flex: 1,
+  },
+  bairroItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  characterCount: {
+    textAlign: "right",
+    fontSize: 12,
+    marginTop: 7,
   },
 });
