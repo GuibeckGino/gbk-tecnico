@@ -612,3 +612,8 @@
 - [x] Preencher automaticamente a data atual ao abrir Nova Instalação
 - [x] Restaurar a data atual após salvar uma nova OS
 - [x] Validar o calendário, testes e compilação
+
+## Documentação — Especificação para Segunda IA
+- [x] Consolidar telas, fluxos, regras financeiras e arquitetura do aplicativo
+- [x] Documentar persistência, sincronização online, compartilhamento e limitações atuais
+- [x] Entregar uma referência técnica detalhada e pronta para análise externa
