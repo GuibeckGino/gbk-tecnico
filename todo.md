@@ -607,3 +607,8 @@
 - [x] Melhorar a busca e seleção de bairro sem alterar os dados disponíveis
 - [x] Reaplicar cartões de tipo de serviço, data, observações e botão de salvar no estilo premium
 - [x] Validar o cadastro, calendário, TypeScript e acabamento mobile
+
+## Melhoria v8.3.1 — Data Atual no Cadastro
+- [x] Preencher automaticamente a data atual ao abrir Nova Instalação
+- [x] Restaurar a data atual após salvar uma nova OS
+- [x] Validar o calendário, testes e compilação

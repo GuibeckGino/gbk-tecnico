@@ -19,6 +19,12 @@ export function formatarData(texto: string): string {
   }
 }
 
+export function obterDataAtual(data = new Date()): string {
+  const dia = String(data.getDate()).padStart(2, "0");
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  return `${dia}/${mes}/${data.getFullYear()}`;
+}
+
 export function validarData(data: string): boolean {
   const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
   const match = data.match(regex);

@@ -16,7 +16,7 @@ import { useInstallations } from "@/context/InstallationsContext";
 import { useColors } from "@/hooks/use-colors";
 import type { ServiceType } from "@/types/installation";
 import * as Haptics from "expo-haptics";
-import { formatarData, validarData, validarCliente, validarEndereco } from "@/lib/input-masks";
+import { formatarData, obterDataAtual, validarData, validarCliente, validarEndereco } from "@/lib/input-masks";
 import { DatePickerModal } from "@/components/date-picker-modal";
 import { BAIRROS_LEM, buscarBairros, validarBairro } from "@/lib/bairros-lem";
 import { ImportModal } from "@/components/import-modal";
@@ -54,7 +54,7 @@ export default function NovoCadastroScreen() {
   const [bairrosFiltrados, setBairrosFiltrados] = useState<string[]>(BAIRROS_LEM);
   const [mostrarBairros, setMostrarBairros] = useState(false);
   const [tipoServico, setTipoServico] = useState<ServiceType>("Instalação");
-  const [data, setData] = useState("");
+  const [data, setData] = useState(() => obterDataAtual());
   const [observacoes, setObservacoes] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [temAlteracoes, setTemAlteracoes] = useState(false);
@@ -133,7 +133,7 @@ export default function NovoCadastroScreen() {
       setCliente("");
       setBairro("");
       setTipoServico("Instalação");
-      setData("");
+      setData(obterDataAtual());
       setObservacoes("");
       // Voltar ao dashboard
       router.replace("/");
