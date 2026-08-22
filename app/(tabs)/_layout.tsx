@@ -94,6 +94,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="meu-veiculo"
+        options={{
+          title: "Veículo",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="car.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="configuracoes"
         options={{
           title: "Config",

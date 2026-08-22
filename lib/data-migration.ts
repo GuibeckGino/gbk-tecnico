@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  */
 
 const MIGRATION_VERSION_KEY = 'app_migration_version';
-const CURRENT_MIGRATION_VERSION = 2;
+const CURRENT_MIGRATION_VERSION = 3;
 
 // Chaves de dados que precisam ser migradas
 const DATA_KEYS = [
@@ -32,6 +32,10 @@ export async function runDataMigration(): Promise<void> {
       if (lastVersion < 2) {
         await migrateFromPreviousVersion();
       }
+
+      // Migração v2 -> v3: introduz a estrutura independente e versionada de veículo.
+      // Não há dados antigos a transformar; manter esta etapa evita que futuras migrações
+      // confundam instalações existentes com os novos dados do veículo.
 
       // Marcar migração como completa
       await AsyncStorage.setItem(MIGRATION_VERSION_KEY, CURRENT_MIGRATION_VERSION.toString());

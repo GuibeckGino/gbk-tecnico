@@ -22,6 +22,9 @@ import { BAIRROS_LEM, buscarBairros, validarBairro } from "@/lib/bairros-lem";
 import { ImportModal } from "@/components/import-modal";
 import type { Installation } from "@/types/installation";
 import { PREMIUM } from "@/components/premium-ui";
+import { useVehicle } from "@/context/VehicleContext";
+import { calculateVehicleMonthlySummary } from "@/types/vehicle";
+import { extrairMesEAnoDaData } from "@/lib/monthly-payment-mode";
 
 const TIPOS: ServiceType[] = ["Instalação", "Tipo 3", "Mudança", "Empresarial"];
 
@@ -46,6 +49,7 @@ function hapticSuccess() {
 
 export default function NovoCadastroScreen() {
   const { adicionarInstalacao } = useInstallations();
+  const { vehicleData, setOsTrip } = useVehicle();
   const colors = useColors();
   const router = useRouter();
 
@@ -56,10 +60,26 @@ export default function NovoCadastroScreen() {
   const [tipoServico, setTipoServico] = useState<ServiceType>("Instalação");
   const [data, setData] = useState(() => obterDataAtual());
   const [observacoes, setObservacoes] = useState("");
+  const [distanciaKm, setDistanciaKm] = useState("");
+  const [kmInicial, setKmInicial] = useState("");
+  const [kmFinal, setKmFinal] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [temAlteracoes, setTemAlteracoes] = useState(false);
   const [mostrarDatePicker, setMostrarDatePicker] = useState(false);
   const [mostrarImportModal, setMostrarImportModal] = useState(false);
+
+  const deslocamento = (() => {
+    const direto = Number(distanciaKm.replace(",", "."));
+    const inicio = Number(kmInicial.replace(",", "."));
+    const fim = Number(kmFinal.replace(",", "."));
+    if (kmInicial.trim() && kmFinal.trim() && Number.isFinite(inicio) && Number.isFinite(fim) && fim > inicio) return fim - inicio;
+    return Number.isFinite(direto) && direto > 0 ? direto : 0;
+  })();
+  const custoPorKmAtual = (() => {
+    const periodo = extrairMesEAnoDaData(data);
+    return calculateVehicleMonthlySummary(vehicleData, [], periodo.mes, periodo.ano).operationalCostPerKm ?? 0;
+  })();
+  const custoDeslocamentoEstimado = deslocamento * custoPorKmAtual;
   
   // Função para filtrar bairros
   const handleBairroSearch = (text: string) => {
@@ -121,13 +141,22 @@ export default function NovoCadastroScreen() {
 
     setSalvando(true);
     try {
-      await adicionarInstalacao({
+      const instalacaoCriada = await adicionarInstalacao({
         cliente: cliente.trim(),
         endereco: bairro.trim(),
         tipoServico,
         data,
         observacoes: observacoes.trim(),
       });
+      if (deslocamento > 0) {
+        setOsTrip(instalacaoCriada.id, {
+          distanceKm: deslocamento,
+          kmInicial: kmInicial.trim() ? Number(kmInicial.replace(",", ".")) : undefined,
+          kmFinal: kmFinal.trim() ? Number(kmFinal.replace(",", ".")) : undefined,
+          costPerKmAtRegistration: custoPorKmAtual,
+          estimatedCost: Number(custoDeslocamentoEstimado.toFixed(2)),
+        });
+      }
       hapticSuccess();
       // Limpar formulário
       setCliente("");
@@ -135,6 +164,9 @@ export default function NovoCadastroScreen() {
       setTipoServico("Instalação");
       setData(obterDataAtual());
       setObservacoes("");
+      setDistanciaKm("");
+      setKmInicial("");
+      setKmFinal("");
       // Voltar ao dashboard
       router.replace("/");
     } catch (error) {
@@ -350,6 +382,45 @@ export default function NovoCadastroScreen() {
           }}
           initialDate={data}
         />
+
+        <FormField label="Deslocamento" icon="directions-car">
+          <Text style={[styles.tripHint, { color: colors.muted }]}>Opcional · usado somente na análise de rentabilidade. O valor oficial da OS não será alterado.</Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.goldBorder, color: PREMIUM.foreground }]}
+            placeholder="Distância percorrida (km)"
+            placeholderTextColor={colors.muted}
+            value={distanciaKm}
+            onChangeText={setDistanciaKm}
+            keyboardType="numeric"
+          />
+          <View style={styles.tripKmRow}>
+            <TextInput
+              style={[styles.input, styles.tripKmInput, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.divider, color: PREMIUM.foreground }]}
+              placeholder="KM inicial"
+              placeholderTextColor={colors.muted}
+              value={kmInicial}
+              onChangeText={setKmInicial}
+              keyboardType="numeric"
+            />
+            <TextInput
+              style={[styles.input, styles.tripKmInput, { backgroundColor: PREMIUM.surface, borderColor: PREMIUM.divider, color: PREMIUM.foreground }]}
+              placeholder="KM final"
+              placeholderTextColor={colors.muted}
+              value={kmFinal}
+              onChangeText={setKmFinal}
+              keyboardType="numeric"
+            />
+          </View>
+          {deslocamento > 0 ? (
+            <View style={styles.tripEstimate}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.tripEstimateLabel}>Custo estimado de deslocamento</Text>
+                <Text style={styles.tripEstimateHint}>{deslocamento.toFixed(1).replace(".", ",")} km · R$ {custoPorKmAtual.toFixed(2).replace(".", ",")}/km</Text>
+              </View>
+              <Text style={styles.tripEstimateValue}>R$ {custoDeslocamentoEstimado.toFixed(2).replace(".", ",")}</Text>
+            </View>
+          ) : null}
+        </FormField>
 
         {/* Campo Observações */}
         <FormField label="Observações" icon="description">
@@ -601,5 +672,43 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 12,
     marginTop: 7,
+  },
+  tripHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 9,
+  },
+  tripKmRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 10,
+  },
+  tripKmInput: {
+    flex: 1,
+  },
+  tripEstimate: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#102B63",
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+    gap: 8,
+  },
+  tripEstimateLabel: {
+    color: PREMIUM.foreground,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  tripEstimateHint: {
+    color: PREMIUM.muted,
+    fontSize: 11,
+    marginTop: 4,
+  },
+  tripEstimateValue: {
+    color: PREMIUM.gold,
+    fontSize: 16,
+    fontWeight: "900",
   },
 });

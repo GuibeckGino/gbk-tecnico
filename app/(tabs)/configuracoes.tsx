@@ -26,6 +26,7 @@ import { useGBKTheme } from "@/context/ThemeContext";
 import { useColors } from "@/hooks/use-colors";
 import { useWorkSchedule, type DayOfWeek } from "@/context/WorkScheduleContext";
 import { useSync } from "@/context/SyncContext";
+import { useVehicle } from "@/context/VehicleContext";
 import { calcularValorPorTipo } from "@/types/installation";
 
 import * as Haptics from "expo-haptics";
@@ -37,6 +38,7 @@ import { buildCsvPreview, buildPdfPreview, formatFileSize, getFileNameFromUri } 
 import { useFocusEffect } from "@react-navigation/native";
 import { PREMIUM, PremiumHeader } from "@/components/premium-ui";
 import { obterPaymentModeDoMes } from "@/lib/monthly-payment-mode";
+import { createFullBackup, parseBackup } from "@/lib/backup";
 
 function haptic() {
   if (Platform.OS !== "web") {
@@ -77,6 +79,7 @@ const SHARE_TARGETS: Array<{ id: PreferredShareTarget; label: string; packageNam
 export default function ConfiguracoesScreen() {
   const { instalacoes, stats, limparDados, exportarJSON, importarJSON, paymentMode, setPaymentMode, monthlyGoal, setMonthlyGoal } =
     useInstallations();
+  const { vehicleData, exportVehicleData, importVehicleData } = useVehicle();
   const { mes, ano, mesAnoFormatado } = useMonth();
   const { modoEscuro, toggleModoEscuro } = useGBKTheme();
   const colors = useColors();
@@ -408,16 +411,16 @@ export default function ConfiguracoesScreen() {
   }
 
   async function exportarBackup() {
-    if (instalacoes.length === 0) {
-      Alert.alert("Sem dados", "Não há instalações para exportar.");
+    if (instalacoes.length === 0 && vehicleData.fuelRecords.length === 0 && vehicleData.maintenanceRecords.length === 0 && !vehicleData.profile.modelo) {
+      Alert.alert("Sem dados", "Não há dados de OS ou veículo para exportar.");
       return;
     }
     setExportando(true);
     try {
       console.log("[JSON] Iniciando exportação de backup");
       
-      // Gerar JSON dos dados
-      const json = exportarJSON();
+      // Backup versionado: mantém compatibilidade com backups antigos e inclui veículo.
+      const json = JSON.stringify(createFullBackup(instalacoes, exportVehicleData()), null, 2);
       console.log("[JSON] JSON gerado, tamanho:", json.length);
 
       if (Platform.OS === "web") {
@@ -513,7 +516,14 @@ export default function ConfiguracoesScreen() {
             onPress: async () => {
               try {
                 console.log("[Restaurar] Iniciando restauração");
-                const sucesso = await importarJSON(conteudo);
+                const backup = parseBackup(conteudo);
+                if (!backup) {
+                  hapticError();
+                  Alert.alert("Erro", "Arquivo de backup inválido.");
+                  return;
+                }
+                const sucesso = await importarJSON(JSON.stringify(backup.installations));
+                if (backup.vehicleData) importVehicleData(backup.vehicleData);
                 if (sucesso) {
                   console.log("[Restaurar] Restauração bem-sucedida");
                   hapticSuccess();

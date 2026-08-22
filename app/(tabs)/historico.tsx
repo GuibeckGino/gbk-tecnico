@@ -15,6 +15,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ScreenContainer } from "@/components/screen-container";
 import { useInstallations } from "@/context/InstallationsContext";
+import { useVehicle } from "@/context/VehicleContext";
 import { useMonth, filtrarPorMes } from "@/context/MonthContext";
 import { useColors } from "@/hooks/use-colors";
 import type { Installation, ServiceType } from "@/types/installation";
@@ -742,6 +743,8 @@ function CardInstalacao({
   onToggleFavorito: () => void;
 }) {
   const colors = useColors();
+  const { vehicleData } = useVehicle();
+  const trip = vehicleData.osTrips[instalacao.id];
 
   const corTipo: Record<ServiceType, string> = {
     Instalação: PREMIUM.blueDeep,
@@ -800,6 +803,14 @@ function CardInstalacao({
           <Text style={[styles.cardData, { color: colors.muted }]}>Unit: R$ {valor}</Text>
           <Text style={[styles.cardValor, { color: colors.success }]}>R$ {valor}</Text>
         </View>
+        {trip ? (
+          <View style={styles.cardTrip}>
+            <IconSymbol name="car.fill" size={15} color={PREMIUM.gold} />
+            <Text style={[styles.cardTripText, { color: colors.muted }]}>
+              {trip.distanceKm.toFixed(1).replace(".", ",")} km · custo estimado R$ {trip.estimatedCost.toFixed(2).replace(".", ",")}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.cardAcoes}>
@@ -987,6 +998,16 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 8,
     flexWrap: "wrap",
+  },
+  cardTrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 8,
+  },
+  cardTripText: {
+    fontSize: 11,
+    fontWeight: "600",
   },
   badgeTipo: {
     borderRadius: 6,

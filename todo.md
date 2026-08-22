@@ -617,3 +617,16 @@
 - [x] Consolidar telas, fluxos, regras financeiras e arquitetura do aplicativo
 - [x] Documentar persistência, sincronização online, compartilhamento e limitações atuais
 - [x] Entregar uma referência técnica detalhada e pronta para análise externa
+
+## Solicitações do Arquivo Enviado
+- [x] Analisar os requisitos do arquivo e mapear os impactos no aplicativo
+- [x] Criar domínio versionado, persistência local e cálculos do módulo Meu Veículo
+- [x] Criar cadastro do veículo e painel premium com custos, consumo, quilometragem e gráfico mensal
+- [x] Implementar cadastro, edição e exclusão de abastecimentos com métricas de consumo e custo
+- [x] Implementar cadastro, edição e exclusão de manutenções com categorias e análises mensal/anual
+- [x] Implementar manutenções programadas, alertas por quilometragem/data e configuração de custos operacionais
+- [x] Integrar distância e custo estimado de deslocamento às OS sem alterar o valor oficial recebido
+- [x] Criar relatórios, período personalizado, insights condicionados a dados e gráficos do veículo
+- [x] Integrar dados do veículo ao backup versionado e à restauração sem apagar dados existentes
+- [x] Criar testes de cálculos, persistência, alertas, backup e integração com OS
+- [x] Validar TypeScript, testes existentes, funcionamento offline e salvar checkpoint

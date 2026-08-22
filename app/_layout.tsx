@@ -14,6 +14,7 @@ import { MonthProvider } from "@/context/MonthContext";
 import { WorkScheduleProvider } from "@/context/WorkScheduleContext";
 import { BairroFilterProvider } from "@/context/BairroFilterContext";
 import { SyncProvider } from "@/context/SyncContext";
+import { VehicleProvider } from "@/context/VehicleContext";
 
 import {
   SafeAreaFrameContext,
@@ -90,6 +91,7 @@ export default function RootLayout() {
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <InstallationsProvider>
+      <VehicleProvider>
       <MonthProvider>
       <WorkScheduleProvider>
       <BairroFilterProvider>
@@ -110,6 +112,7 @@ export default function RootLayout() {
       </BairroFilterProvider>
       </WorkScheduleProvider>
       </MonthProvider>
+      </VehicleProvider>
       </InstallationsProvider>
     </GestureHandlerRootView>
   );

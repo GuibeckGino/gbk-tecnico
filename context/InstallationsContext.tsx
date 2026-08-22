@@ -144,7 +144,7 @@ interface InstallationsContextValue {
     tipoServico: ServiceType;
     data: string;
     observacoes: string;
-  }) => Promise<void>;
+  }) => Promise<Installation>;
   atualizarInstalacao: (instalacao: Installation) => Promise<void>;
   removerInstalacao: (id: string) => Promise<void>;
   deletarInstalacao: (id: string) => Promise<void>;
@@ -208,6 +208,7 @@ export function InstallationsProvider({
         ...dados,
       };
       dispatch({ type: "ADICIONAR", payload: novaInstalacao });
+      return novaInstalacao;
     },
     []
   );

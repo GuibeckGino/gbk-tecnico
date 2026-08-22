@@ -50,6 +50,7 @@ const MAPPING = {
   "chart.pie.fill": "pie-chart",
   "magnifyingglass": "search",
   "calendar": "calendar-today",
+  "car.fill": "directions-car",
   "eye.fill": "visibility",
   "star.fill": "star",
   "star": "star-border",
